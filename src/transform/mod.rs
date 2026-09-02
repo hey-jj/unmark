@@ -1,8 +1,13 @@
 //! The metadata transform layer. It turns an ordered plan into a container drop
 //! spec or a text edit and applies it. It never re-encodes a pixel or a sample.
 //! A container that cannot be rewritten safely returns an error so the caller
-//! fails closed. The pixel and audio degrade transforms arrive in a later
-//! milestone and will live in sibling modules.
+//! fails closed. The pixel and audio degrade transforms live in the sibling
+//! modules `pixel` and `audio`; this module never decodes.
+
+#[cfg(feature = "audio")]
+pub mod audio;
+#[cfg(feature = "image")]
+pub mod pixel;
 
 use crate::asset::Format;
 use crate::container::{self, DropSpec, RewriteError};

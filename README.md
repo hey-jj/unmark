@@ -117,6 +117,26 @@ stays by default and comes off only when you opt in with `--opt-in MC06`.
 - unmark removes marks and never writes them. It fabricates no manifest, no timestamp,
   and no camera EXIF.
 
+## Calibration
+
+The pixel and audio budgets are set by a calibration pass over a corpus of
+first-generation generated assets. `examples/calibrate.rs` runs
+the harness over a manifest, scores every calibrated plan per (plan, format, band)
+cell, derives each number by a nearest-rank percentile, checks the acceptance
+properties, and writes `policy/calibration.json`, the owner table
+`policy/calibration.md`, and the derived numbers into `policy/policy.toml`:
+
+```
+cargo run --release --example calibrate --all-features -- \
+    --manifest corpus/manifest.json --out policy --date 2026-09-02
+cargo run -- policy snapshot --out skills/unmark/references/transforms.md
+```
+
+The committed record is provisional until a corpus run lands cells that reach
+`n_min`. `tests/calibration.rs` pins the fixture subset under
+`fixtures/calibration/` to the record at three decimals, and a codec crate bump
+changes the encoder fingerprint and fails CI until recalibration.
+
 ## Fidelity metrics
 
 The metadata tiers gate on byte-identity of the pixel or sample stream, so every claim

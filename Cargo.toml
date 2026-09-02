@@ -11,6 +11,7 @@ readme = "README.md"
 repository = "https://github.com/hey-jj/unmark"
 include = [
     "src/**",
+    "examples/**",
     "policy/**",
     "skills/**",
     "tests/**",
@@ -47,5 +48,20 @@ lexopt = "0.3"
 name = "unmark"
 path = "src/bin/unmark.rs"
 
+# The calibration harness and the fixture generator build under
+# --all-targets so they cannot rot, and run only with both media features.
+[[example]]
+name = "calibrate"
+required-features = ["image", "audio"]
+
+[[example]]
+name = "calibration_fixtures"
+required-features = ["image", "audio"]
+
 [profile.release]
 lto = true
+
+# The calibration pins recompute resampling, encoding, and spectra over the
+# fixture subset; light optimization keeps that suite short in CI.
+[profile.test]
+opt-level = 1

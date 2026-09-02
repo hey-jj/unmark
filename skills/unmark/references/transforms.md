@@ -3,7 +3,7 @@
 Regenerate with `unmark policy snapshot` after any policy change. Edits here are overwritten.
 
 - policy version: 0.2.0
-- policy digest: sha256:6096fee72aa69b4fb9aefa6917190f56a0e96bd30172e3f74c49350de34fcd53
+- policy digest: sha256:bf9bcab9c4b5531f6ad766e12c669c2c7c36216410b64ee37cf4b673cdd19431
 
 ## What the tool may say about each mark
 
@@ -170,7 +170,7 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 - target: Weak correlation marks
 - parameters: distribution=gaussian, sigma=6.0
-- Add Gaussian noise at the pinned sigma to every channel. The seed is the policy base seed combined with the input's hash, so one asset always gets the same grain and two assets never share a pattern. A shared pattern would itself be a correlational mark.
+- Add Gaussian noise at the pinned sigma to every color channel, alpha untouched. The seed is the policy base seed combined with the input's hash, so one asset always gets the same grain and two assets never share a pattern. A shared pattern would itself be a correlational mark.
 
 ### PX04 requantize (tier residual, fidelity banding, default false, milestone 2)
 
@@ -205,7 +205,7 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 ### AU03 lossy-transcode-round-trip (tier residual, fidelity held, default false, milestone 2)
 
 - target: Fragile spectral marks
-- Reserved. No pure Rust MP3 or AAC encoder meets the dependency bar, so this entry holds the id and pins no parameters until the owner rules on the encoder. Selecting it is refused and the plan reports it as held.
+- Reserved and not runnable in this version. No pure Rust MP3 or AAC encoder meets the dependency bar, so the entry holds the id, pins no parameters, and sits in no profile. A plan that names it is refused and reported as held.
 
 ### AU02 dither-requantize (tier residual, fidelity noise-floor, default true, milestone 2)
 
@@ -227,7 +227,7 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 ## Fidelity budgets
 
-Calibration status: provisional. Record: policy/calibration.json. Record sha256: none. Corpus manifest sha256: none. Date: none.
+Calibration status: provisional. Record: policy/calibration.json. Record sha256: ed95df69288a99f7008777b48fa51c5abe0cf32457473bc28a5a214ad22b8655. Corpus manifest sha256: cc4a4fa43d5189384ca60b8fff7b4985a000b28a34c7a40c6a56e12c69689f47. Date: 2026-09-02.
 
 | Budget | Kind | Signal floor or ceiling | Geometry |
 |---|---|---|---|

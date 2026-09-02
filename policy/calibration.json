@@ -1,0 +1,4360 @@
+{
+  "schema_version": "1.0.0",
+  "tool_version": "0.1.0",
+  "policy_version": "0.2.0",
+  "date": "2026-09-02",
+  "corpus": {
+    "manifest": "manifest.json",
+    "manifest_sha256": "cc4a4fa43d5189384ca60b8fff7b4985a000b28a34c7a40c6a56e12c69689f47",
+    "filters": {
+      "include_rounds": [],
+      "exclude_rounds": [],
+      "include_tags": [],
+      "exclude_tags": []
+    },
+    "assets_listed": 15,
+    "assets_scored": 15,
+    "assets_excluded": 0,
+    "exclusions": []
+  },
+  "encoder_fingerprint": "unmark 0.1.0; container-rewrite/no-reencode; png 0.18.1; jpeg-decoder 0.3.2; image-webp 0.2.4; claxon 0.4.3; flacenc 0.5.1; jpeg-encoder in-crate baseline 4:4:4; resample in-crate lanczos3 and kaiser-sinc scalar",
+  "base_seed": "0x5eed202609020001",
+  "percentile_image": 5,
+  "percentile_audio": 95,
+  "n_min": 40,
+  "psnr_step_db": 0.5,
+  "ssim_step": 0.005,
+  "lsd_step_db": 0.05,
+  "metrics": [
+    {
+      "key": "au05_metric",
+      "value": "time-averaged-log-power-spectrum"
+    },
+    {
+      "key": "blank_luma_stddev_min",
+      "value": 4.0
+    },
+    {
+      "key": "lsd_downmix",
+      "value": "mean"
+    },
+    {
+      "key": "lsd_frame",
+      "value": 2048
+    },
+    {
+      "key": "lsd_hop",
+      "value": 1024
+    },
+    {
+      "key": "lsd_min_frames",
+      "value": 4
+    },
+    {
+      "key": "lsd_power_floor",
+      "value": 1e-10
+    },
+    {
+      "key": "lsd_power_scale",
+      "value": "dft-over-n"
+    },
+    {
+      "key": "lsd_window",
+      "value": "hann-periodic"
+    },
+    {
+      "key": "psnr_channels",
+      "value": "rgb-plus-alpha-when-present"
+    },
+    {
+      "key": "psnr_identical_db",
+      "value": 120.0
+    },
+    {
+      "key": "silent_rms_min",
+      "value": 0.001
+    },
+    {
+      "key": "ssim_k1",
+      "value": 0.01
+    },
+    {
+      "key": "ssim_k2",
+      "value": 0.03
+    },
+    {
+      "key": "ssim_luma",
+      "value": "bt601"
+    },
+    {
+      "key": "ssim_window",
+      "value": 8
+    }
+  ],
+  "transforms": [
+    {
+      "id": "PX06",
+      "params": [
+        {
+          "key": "op",
+          "value": "flip-horizontal"
+        }
+      ]
+    },
+    {
+      "id": "PX03",
+      "params": [
+        {
+          "key": "anchor",
+          "value": "center"
+        },
+        {
+          "key": "area",
+          "value": 0.9
+        }
+      ]
+    },
+    {
+      "id": "PX02",
+      "params": [
+        {
+          "key": "filter",
+          "value": "lanczos3"
+        },
+        {
+          "key": "ratio",
+          "value": 0.9
+        }
+      ]
+    },
+    {
+      "id": "PX05",
+      "params": [
+        {
+          "key": "distribution",
+          "value": "gaussian"
+        },
+        {
+          "key": "sigma",
+          "value": 6.0
+        }
+      ]
+    },
+    {
+      "id": "PX04",
+      "params": [
+        {
+          "key": "bits",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "id": "PX01",
+      "params": [
+        {
+          "key": "jpeg_chroma",
+          "value": "4:4:4"
+        },
+        {
+          "key": "jpeg_quality",
+          "value": 92
+        }
+      ]
+    },
+    {
+      "id": "AU01",
+      "params": [
+        {
+          "key": "beta",
+          "value": 10.0
+        },
+        {
+          "key": "cutoff",
+          "value": 0.97
+        },
+        {
+          "key": "filter",
+          "value": "kaiser-sinc"
+        },
+        {
+          "key": "half_taps",
+          "value": 64
+        }
+      ]
+    },
+    {
+      "id": "AU04",
+      "params": [
+        {
+          "key": "high_gain_db",
+          "value": -1.5
+        },
+        {
+          "key": "low_gain_db",
+          "value": 1.5
+        },
+        {
+          "key": "pivot_hz",
+          "value": 1000.0
+        },
+        {
+          "key": "slope",
+          "value": 1.0
+        }
+      ]
+    },
+    {
+      "id": "AU05",
+      "params": [
+        {
+          "key": "factor",
+          "value": 1.03
+        },
+        {
+          "key": "method",
+          "value": "resample"
+        }
+      ]
+    },
+    {
+      "id": "AU03",
+      "params": []
+    },
+    {
+      "id": "AU02",
+      "params": [
+        {
+          "key": "bits",
+          "value": 16
+        },
+        {
+          "key": "dither",
+          "value": "tpdf"
+        },
+        {
+          "key": "dither_lsb",
+          "value": 1.0
+        }
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "plan": "image-safe",
+      "format": "png",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 0,
+      "held": 2,
+      "errors": 0,
+      "status": "held",
+      "qualified": false,
+      "next_tier": {
+        "plan": "image-aggressive",
+        "count": 0
+      }
+    },
+    {
+      "plan": "image-safe",
+      "format": "png",
+      "band": "large",
+      "merged_from": [],
+      "count": 0,
+      "held": 1,
+      "errors": 0,
+      "status": "held",
+      "qualified": false,
+      "next_tier": {
+        "plan": "image-aggressive",
+        "count": 0
+      }
+    },
+    {
+      "plan": "image-aggressive",
+      "format": "png",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 0,
+      "held": 2,
+      "errors": 0,
+      "status": "held",
+      "qualified": false,
+      "next_tier": {
+        "plan": "image-two-opt-in",
+        "count": 0
+      }
+    },
+    {
+      "plan": "image-aggressive",
+      "format": "png",
+      "band": "large",
+      "merged_from": [],
+      "count": 0,
+      "held": 1,
+      "errors": 0,
+      "status": "held",
+      "qualified": false,
+      "next_tier": {
+        "plan": "image-two-opt-in",
+        "count": 0
+      }
+    },
+    {
+      "plan": "image-aggressive+PX03",
+      "format": "png",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 0,
+      "held": 2,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "image-aggressive+PX03",
+      "format": "png",
+      "band": "large",
+      "merged_from": [],
+      "count": 0,
+      "held": 1,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "image-aggressive+PX04",
+      "format": "png",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 0,
+      "held": 2,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "image-aggressive+PX04",
+      "format": "png",
+      "band": "large",
+      "merged_from": [],
+      "count": 0,
+      "held": 1,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "image-aggressive+PX05",
+      "format": "png",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 0,
+      "held": 2,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "image-aggressive+PX05",
+      "format": "png",
+      "band": "large",
+      "merged_from": [],
+      "count": 0,
+      "held": 1,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "image-aggressive+PX06",
+      "format": "png",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 0,
+      "held": 2,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "image-aggressive+PX06",
+      "format": "png",
+      "band": "large",
+      "merged_from": [],
+      "count": 0,
+      "held": 1,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "image-two-opt-in",
+      "format": "png",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 0,
+      "held": 2,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "image-two-opt-in",
+      "format": "png",
+      "band": "large",
+      "merged_from": [],
+      "count": 0,
+      "held": 1,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "PX01",
+      "format": "png",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 0,
+      "held": 2,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "PX01",
+      "format": "png",
+      "band": "large",
+      "merged_from": [],
+      "count": 0,
+      "held": 1,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "PX02",
+      "format": "png",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_path": "png-medium-alpha.png",
+        "ssim_percentile_path": "png-medium-alpha.png",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "PX02",
+      "format": "png",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_path": "png-large.png",
+        "ssim_percentile_path": "png-large.png",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "PX03",
+      "format": "png",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_path": "png-medium-alpha.png",
+        "ssim_percentile_path": "png-medium-alpha.png",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "PX03",
+      "format": "png",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_path": "png-large.png",
+        "ssim_percentile_path": "png-large.png",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "PX04",
+      "format": "png",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 40.498,
+        "psnr_median_db": 40.498,
+        "psnr_min_db": 40.498,
+        "ssim_percentile": 0.972,
+        "ssim_median": 0.972,
+        "ssim_min": 0.972,
+        "psnr_percentile_path": "png-small.png",
+        "ssim_percentile_path": "png-small.png",
+        "psnr_floor_db": 40.0,
+        "ssim_floor": 0.97
+      }
+    },
+    {
+      "plan": "PX04",
+      "format": "png",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 40.518,
+        "psnr_median_db": 40.518,
+        "psnr_min_db": 40.518,
+        "ssim_percentile": 0.984,
+        "ssim_median": 0.984,
+        "ssim_min": 0.984,
+        "psnr_percentile_path": "png-large.png",
+        "ssim_percentile_path": "png-large.png",
+        "psnr_floor_db": 40.5,
+        "ssim_floor": 0.98
+      }
+    },
+    {
+      "plan": "PX05",
+      "format": "png",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 32.549,
+        "psnr_median_db": 32.549,
+        "psnr_min_db": 32.549,
+        "ssim_percentile": 0.846,
+        "ssim_median": 0.846,
+        "ssim_min": 0.846,
+        "psnr_percentile_path": "png-small.png",
+        "ssim_percentile_path": "png-small.png",
+        "psnr_floor_db": 32.5,
+        "ssim_floor": 0.845
+      }
+    },
+    {
+      "plan": "PX05",
+      "format": "png",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 32.556,
+        "psnr_median_db": 32.556,
+        "psnr_min_db": 32.556,
+        "ssim_percentile": 0.905,
+        "ssim_median": 0.905,
+        "ssim_min": 0.905,
+        "psnr_percentile_path": "png-large.png",
+        "ssim_percentile_path": "png-large.png",
+        "psnr_floor_db": 32.5,
+        "ssim_floor": 0.905
+      }
+    },
+    {
+      "plan": "PX06",
+      "format": "png",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_path": "png-medium-alpha.png",
+        "ssim_percentile_path": "png-medium-alpha.png",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "PX06",
+      "format": "png",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_path": "png-large.png",
+        "ssim_percentile_path": "png-large.png",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "image-safe",
+      "format": "jpeg",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "unqualified",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 34.702,
+        "psnr_median_db": 34.702,
+        "psnr_min_db": 34.702,
+        "ssim_percentile": 0.952,
+        "ssim_median": 0.952,
+        "ssim_min": 0.952,
+        "psnr_percentile_path": "jpeg-small.jpg",
+        "ssim_percentile_path": "jpeg-small.jpg",
+        "psnr_floor_db": 34.5,
+        "ssim_floor": 0.95
+      },
+      "next_tier": {
+        "plan": "image-aggressive",
+        "count": 2,
+        "psnr_median_db": 30.431,
+        "ssim_median": 0.808
+      }
+    },
+    {
+      "plan": "image-safe",
+      "format": "jpeg",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "unqualified",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 34.666,
+        "psnr_median_db": 34.666,
+        "psnr_min_db": 34.666,
+        "ssim_percentile": 0.976,
+        "ssim_median": 0.976,
+        "ssim_min": 0.976,
+        "psnr_percentile_path": "jpeg-large.jpg",
+        "ssim_percentile_path": "jpeg-large.jpg",
+        "psnr_floor_db": 34.5,
+        "ssim_floor": 0.975
+      },
+      "next_tier": {
+        "plan": "image-aggressive",
+        "count": 1,
+        "psnr_median_db": 30.572,
+        "ssim_median": 0.893
+      }
+    },
+    {
+      "plan": "image-aggressive",
+      "format": "jpeg",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "unqualified",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 30.431,
+        "psnr_median_db": 30.431,
+        "psnr_min_db": 30.431,
+        "ssim_percentile": 0.808,
+        "ssim_median": 0.808,
+        "ssim_min": 0.808,
+        "psnr_percentile_path": "jpeg-small.jpg",
+        "ssim_percentile_path": "jpeg-small.jpg",
+        "psnr_floor_db": 30.0,
+        "ssim_floor": 0.805
+      },
+      "next_tier": {
+        "plan": "image-two-opt-in",
+        "count": 2,
+        "psnr_median_db": 29.913,
+        "ssim_median": 0.784
+      }
+    },
+    {
+      "plan": "image-aggressive",
+      "format": "jpeg",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "unqualified",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 30.572,
+        "psnr_median_db": 30.572,
+        "psnr_min_db": 30.572,
+        "ssim_percentile": 0.893,
+        "ssim_median": 0.893,
+        "ssim_min": 0.893,
+        "psnr_percentile_path": "jpeg-large.jpg",
+        "ssim_percentile_path": "jpeg-large.jpg",
+        "psnr_floor_db": 30.5,
+        "ssim_floor": 0.89
+      },
+      "next_tier": {
+        "plan": "image-two-opt-in",
+        "count": 1,
+        "psnr_median_db": 30.051,
+        "ssim_median": 0.878
+      }
+    },
+    {
+      "plan": "image-aggressive+PX03",
+      "format": "jpeg",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 34.765,
+        "psnr_median_db": 34.765,
+        "psnr_min_db": 34.765,
+        "ssim_percentile": 0.951,
+        "ssim_median": 0.951,
+        "ssim_min": 0.951,
+        "psnr_percentile_path": "jpeg-small.jpg",
+        "ssim_percentile_path": "jpeg-small.jpg",
+        "psnr_floor_db": 34.5,
+        "ssim_floor": 0.95
+      }
+    },
+    {
+      "plan": "image-aggressive+PX03",
+      "format": "jpeg",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 34.73,
+        "psnr_median_db": 34.73,
+        "psnr_min_db": 34.73,
+        "ssim_percentile": 0.975,
+        "ssim_median": 0.975,
+        "ssim_min": 0.975,
+        "psnr_percentile_path": "jpeg-large.jpg",
+        "ssim_percentile_path": "jpeg-large.jpg",
+        "psnr_floor_db": 34.5,
+        "ssim_floor": 0.975
+      }
+    },
+    {
+      "plan": "image-aggressive+PX04",
+      "format": "jpeg",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 33.97,
+        "psnr_median_db": 33.97,
+        "psnr_min_db": 33.97,
+        "ssim_percentile": 0.933,
+        "ssim_median": 0.933,
+        "ssim_min": 0.933,
+        "psnr_percentile_path": "jpeg-small.jpg",
+        "ssim_percentile_path": "jpeg-small.jpg",
+        "psnr_floor_db": 33.5,
+        "ssim_floor": 0.93
+      }
+    },
+    {
+      "plan": "image-aggressive+PX04",
+      "format": "jpeg",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 33.972,
+        "psnr_median_db": 33.972,
+        "psnr_min_db": 33.972,
+        "ssim_percentile": 0.965,
+        "ssim_median": 0.965,
+        "ssim_min": 0.965,
+        "psnr_percentile_path": "jpeg-large.jpg",
+        "ssim_percentile_path": "jpeg-large.jpg",
+        "psnr_floor_db": 33.5,
+        "ssim_floor": 0.965
+      }
+    },
+    {
+      "plan": "image-aggressive+PX05",
+      "format": "jpeg",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 30.431,
+        "psnr_median_db": 30.431,
+        "psnr_min_db": 30.431,
+        "ssim_percentile": 0.808,
+        "ssim_median": 0.808,
+        "ssim_min": 0.808,
+        "psnr_percentile_path": "jpeg-small.jpg",
+        "ssim_percentile_path": "jpeg-small.jpg",
+        "psnr_floor_db": 30.0,
+        "ssim_floor": 0.805
+      }
+    },
+    {
+      "plan": "image-aggressive+PX05",
+      "format": "jpeg",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 30.572,
+        "psnr_median_db": 30.572,
+        "psnr_min_db": 30.572,
+        "ssim_percentile": 0.893,
+        "ssim_median": 0.893,
+        "ssim_min": 0.893,
+        "psnr_percentile_path": "jpeg-large.jpg",
+        "ssim_percentile_path": "jpeg-large.jpg",
+        "psnr_floor_db": 30.5,
+        "ssim_floor": 0.89
+      }
+    },
+    {
+      "plan": "image-aggressive+PX06",
+      "format": "jpeg",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 34.702,
+        "psnr_median_db": 34.702,
+        "psnr_min_db": 34.702,
+        "ssim_percentile": 0.952,
+        "ssim_median": 0.952,
+        "ssim_min": 0.952,
+        "psnr_percentile_path": "jpeg-small.jpg",
+        "ssim_percentile_path": "jpeg-small.jpg",
+        "psnr_floor_db": 34.5,
+        "ssim_floor": 0.95
+      }
+    },
+    {
+      "plan": "image-aggressive+PX06",
+      "format": "jpeg",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 34.679,
+        "psnr_median_db": 34.679,
+        "psnr_min_db": 34.679,
+        "ssim_percentile": 0.975,
+        "ssim_median": 0.975,
+        "ssim_min": 0.975,
+        "psnr_percentile_path": "jpeg-large.jpg",
+        "ssim_percentile_path": "jpeg-large.jpg",
+        "psnr_floor_db": 34.5,
+        "ssim_floor": 0.975
+      }
+    },
+    {
+      "plan": "image-two-opt-in",
+      "format": "jpeg",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 29.913,
+        "psnr_median_db": 29.913,
+        "psnr_min_db": 29.913,
+        "ssim_percentile": 0.784,
+        "ssim_median": 0.784,
+        "ssim_min": 0.784,
+        "psnr_percentile_path": "jpeg-small.jpg",
+        "ssim_percentile_path": "jpeg-small.jpg",
+        "psnr_floor_db": 29.5,
+        "ssim_floor": 0.78
+      }
+    },
+    {
+      "plan": "image-two-opt-in",
+      "format": "jpeg",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 30.051,
+        "psnr_median_db": 30.051,
+        "psnr_min_db": 30.051,
+        "ssim_percentile": 0.878,
+        "ssim_median": 0.878,
+        "ssim_min": 0.878,
+        "psnr_percentile_path": "jpeg-large.jpg",
+        "ssim_percentile_path": "jpeg-large.jpg",
+        "psnr_floor_db": 30.0,
+        "ssim_floor": 0.875
+      }
+    },
+    {
+      "plan": "PX01",
+      "format": "jpeg",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 36.218,
+        "psnr_median_db": 36.218,
+        "psnr_min_db": 36.218,
+        "ssim_percentile": 0.971,
+        "ssim_median": 0.971,
+        "ssim_min": 0.971,
+        "psnr_percentile_path": "jpeg-small.jpg",
+        "ssim_percentile_path": "jpeg-small.jpg",
+        "psnr_floor_db": 36.0,
+        "ssim_floor": 0.97
+      }
+    },
+    {
+      "plan": "PX01",
+      "format": "jpeg",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 36.26,
+        "psnr_median_db": 36.26,
+        "psnr_min_db": 36.26,
+        "ssim_percentile": 0.982,
+        "ssim_median": 0.982,
+        "ssim_min": 0.982,
+        "psnr_percentile_path": "jpeg-large.jpg",
+        "ssim_percentile_path": "jpeg-large.jpg",
+        "psnr_floor_db": 36.0,
+        "ssim_floor": 0.98
+      }
+    },
+    {
+      "plan": "PX02",
+      "format": "jpeg",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 34.702,
+        "psnr_median_db": 34.702,
+        "psnr_min_db": 34.702,
+        "ssim_percentile": 0.952,
+        "ssim_median": 0.952,
+        "ssim_min": 0.952,
+        "psnr_percentile_path": "jpeg-small.jpg",
+        "ssim_percentile_path": "jpeg-small.jpg",
+        "psnr_floor_db": 34.5,
+        "ssim_floor": 0.95
+      }
+    },
+    {
+      "plan": "PX02",
+      "format": "jpeg",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 34.666,
+        "psnr_median_db": 34.666,
+        "psnr_min_db": 34.666,
+        "ssim_percentile": 0.976,
+        "ssim_median": 0.976,
+        "ssim_min": 0.976,
+        "psnr_percentile_path": "jpeg-large.jpg",
+        "ssim_percentile_path": "jpeg-large.jpg",
+        "psnr_floor_db": 34.5,
+        "ssim_floor": 0.975
+      }
+    },
+    {
+      "plan": "PX03",
+      "format": "jpeg",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 33.936,
+        "psnr_median_db": 33.936,
+        "psnr_min_db": 33.936,
+        "ssim_percentile": 0.938,
+        "ssim_median": 0.938,
+        "ssim_min": 0.938,
+        "psnr_percentile_path": "jpeg-medium.jpg",
+        "ssim_percentile_path": "jpeg-small.jpg",
+        "psnr_floor_db": 33.5,
+        "ssim_floor": 0.935
+      }
+    },
+    {
+      "plan": "PX03",
+      "format": "jpeg",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 33.82,
+        "psnr_median_db": 33.82,
+        "psnr_min_db": 33.82,
+        "ssim_percentile": 0.963,
+        "ssim_median": 0.963,
+        "ssim_min": 0.963,
+        "psnr_percentile_path": "jpeg-large.jpg",
+        "ssim_percentile_path": "jpeg-large.jpg",
+        "psnr_floor_db": 33.5,
+        "ssim_floor": 0.96
+      }
+    },
+    {
+      "plan": "PX04",
+      "format": "jpeg",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 35.009,
+        "psnr_median_db": 35.009,
+        "psnr_min_db": 35.009,
+        "ssim_percentile": 0.952,
+        "ssim_median": 0.952,
+        "ssim_min": 0.952,
+        "psnr_percentile_path": "jpeg-small.jpg",
+        "ssim_percentile_path": "jpeg-small.jpg",
+        "psnr_floor_db": 35.0,
+        "ssim_floor": 0.95
+      }
+    },
+    {
+      "plan": "PX04",
+      "format": "jpeg",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 35.057,
+        "psnr_median_db": 35.057,
+        "psnr_min_db": 35.057,
+        "ssim_percentile": 0.971,
+        "ssim_median": 0.971,
+        "ssim_min": 0.971,
+        "psnr_percentile_path": "jpeg-large.jpg",
+        "ssim_percentile_path": "jpeg-large.jpg",
+        "psnr_floor_db": 35.0,
+        "ssim_floor": 0.97
+      }
+    },
+    {
+      "plan": "PX05",
+      "format": "jpeg",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 31.049,
+        "psnr_median_db": 31.049,
+        "psnr_min_db": 31.049,
+        "ssim_percentile": 0.831,
+        "ssim_median": 0.831,
+        "ssim_min": 0.831,
+        "psnr_percentile_path": "jpeg-small.jpg",
+        "ssim_percentile_path": "jpeg-small.jpg",
+        "psnr_floor_db": 31.0,
+        "ssim_floor": 0.83
+      }
+    },
+    {
+      "plan": "PX05",
+      "format": "jpeg",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 31.078,
+        "psnr_median_db": 31.078,
+        "psnr_min_db": 31.078,
+        "ssim_percentile": 0.894,
+        "ssim_median": 0.894,
+        "ssim_min": 0.894,
+        "psnr_percentile_path": "jpeg-large.jpg",
+        "ssim_percentile_path": "jpeg-large.jpg",
+        "psnr_floor_db": 31.0,
+        "ssim_floor": 0.89
+      }
+    },
+    {
+      "plan": "PX06",
+      "format": "jpeg",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 36.217,
+        "psnr_median_db": 36.217,
+        "psnr_min_db": 36.217,
+        "ssim_percentile": 0.971,
+        "ssim_median": 0.971,
+        "ssim_min": 0.971,
+        "psnr_percentile_path": "jpeg-small.jpg",
+        "ssim_percentile_path": "jpeg-small.jpg",
+        "psnr_floor_db": 36.0,
+        "ssim_floor": 0.97
+      }
+    },
+    {
+      "plan": "PX06",
+      "format": "jpeg",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 36.26,
+        "psnr_median_db": 36.26,
+        "psnr_min_db": 36.26,
+        "ssim_percentile": 0.982,
+        "ssim_median": 0.982,
+        "ssim_min": 0.982,
+        "psnr_percentile_path": "jpeg-large.jpg",
+        "ssim_percentile_path": "jpeg-large.jpg",
+        "psnr_floor_db": 36.0,
+        "ssim_floor": 0.98
+      }
+    },
+    {
+      "plan": "image-safe",
+      "format": "webp",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 0,
+      "held": 2,
+      "errors": 0,
+      "status": "held",
+      "qualified": false,
+      "next_tier": {
+        "plan": "image-aggressive",
+        "count": 0
+      }
+    },
+    {
+      "plan": "image-safe",
+      "format": "webp",
+      "band": "large",
+      "merged_from": [],
+      "count": 0,
+      "held": 1,
+      "errors": 0,
+      "status": "held",
+      "qualified": false,
+      "next_tier": {
+        "plan": "image-aggressive",
+        "count": 0
+      }
+    },
+    {
+      "plan": "image-aggressive",
+      "format": "webp",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 0,
+      "held": 2,
+      "errors": 0,
+      "status": "held",
+      "qualified": false,
+      "next_tier": {
+        "plan": "image-two-opt-in",
+        "count": 0
+      }
+    },
+    {
+      "plan": "image-aggressive",
+      "format": "webp",
+      "band": "large",
+      "merged_from": [],
+      "count": 0,
+      "held": 1,
+      "errors": 0,
+      "status": "held",
+      "qualified": false,
+      "next_tier": {
+        "plan": "image-two-opt-in",
+        "count": 0
+      }
+    },
+    {
+      "plan": "image-aggressive+PX03",
+      "format": "webp",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 0,
+      "held": 2,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "image-aggressive+PX03",
+      "format": "webp",
+      "band": "large",
+      "merged_from": [],
+      "count": 0,
+      "held": 1,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "image-aggressive+PX04",
+      "format": "webp",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 0,
+      "held": 2,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "image-aggressive+PX04",
+      "format": "webp",
+      "band": "large",
+      "merged_from": [],
+      "count": 0,
+      "held": 1,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "image-aggressive+PX05",
+      "format": "webp",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 0,
+      "held": 2,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "image-aggressive+PX05",
+      "format": "webp",
+      "band": "large",
+      "merged_from": [],
+      "count": 0,
+      "held": 1,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "image-aggressive+PX06",
+      "format": "webp",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 0,
+      "held": 2,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "image-aggressive+PX06",
+      "format": "webp",
+      "band": "large",
+      "merged_from": [],
+      "count": 0,
+      "held": 1,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "image-two-opt-in",
+      "format": "webp",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 0,
+      "held": 2,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "image-two-opt-in",
+      "format": "webp",
+      "band": "large",
+      "merged_from": [],
+      "count": 0,
+      "held": 1,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "PX01",
+      "format": "webp",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 0,
+      "held": 2,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "PX01",
+      "format": "webp",
+      "band": "large",
+      "merged_from": [],
+      "count": 0,
+      "held": 1,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "PX02",
+      "format": "webp",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_path": "webp-medium.webp",
+        "ssim_percentile_path": "webp-medium.webp",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "PX02",
+      "format": "webp",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_path": "webp-large.webp",
+        "ssim_percentile_path": "webp-large.webp",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "PX03",
+      "format": "webp",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_path": "webp-medium.webp",
+        "ssim_percentile_path": "webp-medium.webp",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "PX03",
+      "format": "webp",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_path": "webp-large.webp",
+        "ssim_percentile_path": "webp-large.webp",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "PX04",
+      "format": "webp",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 40.539,
+        "psnr_median_db": 40.539,
+        "psnr_min_db": 40.539,
+        "ssim_percentile": 0.972,
+        "ssim_median": 0.972,
+        "ssim_min": 0.972,
+        "psnr_percentile_path": "webp-medium.webp",
+        "ssim_percentile_path": "webp-small-alpha.webp",
+        "psnr_floor_db": 40.5,
+        "ssim_floor": 0.97
+      }
+    },
+    {
+      "plan": "PX04",
+      "format": "webp",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 40.529,
+        "psnr_median_db": 40.529,
+        "psnr_min_db": 40.529,
+        "ssim_percentile": 0.983,
+        "ssim_median": 0.983,
+        "ssim_min": 0.983,
+        "psnr_percentile_path": "webp-large.webp",
+        "ssim_percentile_path": "webp-large.webp",
+        "psnr_floor_db": 40.5,
+        "ssim_floor": 0.98
+      }
+    },
+    {
+      "plan": "PX05",
+      "format": "webp",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 32.582,
+        "psnr_median_db": 32.582,
+        "psnr_min_db": 32.582,
+        "ssim_percentile": 0.848,
+        "ssim_median": 0.848,
+        "ssim_min": 0.848,
+        "psnr_percentile_path": "webp-medium.webp",
+        "ssim_percentile_path": "webp-small-alpha.webp",
+        "psnr_floor_db": 32.5,
+        "ssim_floor": 0.845
+      }
+    },
+    {
+      "plan": "PX05",
+      "format": "webp",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 32.55,
+        "psnr_median_db": 32.55,
+        "psnr_min_db": 32.55,
+        "ssim_percentile": 0.904,
+        "ssim_median": 0.904,
+        "ssim_min": 0.904,
+        "psnr_percentile_path": "webp-large.webp",
+        "ssim_percentile_path": "webp-large.webp",
+        "psnr_floor_db": 32.5,
+        "ssim_floor": 0.9
+      }
+    },
+    {
+      "plan": "PX06",
+      "format": "webp",
+      "band": "small+medium",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_path": "webp-medium.webp",
+        "ssim_percentile_path": "webp-medium.webp",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "PX06",
+      "format": "webp",
+      "band": "large",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_path": "webp-large.webp",
+        "ssim_percentile_path": "webp-large.webp",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "audio-safe",
+      "format": "wav",
+      "band": "short+medium",
+      "merged_from": [
+        "short",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "unqualified",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 1.558,
+        "lsd_median_db": 1.13,
+        "lsd_max_db": 1.558,
+        "lsd_percentile_path": "wav-medium-24bit.wav",
+        "lsd_ceiling_db": 1.6
+      },
+      "next_tier": {
+        "plan": "audio-aggressive",
+        "count": 2,
+        "lsd_median_db": 5.253
+      }
+    },
+    {
+      "plan": "audio-safe",
+      "format": "wav",
+      "band": "long",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "unqualified",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 1.605,
+        "lsd_median_db": 1.605,
+        "lsd_max_db": 1.605,
+        "lsd_percentile_path": "wav-long.wav",
+        "lsd_ceiling_db": 1.65
+      },
+      "next_tier": {
+        "plan": "audio-aggressive",
+        "count": 1,
+        "lsd_median_db": 4.67
+      }
+    },
+    {
+      "plan": "audio-aggressive",
+      "format": "wav",
+      "band": "short+medium",
+      "merged_from": [
+        "short",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "unqualified",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 9.047,
+        "lsd_median_db": 5.253,
+        "lsd_max_db": 9.047,
+        "lsd_percentile_path": "wav-medium-24bit.wav",
+        "lsd_ceiling_db": 9.05
+      },
+      "next_tier": {
+        "plan": "audio-two-opt-in",
+        "count": 2,
+        "lsd_median_db": 5.483
+      }
+    },
+    {
+      "plan": "audio-aggressive",
+      "format": "wav",
+      "band": "long",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "unqualified",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 4.67,
+        "lsd_median_db": 4.67,
+        "lsd_max_db": 4.67,
+        "lsd_percentile_path": "wav-long.wav",
+        "lsd_ceiling_db": 4.7
+      },
+      "next_tier": {
+        "plan": "audio-two-opt-in",
+        "count": 1,
+        "lsd_median_db": 4.888
+      }
+    },
+    {
+      "plan": "audio-aggressive+AU04",
+      "format": "wav",
+      "band": "short+medium",
+      "merged_from": [
+        "short",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 2.006,
+        "lsd_median_db": 1.69,
+        "lsd_max_db": 2.006,
+        "lsd_percentile_path": "wav-medium-24bit.wav",
+        "lsd_ceiling_db": 2.05
+      }
+    },
+    {
+      "plan": "audio-aggressive+AU04",
+      "format": "wav",
+      "band": "long",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 2.033,
+        "lsd_median_db": 2.033,
+        "lsd_max_db": 2.033,
+        "lsd_percentile_path": "wav-long.wav",
+        "lsd_ceiling_db": 2.05
+      }
+    },
+    {
+      "plan": "audio-aggressive+AU05",
+      "format": "wav",
+      "band": "short+medium",
+      "merged_from": [
+        "short",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 9.047,
+        "lsd_median_db": 5.253,
+        "lsd_max_db": 9.047,
+        "lsd_percentile_path": "wav-medium-24bit.wav",
+        "lsd_ceiling_db": 9.05
+      }
+    },
+    {
+      "plan": "audio-aggressive+AU05",
+      "format": "wav",
+      "band": "long",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 4.67,
+        "lsd_median_db": 4.67,
+        "lsd_max_db": 4.67,
+        "lsd_percentile_path": "wav-long.wav",
+        "lsd_ceiling_db": 4.7
+      }
+    },
+    {
+      "plan": "audio-two-opt-in",
+      "format": "wav",
+      "band": "short+medium",
+      "merged_from": [
+        "short",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 9.106,
+        "lsd_median_db": 5.483,
+        "lsd_max_db": 9.106,
+        "lsd_percentile_path": "wav-medium-24bit.wav",
+        "lsd_ceiling_db": 9.15
+      }
+    },
+    {
+      "plan": "audio-two-opt-in",
+      "format": "wav",
+      "band": "long",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 4.888,
+        "lsd_median_db": 4.888,
+        "lsd_max_db": 4.888,
+        "lsd_percentile_path": "wav-long.wav",
+        "lsd_ceiling_db": 4.9
+      }
+    },
+    {
+      "plan": "AU01",
+      "format": "wav",
+      "band": "short+medium",
+      "merged_from": [
+        "short",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 1.557,
+        "lsd_median_db": 1.13,
+        "lsd_max_db": 1.557,
+        "lsd_percentile_path": "wav-medium-24bit.wav",
+        "lsd_ceiling_db": 1.6
+      }
+    },
+    {
+      "plan": "AU01",
+      "format": "wav",
+      "band": "long",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 1.604,
+        "lsd_median_db": 1.604,
+        "lsd_max_db": 1.604,
+        "lsd_percentile_path": "wav-long.wav",
+        "lsd_ceiling_db": 1.65
+      }
+    },
+    {
+      "plan": "AU02",
+      "format": "wav",
+      "band": "short+medium",
+      "merged_from": [
+        "short",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 0.056,
+        "lsd_median_db": 0.045,
+        "lsd_max_db": 0.056,
+        "lsd_percentile_path": "wav-medium-24bit.wav",
+        "lsd_ceiling_db": 0.1
+      }
+    },
+    {
+      "plan": "AU02",
+      "format": "wav",
+      "band": "long",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 0.053,
+        "lsd_median_db": 0.053,
+        "lsd_max_db": 0.053,
+        "lsd_percentile_path": "wav-long.wav",
+        "lsd_ceiling_db": 0.1
+      }
+    },
+    {
+      "plan": "AU03",
+      "format": "wav",
+      "band": "short+medium",
+      "merged_from": [
+        "short",
+        "medium"
+      ],
+      "count": 0,
+      "held": 2,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "AU03",
+      "format": "wav",
+      "band": "long",
+      "merged_from": [],
+      "count": 0,
+      "held": 1,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "AU04",
+      "format": "wav",
+      "band": "short+medium",
+      "merged_from": [
+        "short",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 1.243,
+        "lsd_median_db": 1.226,
+        "lsd_max_db": 1.243,
+        "lsd_percentile_path": "wav-short-stereo.wav",
+        "lsd_ceiling_db": 1.25
+      }
+    },
+    {
+      "plan": "AU04",
+      "format": "wav",
+      "band": "long",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 1.186,
+        "lsd_median_db": 1.186,
+        "lsd_max_db": 1.186,
+        "lsd_percentile_path": "wav-long.wav",
+        "lsd_ceiling_db": 1.2
+      }
+    },
+    {
+      "plan": "AU05",
+      "format": "wav",
+      "band": "short+medium",
+      "merged_from": [
+        "short",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 9.044,
+        "lsd_median_db": 5.252,
+        "lsd_max_db": 9.044,
+        "lsd_percentile_path": "wav-medium-24bit.wav",
+        "lsd_ceiling_db": 9.05
+      }
+    },
+    {
+      "plan": "AU05",
+      "format": "wav",
+      "band": "long",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 4.239,
+        "lsd_median_db": 4.239,
+        "lsd_max_db": 4.239,
+        "lsd_percentile_path": "wav-long.wav",
+        "lsd_ceiling_db": 4.25
+      }
+    },
+    {
+      "plan": "audio-safe",
+      "format": "flac",
+      "band": "short+medium",
+      "merged_from": [
+        "short",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "unqualified",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 1.913,
+        "lsd_median_db": 1.591,
+        "lsd_max_db": 1.913,
+        "lsd_percentile_path": "flac-short-stereo.flac",
+        "lsd_ceiling_db": 1.95
+      },
+      "next_tier": {
+        "plan": "audio-aggressive",
+        "count": 2,
+        "lsd_median_db": 5.158
+      }
+    },
+    {
+      "plan": "audio-safe",
+      "format": "flac",
+      "band": "long",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "unqualified",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 1.553,
+        "lsd_median_db": 1.553,
+        "lsd_max_db": 1.553,
+        "lsd_percentile_path": "flac-long.flac",
+        "lsd_ceiling_db": 1.6
+      },
+      "next_tier": {
+        "plan": "audio-aggressive",
+        "count": 1,
+        "lsd_median_db": 3.637
+      }
+    },
+    {
+      "plan": "audio-aggressive",
+      "format": "flac",
+      "band": "short+medium",
+      "merged_from": [
+        "short",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "unqualified",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 10.216,
+        "lsd_median_db": 5.158,
+        "lsd_max_db": 10.216,
+        "lsd_percentile_path": "flac-medium-24bit.flac",
+        "lsd_ceiling_db": 10.25
+      },
+      "next_tier": {
+        "plan": "audio-two-opt-in",
+        "count": 2,
+        "lsd_median_db": 5.37
+      }
+    },
+    {
+      "plan": "audio-aggressive",
+      "format": "flac",
+      "band": "long",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "unqualified",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 3.637,
+        "lsd_median_db": 3.637,
+        "lsd_max_db": 3.637,
+        "lsd_percentile_path": "flac-long.flac",
+        "lsd_ceiling_db": 3.65
+      },
+      "next_tier": {
+        "plan": "audio-two-opt-in",
+        "count": 1,
+        "lsd_median_db": 3.715
+      }
+    },
+    {
+      "plan": "audio-aggressive+AU04",
+      "format": "flac",
+      "band": "short+medium",
+      "merged_from": [
+        "short",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 2.26,
+        "lsd_median_db": 2.038,
+        "lsd_max_db": 2.26,
+        "lsd_percentile_path": "flac-short-stereo.flac",
+        "lsd_ceiling_db": 2.3
+      }
+    },
+    {
+      "plan": "audio-aggressive+AU04",
+      "format": "flac",
+      "band": "long",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 2.006,
+        "lsd_median_db": 2.006,
+        "lsd_max_db": 2.006,
+        "lsd_percentile_path": "flac-long.flac",
+        "lsd_ceiling_db": 2.05
+      }
+    },
+    {
+      "plan": "audio-aggressive+AU05",
+      "format": "flac",
+      "band": "short+medium",
+      "merged_from": [
+        "short",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 10.216,
+        "lsd_median_db": 5.158,
+        "lsd_max_db": 10.216,
+        "lsd_percentile_path": "flac-medium-24bit.flac",
+        "lsd_ceiling_db": 10.25
+      }
+    },
+    {
+      "plan": "audio-aggressive+AU05",
+      "format": "flac",
+      "band": "long",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 3.637,
+        "lsd_median_db": 3.637,
+        "lsd_max_db": 3.637,
+        "lsd_percentile_path": "flac-long.flac",
+        "lsd_ceiling_db": 3.65
+      }
+    },
+    {
+      "plan": "audio-two-opt-in",
+      "format": "flac",
+      "band": "short+medium",
+      "merged_from": [
+        "short",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 10.279,
+        "lsd_median_db": 5.37,
+        "lsd_max_db": 10.279,
+        "lsd_percentile_path": "flac-medium-24bit.flac",
+        "lsd_ceiling_db": 10.3
+      }
+    },
+    {
+      "plan": "audio-two-opt-in",
+      "format": "flac",
+      "band": "long",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 3.715,
+        "lsd_median_db": 3.715,
+        "lsd_max_db": 3.715,
+        "lsd_percentile_path": "flac-long.flac",
+        "lsd_ceiling_db": 3.75
+      }
+    },
+    {
+      "plan": "AU01",
+      "format": "flac",
+      "band": "short+medium",
+      "merged_from": [
+        "short",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 1.913,
+        "lsd_median_db": 1.59,
+        "lsd_max_db": 1.913,
+        "lsd_percentile_path": "flac-short-stereo.flac",
+        "lsd_ceiling_db": 1.95
+      }
+    },
+    {
+      "plan": "AU01",
+      "format": "flac",
+      "band": "long",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 1.552,
+        "lsd_median_db": 1.552,
+        "lsd_max_db": 1.552,
+        "lsd_percentile_path": "flac-long.flac",
+        "lsd_ceiling_db": 1.6
+      }
+    },
+    {
+      "plan": "AU02",
+      "format": "flac",
+      "band": "short+medium",
+      "merged_from": [
+        "short",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 0.056,
+        "lsd_median_db": 0.044,
+        "lsd_max_db": 0.056,
+        "lsd_percentile_path": "flac-medium-24bit.flac",
+        "lsd_ceiling_db": 0.1
+      }
+    },
+    {
+      "plan": "AU02",
+      "format": "flac",
+      "band": "long",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 0.055,
+        "lsd_median_db": 0.055,
+        "lsd_max_db": 0.055,
+        "lsd_percentile_path": "flac-long.flac",
+        "lsd_ceiling_db": 0.1
+      }
+    },
+    {
+      "plan": "AU03",
+      "format": "flac",
+      "band": "short+medium",
+      "merged_from": [
+        "short",
+        "medium"
+      ],
+      "count": 0,
+      "held": 2,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "AU03",
+      "format": "flac",
+      "band": "long",
+      "merged_from": [],
+      "count": 0,
+      "held": 1,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false
+    },
+    {
+      "plan": "AU04",
+      "format": "flac",
+      "band": "short+medium",
+      "merged_from": [
+        "short",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 1.245,
+        "lsd_median_db": 1.224,
+        "lsd_max_db": 1.245,
+        "lsd_percentile_path": "flac-short-stereo.flac",
+        "lsd_ceiling_db": 1.25
+      }
+    },
+    {
+      "plan": "AU04",
+      "format": "flac",
+      "band": "long",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 1.227,
+        "lsd_median_db": 1.227,
+        "lsd_max_db": 1.227,
+        "lsd_percentile_path": "flac-long.flac",
+        "lsd_ceiling_db": 1.25
+      }
+    },
+    {
+      "plan": "AU05",
+      "format": "flac",
+      "band": "short+medium",
+      "merged_from": [
+        "short",
+        "medium"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 10.214,
+        "lsd_median_db": 4.982,
+        "lsd_max_db": 10.214,
+        "lsd_percentile_path": "flac-medium-24bit.flac",
+        "lsd_ceiling_db": 10.25
+      }
+    },
+    {
+      "plan": "AU05",
+      "format": "flac",
+      "band": "long",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 3.628,
+        "lsd_median_db": 3.628,
+        "lsd_max_db": 3.628,
+        "lsd_percentile_path": "flac-long.flac",
+        "lsd_ceiling_db": 3.65
+      }
+    }
+  ],
+  "strata": [
+    {
+      "plan": "image-safe",
+      "format": "png",
+      "band": "mcu-padded",
+      "merged_from": [],
+      "count": 0,
+      "held": 3,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "next_tier": {
+        "plan": "image-aggressive",
+        "count": 0
+      }
+    },
+    {
+      "plan": "image-aggressive",
+      "format": "png",
+      "band": "mcu-padded",
+      "merged_from": [],
+      "count": 0,
+      "held": 3,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "next_tier": {
+        "plan": "image-two-opt-in",
+        "count": 0
+      }
+    },
+    {
+      "plan": "image-safe",
+      "format": "jpeg",
+      "band": "mcu-padded",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 34.783,
+        "psnr_median_db": 34.783,
+        "psnr_min_db": 34.783,
+        "ssim_percentile": 0.97,
+        "ssim_median": 0.97,
+        "ssim_min": 0.97,
+        "psnr_percentile_path": "jpeg-medium.jpg",
+        "ssim_percentile_path": "jpeg-medium.jpg",
+        "psnr_floor_db": 34.5,
+        "ssim_floor": 0.97
+      },
+      "next_tier": {
+        "plan": "image-aggressive",
+        "count": 1,
+        "psnr_median_db": 30.555,
+        "ssim_median": 0.872
+      }
+    },
+    {
+      "plan": "image-aggressive",
+      "format": "jpeg",
+      "band": "mcu-padded",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 30.555,
+        "psnr_median_db": 30.555,
+        "psnr_min_db": 30.555,
+        "ssim_percentile": 0.872,
+        "ssim_median": 0.872,
+        "ssim_min": 0.872,
+        "psnr_percentile_path": "jpeg-medium.jpg",
+        "ssim_percentile_path": "jpeg-medium.jpg",
+        "psnr_floor_db": 30.5,
+        "ssim_floor": 0.87
+      },
+      "next_tier": {
+        "plan": "image-two-opt-in",
+        "count": 1,
+        "psnr_median_db": 30.03,
+        "ssim_median": 0.854
+      }
+    },
+    {
+      "plan": "image-safe",
+      "format": "webp",
+      "band": "mcu-padded",
+      "merged_from": [],
+      "count": 0,
+      "held": 3,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "next_tier": {
+        "plan": "image-aggressive",
+        "count": 0
+      }
+    },
+    {
+      "plan": "image-aggressive",
+      "format": "webp",
+      "band": "mcu-padded",
+      "merged_from": [],
+      "count": 0,
+      "held": 3,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "next_tier": {
+        "plan": "image-two-opt-in",
+        "count": 0
+      }
+    },
+    {
+      "plan": "audio-safe",
+      "format": "wav",
+      "band": "short-clip",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 1.13,
+        "lsd_median_db": 1.13,
+        "lsd_max_db": 1.13,
+        "lsd_percentile_path": "wav-short-stereo.wav",
+        "lsd_ceiling_db": 1.15
+      },
+      "next_tier": {
+        "plan": "audio-aggressive",
+        "count": 1,
+        "lsd_median_db": 5.253
+      }
+    },
+    {
+      "plan": "audio-aggressive",
+      "format": "wav",
+      "band": "short-clip",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 5.253,
+        "lsd_median_db": 5.253,
+        "lsd_max_db": 5.253,
+        "lsd_percentile_path": "wav-short-stereo.wav",
+        "lsd_ceiling_db": 5.3
+      },
+      "next_tier": {
+        "plan": "audio-two-opt-in",
+        "count": 1,
+        "lsd_median_db": 5.483
+      }
+    },
+    {
+      "plan": "audio-safe",
+      "format": "flac",
+      "band": "short-clip",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 1.913,
+        "lsd_median_db": 1.913,
+        "lsd_max_db": 1.913,
+        "lsd_percentile_path": "flac-short-stereo.flac",
+        "lsd_ceiling_db": 1.95
+      },
+      "next_tier": {
+        "plan": "audio-aggressive",
+        "count": 1,
+        "lsd_median_db": 5.158
+      }
+    },
+    {
+      "plan": "audio-aggressive",
+      "format": "flac",
+      "band": "short-clip",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "status": "informational",
+      "qualified": false,
+      "audio": {
+        "lsd_percentile_db": 5.158,
+        "lsd_median_db": 5.158,
+        "lsd_max_db": 5.158,
+        "lsd_percentile_path": "flac-short-stereo.flac",
+        "lsd_ceiling_db": 5.2
+      },
+      "next_tier": {
+        "plan": "audio-two-opt-in",
+        "count": 1,
+        "lsd_median_db": 5.37
+      }
+    }
+  ],
+  "identity": [
+    {
+      "plan": "image-metadata",
+      "format": "png",
+      "count": 3,
+      "identical": true,
+      "failures": []
+    },
+    {
+      "plan": "image-metadata",
+      "format": "jpeg",
+      "count": 3,
+      "identical": true,
+      "failures": []
+    },
+    {
+      "plan": "image-metadata",
+      "format": "webp",
+      "count": 3,
+      "identical": true,
+      "failures": []
+    },
+    {
+      "plan": "audio-metadata",
+      "format": "wav",
+      "count": 3,
+      "identical": true,
+      "failures": []
+    },
+    {
+      "plan": "audio-metadata",
+      "format": "flac",
+      "count": 3,
+      "identical": true,
+      "failures": []
+    }
+  ],
+  "derived": {
+    "image-safe": {
+      "psnr_floor_db": 38.0,
+      "ssim_floor": 0.98,
+      "source": "provisional",
+      "provisional_psnr_floor_db": 38.0,
+      "provisional_ssim_floor": 0.98,
+      "overrides": []
+    },
+    "image-aggressive": {
+      "psnr_floor_db": 30.0,
+      "ssim_floor": 0.9,
+      "source": "provisional",
+      "provisional_psnr_floor_db": 30.0,
+      "provisional_ssim_floor": 0.9,
+      "overrides": []
+    },
+    "audio-safe": {
+      "lsd_ceiling_db": 1.0,
+      "source": "provisional",
+      "provisional_lsd_ceiling_db": 1.0,
+      "overrides": []
+    },
+    "audio-aggressive": {
+      "lsd_ceiling_db": 3.0,
+      "source": "provisional",
+      "provisional_lsd_ceiling_db": 3.0,
+      "overrides": []
+    }
+  },
+  "properties": [
+    {
+      "name": "qualified-cells-present",
+      "pass": false,
+      "detail": "no cell reached n_min; every number stays provisional"
+    },
+    {
+      "name": "aggressive-never-stricter-than-safe",
+      "pass": true,
+      "detail": "holds for every format"
+    },
+    {
+      "name": "metadata-byte-identity",
+      "pass": true,
+      "detail": "5 identity cells, every decoded stream identical"
+    },
+    {
+      "name": "encoder-fingerprint",
+      "pass": true,
+      "detail": "unmark 0.1.0; container-rewrite/no-reencode; png 0.18.1; jpeg-decoder 0.3.2; image-webp 0.2.4; claxon 0.4.3; flacenc 0.5.1; jpeg-encoder in-crate baseline 4:4:4; resample in-crate lanczos3 and kaiser-sinc scalar"
+    },
+    {
+      "name": "determinism",
+      "pass": true,
+      "detail": "two passes over the manifest produced byte-identical records"
+    }
+  ],
+  "determinism": {
+    "checked": true,
+    "identical": true
+  },
+  "accepted": false,
+  "fixture": [
+    {
+      "path": "png-small.png",
+      "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
+      "plan": "image-metadata",
+      "status": "identity",
+      "identical": true,
+      "detail": "decoded stream identical"
+    },
+    {
+      "path": "png-small.png",
+      "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
+      "plan": "PX01",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-small.png",
+      "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
+      "plan": "PX02",
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
+    },
+    {
+      "path": "png-small.png",
+      "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
+      "plan": "PX03",
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
+    },
+    {
+      "path": "png-small.png",
+      "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
+      "plan": "PX04",
+      "status": "image",
+      "psnr_db": 40.498,
+      "ssim": 0.972
+    },
+    {
+      "path": "png-small.png",
+      "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
+      "plan": "PX05",
+      "status": "image",
+      "psnr_db": 32.549,
+      "ssim": 0.846
+    },
+    {
+      "path": "png-small.png",
+      "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
+      "plan": "PX06",
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
+    },
+    {
+      "path": "png-small.png",
+      "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
+      "plan": "image-safe",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-small.png",
+      "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
+      "plan": "image-aggressive+PX03",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-small.png",
+      "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
+      "plan": "image-aggressive+PX04",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-small.png",
+      "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
+      "plan": "image-aggressive+PX05",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-small.png",
+      "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
+      "plan": "image-aggressive+PX06",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-small.png",
+      "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
+      "plan": "image-aggressive",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-small.png",
+      "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
+      "plan": "image-two-opt-in",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-medium-alpha.png",
+      "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
+      "plan": "image-metadata",
+      "status": "identity",
+      "identical": true,
+      "detail": "decoded stream identical"
+    },
+    {
+      "path": "png-medium-alpha.png",
+      "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
+      "plan": "PX01",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-medium-alpha.png",
+      "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
+      "plan": "PX02",
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
+    },
+    {
+      "path": "png-medium-alpha.png",
+      "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
+      "plan": "PX03",
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
+    },
+    {
+      "path": "png-medium-alpha.png",
+      "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
+      "plan": "PX04",
+      "status": "image",
+      "psnr_db": 41.752,
+      "ssim": 0.98
+    },
+    {
+      "path": "png-medium-alpha.png",
+      "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
+      "plan": "PX05",
+      "status": "image",
+      "psnr_db": 33.848,
+      "ssim": 0.89
+    },
+    {
+      "path": "png-medium-alpha.png",
+      "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
+      "plan": "PX06",
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
+    },
+    {
+      "path": "png-medium-alpha.png",
+      "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
+      "plan": "image-safe",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-medium-alpha.png",
+      "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
+      "plan": "image-aggressive+PX03",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-medium-alpha.png",
+      "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
+      "plan": "image-aggressive+PX04",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-medium-alpha.png",
+      "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
+      "plan": "image-aggressive+PX05",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-medium-alpha.png",
+      "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
+      "plan": "image-aggressive+PX06",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-medium-alpha.png",
+      "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
+      "plan": "image-aggressive",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-medium-alpha.png",
+      "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
+      "plan": "image-two-opt-in",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-large.png",
+      "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
+      "plan": "image-metadata",
+      "status": "identity",
+      "identical": true,
+      "detail": "decoded stream identical"
+    },
+    {
+      "path": "png-large.png",
+      "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
+      "plan": "PX01",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-large.png",
+      "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
+      "plan": "PX02",
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
+    },
+    {
+      "path": "png-large.png",
+      "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
+      "plan": "PX03",
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
+    },
+    {
+      "path": "png-large.png",
+      "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
+      "plan": "PX04",
+      "status": "image",
+      "psnr_db": 40.518,
+      "ssim": 0.984
+    },
+    {
+      "path": "png-large.png",
+      "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
+      "plan": "PX05",
+      "status": "image",
+      "psnr_db": 32.556,
+      "ssim": 0.905
+    },
+    {
+      "path": "png-large.png",
+      "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
+      "plan": "PX06",
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
+    },
+    {
+      "path": "png-large.png",
+      "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
+      "plan": "image-safe",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-large.png",
+      "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
+      "plan": "image-aggressive+PX03",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-large.png",
+      "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
+      "plan": "image-aggressive+PX04",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-large.png",
+      "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
+      "plan": "image-aggressive+PX05",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-large.png",
+      "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
+      "plan": "image-aggressive+PX06",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-large.png",
+      "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
+      "plan": "image-aggressive",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "png-large.png",
+      "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
+      "plan": "image-two-opt-in",
+      "status": "held",
+      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "jpeg-small.jpg",
+      "sha256": "fa5d11d6878e1b75948e3a7a47b54d77c43713133d399d7dec73d4248d71dae9",
+      "plan": "image-metadata",
+      "status": "identity",
+      "identical": true,
+      "detail": "decoded stream identical"
+    },
+    {
+      "path": "jpeg-small.jpg",
+      "sha256": "fa5d11d6878e1b75948e3a7a47b54d77c43713133d399d7dec73d4248d71dae9",
+      "plan": "PX01",
+      "status": "image",
+      "psnr_db": 36.218,
+      "ssim": 0.971
+    },
+    {
+      "path": "jpeg-small.jpg",
+      "sha256": "fa5d11d6878e1b75948e3a7a47b54d77c43713133d399d7dec73d4248d71dae9",
+      "plan": "PX02",
+      "status": "image",
+      "psnr_db": 34.702,
+      "ssim": 0.952
+    },
+    {
+      "path": "jpeg-small.jpg",
+      "sha256": "fa5d11d6878e1b75948e3a7a47b54d77c43713133d399d7dec73d4248d71dae9",
+      "plan": "PX03",
+      "status": "image",
+      "psnr_db": 33.997,
+      "ssim": 0.938
+    },
+    {
+      "path": "jpeg-small.jpg",
+      "sha256": "fa5d11d6878e1b75948e3a7a47b54d77c43713133d399d7dec73d4248d71dae9",
+      "plan": "PX04",
+      "status": "image",
+      "psnr_db": 35.009,
+      "ssim": 0.952
+    },
+    {
+      "path": "jpeg-small.jpg",
+      "sha256": "fa5d11d6878e1b75948e3a7a47b54d77c43713133d399d7dec73d4248d71dae9",
+      "plan": "PX05",
+      "status": "image",
+      "psnr_db": 31.049,
+      "ssim": 0.831
+    },
+    {
+      "path": "jpeg-small.jpg",
+      "sha256": "fa5d11d6878e1b75948e3a7a47b54d77c43713133d399d7dec73d4248d71dae9",
+      "plan": "PX06",
+      "status": "image",
+      "psnr_db": 36.217,
+      "ssim": 0.971
+    },
+    {
+      "path": "jpeg-small.jpg",
+      "sha256": "fa5d11d6878e1b75948e3a7a47b54d77c43713133d399d7dec73d4248d71dae9",
+      "plan": "image-safe",
+      "status": "image",
+      "psnr_db": 34.702,
+      "ssim": 0.952
+    },
+    {
+      "path": "jpeg-small.jpg",
+      "sha256": "fa5d11d6878e1b75948e3a7a47b54d77c43713133d399d7dec73d4248d71dae9",
+      "plan": "image-aggressive+PX03",
+      "status": "image",
+      "psnr_db": 34.765,
+      "ssim": 0.951
+    },
+    {
+      "path": "jpeg-small.jpg",
+      "sha256": "fa5d11d6878e1b75948e3a7a47b54d77c43713133d399d7dec73d4248d71dae9",
+      "plan": "image-aggressive+PX04",
+      "status": "image",
+      "psnr_db": 33.97,
+      "ssim": 0.933
+    },
+    {
+      "path": "jpeg-small.jpg",
+      "sha256": "fa5d11d6878e1b75948e3a7a47b54d77c43713133d399d7dec73d4248d71dae9",
+      "plan": "image-aggressive+PX05",
+      "status": "image",
+      "psnr_db": 30.431,
+      "ssim": 0.808
+    },
+    {
+      "path": "jpeg-small.jpg",
+      "sha256": "fa5d11d6878e1b75948e3a7a47b54d77c43713133d399d7dec73d4248d71dae9",
+      "plan": "image-aggressive+PX06",
+      "status": "image",
+      "psnr_db": 34.702,
+      "ssim": 0.952
+    },
+    {
+      "path": "jpeg-small.jpg",
+      "sha256": "fa5d11d6878e1b75948e3a7a47b54d77c43713133d399d7dec73d4248d71dae9",
+      "plan": "image-aggressive",
+      "status": "image",
+      "psnr_db": 30.431,
+      "ssim": 0.808
+    },
+    {
+      "path": "jpeg-small.jpg",
+      "sha256": "fa5d11d6878e1b75948e3a7a47b54d77c43713133d399d7dec73d4248d71dae9",
+      "plan": "image-two-opt-in",
+      "status": "image",
+      "psnr_db": 29.913,
+      "ssim": 0.784
+    },
+    {
+      "path": "jpeg-medium.jpg",
+      "sha256": "73b59f4145bc82b3c9f998683a52340b592c1fa075aaf606dd469ce154f8ce6d",
+      "plan": "image-metadata",
+      "status": "identity",
+      "identical": true,
+      "detail": "decoded stream identical"
+    },
+    {
+      "path": "jpeg-medium.jpg",
+      "sha256": "73b59f4145bc82b3c9f998683a52340b592c1fa075aaf606dd469ce154f8ce6d",
+      "plan": "PX01",
+      "status": "image",
+      "psnr_db": 36.249,
+      "ssim": 0.979
+    },
+    {
+      "path": "jpeg-medium.jpg",
+      "sha256": "73b59f4145bc82b3c9f998683a52340b592c1fa075aaf606dd469ce154f8ce6d",
+      "plan": "PX02",
+      "status": "image",
+      "psnr_db": 34.783,
+      "ssim": 0.97
+    },
+    {
+      "path": "jpeg-medium.jpg",
+      "sha256": "73b59f4145bc82b3c9f998683a52340b592c1fa075aaf606dd469ce154f8ce6d",
+      "plan": "PX03",
+      "status": "image",
+      "psnr_db": 33.936,
+      "ssim": 0.958
+    },
+    {
+      "path": "jpeg-medium.jpg",
+      "sha256": "73b59f4145bc82b3c9f998683a52340b592c1fa075aaf606dd469ce154f8ce6d",
+      "plan": "PX04",
+      "status": "image",
+      "psnr_db": 35.021,
+      "ssim": 0.966
+    },
+    {
+      "path": "jpeg-medium.jpg",
+      "sha256": "73b59f4145bc82b3c9f998683a52340b592c1fa075aaf606dd469ce154f8ce6d",
+      "plan": "PX05",
+      "status": "image",
+      "psnr_db": 31.054,
+      "ssim": 0.876
+    },
+    {
+      "path": "jpeg-medium.jpg",
+      "sha256": "73b59f4145bc82b3c9f998683a52340b592c1fa075aaf606dd469ce154f8ce6d",
+      "plan": "PX06",
+      "status": "image",
+      "psnr_db": 36.249,
+      "ssim": 0.979
+    },
+    {
+      "path": "jpeg-medium.jpg",
+      "sha256": "73b59f4145bc82b3c9f998683a52340b592c1fa075aaf606dd469ce154f8ce6d",
+      "plan": "image-safe",
+      "status": "image",
+      "psnr_db": 34.783,
+      "ssim": 0.97
+    },
+    {
+      "path": "jpeg-medium.jpg",
+      "sha256": "73b59f4145bc82b3c9f998683a52340b592c1fa075aaf606dd469ce154f8ce6d",
+      "plan": "image-aggressive+PX03",
+      "status": "image",
+      "psnr_db": 34.788,
+      "ssim": 0.971
+    },
+    {
+      "path": "jpeg-medium.jpg",
+      "sha256": "73b59f4145bc82b3c9f998683a52340b592c1fa075aaf606dd469ce154f8ce6d",
+      "plan": "image-aggressive+PX04",
+      "status": "image",
+      "psnr_db": 34.077,
+      "ssim": 0.959
+    },
+    {
+      "path": "jpeg-medium.jpg",
+      "sha256": "73b59f4145bc82b3c9f998683a52340b592c1fa075aaf606dd469ce154f8ce6d",
+      "plan": "image-aggressive+PX05",
+      "status": "image",
+      "psnr_db": 30.555,
+      "ssim": 0.872
+    },
+    {
+      "path": "jpeg-medium.jpg",
+      "sha256": "73b59f4145bc82b3c9f998683a52340b592c1fa075aaf606dd469ce154f8ce6d",
+      "plan": "image-aggressive+PX06",
+      "status": "image",
+      "psnr_db": 34.839,
+      "ssim": 0.97
+    },
+    {
+      "path": "jpeg-medium.jpg",
+      "sha256": "73b59f4145bc82b3c9f998683a52340b592c1fa075aaf606dd469ce154f8ce6d",
+      "plan": "image-aggressive",
+      "status": "image",
+      "psnr_db": 30.555,
+      "ssim": 0.872
+    },
+    {
+      "path": "jpeg-medium.jpg",
+      "sha256": "73b59f4145bc82b3c9f998683a52340b592c1fa075aaf606dd469ce154f8ce6d",
+      "plan": "image-two-opt-in",
+      "status": "image",
+      "psnr_db": 30.03,
+      "ssim": 0.854
+    },
+    {
+      "path": "jpeg-large.jpg",
+      "sha256": "b8dc5eccdc11cf5d4300be60a6fc0eb6bc214c48f7394e2c70a38ddc533bf215",
+      "plan": "image-metadata",
+      "status": "identity",
+      "identical": true,
+      "detail": "decoded stream identical"
+    },
+    {
+      "path": "jpeg-large.jpg",
+      "sha256": "b8dc5eccdc11cf5d4300be60a6fc0eb6bc214c48f7394e2c70a38ddc533bf215",
+      "plan": "PX01",
+      "status": "image",
+      "psnr_db": 36.26,
+      "ssim": 0.982
+    },
+    {
+      "path": "jpeg-large.jpg",
+      "sha256": "b8dc5eccdc11cf5d4300be60a6fc0eb6bc214c48f7394e2c70a38ddc533bf215",
+      "plan": "PX02",
+      "status": "image",
+      "psnr_db": 34.666,
+      "ssim": 0.976
+    },
+    {
+      "path": "jpeg-large.jpg",
+      "sha256": "b8dc5eccdc11cf5d4300be60a6fc0eb6bc214c48f7394e2c70a38ddc533bf215",
+      "plan": "PX03",
+      "status": "image",
+      "psnr_db": 33.82,
+      "ssim": 0.963
+    },
+    {
+      "path": "jpeg-large.jpg",
+      "sha256": "b8dc5eccdc11cf5d4300be60a6fc0eb6bc214c48f7394e2c70a38ddc533bf215",
+      "plan": "PX04",
+      "status": "image",
+      "psnr_db": 35.057,
+      "ssim": 0.971
+    },
+    {
+      "path": "jpeg-large.jpg",
+      "sha256": "b8dc5eccdc11cf5d4300be60a6fc0eb6bc214c48f7394e2c70a38ddc533bf215",
+      "plan": "PX05",
+      "status": "image",
+      "psnr_db": 31.078,
+      "ssim": 0.894
+    },
+    {
+      "path": "jpeg-large.jpg",
+      "sha256": "b8dc5eccdc11cf5d4300be60a6fc0eb6bc214c48f7394e2c70a38ddc533bf215",
+      "plan": "PX06",
+      "status": "image",
+      "psnr_db": 36.26,
+      "ssim": 0.982
+    },
+    {
+      "path": "jpeg-large.jpg",
+      "sha256": "b8dc5eccdc11cf5d4300be60a6fc0eb6bc214c48f7394e2c70a38ddc533bf215",
+      "plan": "image-safe",
+      "status": "image",
+      "psnr_db": 34.666,
+      "ssim": 0.976
+    },
+    {
+      "path": "jpeg-large.jpg",
+      "sha256": "b8dc5eccdc11cf5d4300be60a6fc0eb6bc214c48f7394e2c70a38ddc533bf215",
+      "plan": "image-aggressive+PX03",
+      "status": "image",
+      "psnr_db": 34.73,
+      "ssim": 0.975
+    },
+    {
+      "path": "jpeg-large.jpg",
+      "sha256": "b8dc5eccdc11cf5d4300be60a6fc0eb6bc214c48f7394e2c70a38ddc533bf215",
+      "plan": "image-aggressive+PX04",
+      "status": "image",
+      "psnr_db": 33.972,
+      "ssim": 0.965
+    },
+    {
+      "path": "jpeg-large.jpg",
+      "sha256": "b8dc5eccdc11cf5d4300be60a6fc0eb6bc214c48f7394e2c70a38ddc533bf215",
+      "plan": "image-aggressive+PX05",
+      "status": "image",
+      "psnr_db": 30.572,
+      "ssim": 0.893
+    },
+    {
+      "path": "jpeg-large.jpg",
+      "sha256": "b8dc5eccdc11cf5d4300be60a6fc0eb6bc214c48f7394e2c70a38ddc533bf215",
+      "plan": "image-aggressive+PX06",
+      "status": "image",
+      "psnr_db": 34.679,
+      "ssim": 0.975
+    },
+    {
+      "path": "jpeg-large.jpg",
+      "sha256": "b8dc5eccdc11cf5d4300be60a6fc0eb6bc214c48f7394e2c70a38ddc533bf215",
+      "plan": "image-aggressive",
+      "status": "image",
+      "psnr_db": 30.572,
+      "ssim": 0.893
+    },
+    {
+      "path": "jpeg-large.jpg",
+      "sha256": "b8dc5eccdc11cf5d4300be60a6fc0eb6bc214c48f7394e2c70a38ddc533bf215",
+      "plan": "image-two-opt-in",
+      "status": "image",
+      "psnr_db": 30.051,
+      "ssim": 0.878
+    },
+    {
+      "path": "webp-small-alpha.webp",
+      "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
+      "plan": "image-metadata",
+      "status": "identity",
+      "identical": true,
+      "detail": "decoded stream identical"
+    },
+    {
+      "path": "webp-small-alpha.webp",
+      "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
+      "plan": "PX01",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-small-alpha.webp",
+      "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
+      "plan": "PX02",
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
+    },
+    {
+      "path": "webp-small-alpha.webp",
+      "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
+      "plan": "PX03",
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
+    },
+    {
+      "path": "webp-small-alpha.webp",
+      "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
+      "plan": "PX04",
+      "status": "image",
+      "psnr_db": 41.764,
+      "ssim": 0.972
+    },
+    {
+      "path": "webp-small-alpha.webp",
+      "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
+      "plan": "PX05",
+      "status": "image",
+      "psnr_db": 33.834,
+      "ssim": 0.848
+    },
+    {
+      "path": "webp-small-alpha.webp",
+      "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
+      "plan": "PX06",
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
+    },
+    {
+      "path": "webp-small-alpha.webp",
+      "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
+      "plan": "image-safe",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-small-alpha.webp",
+      "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
+      "plan": "image-aggressive+PX03",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-small-alpha.webp",
+      "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
+      "plan": "image-aggressive+PX04",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-small-alpha.webp",
+      "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
+      "plan": "image-aggressive+PX05",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-small-alpha.webp",
+      "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
+      "plan": "image-aggressive+PX06",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-small-alpha.webp",
+      "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
+      "plan": "image-aggressive",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-small-alpha.webp",
+      "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
+      "plan": "image-two-opt-in",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-medium.webp",
+      "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
+      "plan": "image-metadata",
+      "status": "identity",
+      "identical": true,
+      "detail": "decoded stream identical"
+    },
+    {
+      "path": "webp-medium.webp",
+      "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
+      "plan": "PX01",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-medium.webp",
+      "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
+      "plan": "PX02",
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
+    },
+    {
+      "path": "webp-medium.webp",
+      "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
+      "plan": "PX03",
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
+    },
+    {
+      "path": "webp-medium.webp",
+      "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
+      "plan": "PX04",
+      "status": "image",
+      "psnr_db": 40.539,
+      "ssim": 0.98
+    },
+    {
+      "path": "webp-medium.webp",
+      "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
+      "plan": "PX05",
+      "status": "image",
+      "psnr_db": 32.582,
+      "ssim": 0.889
+    },
+    {
+      "path": "webp-medium.webp",
+      "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
+      "plan": "PX06",
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
+    },
+    {
+      "path": "webp-medium.webp",
+      "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
+      "plan": "image-safe",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-medium.webp",
+      "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
+      "plan": "image-aggressive+PX03",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-medium.webp",
+      "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
+      "plan": "image-aggressive+PX04",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-medium.webp",
+      "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
+      "plan": "image-aggressive+PX05",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-medium.webp",
+      "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
+      "plan": "image-aggressive+PX06",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-medium.webp",
+      "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
+      "plan": "image-aggressive",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-medium.webp",
+      "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
+      "plan": "image-two-opt-in",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-large.webp",
+      "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
+      "plan": "image-metadata",
+      "status": "identity",
+      "identical": true,
+      "detail": "decoded stream identical"
+    },
+    {
+      "path": "webp-large.webp",
+      "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
+      "plan": "PX01",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-large.webp",
+      "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
+      "plan": "PX02",
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
+    },
+    {
+      "path": "webp-large.webp",
+      "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
+      "plan": "PX03",
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
+    },
+    {
+      "path": "webp-large.webp",
+      "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
+      "plan": "PX04",
+      "status": "image",
+      "psnr_db": 40.529,
+      "ssim": 0.983
+    },
+    {
+      "path": "webp-large.webp",
+      "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
+      "plan": "PX05",
+      "status": "image",
+      "psnr_db": 32.55,
+      "ssim": 0.904
+    },
+    {
+      "path": "webp-large.webp",
+      "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
+      "plan": "PX06",
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
+    },
+    {
+      "path": "webp-large.webp",
+      "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
+      "plan": "image-safe",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-large.webp",
+      "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
+      "plan": "image-aggressive+PX03",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-large.webp",
+      "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
+      "plan": "image-aggressive+PX04",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-large.webp",
+      "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
+      "plan": "image-aggressive+PX05",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-large.webp",
+      "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
+      "plan": "image-aggressive+PX06",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-large.webp",
+      "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
+      "plan": "image-aggressive",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "webp-large.webp",
+      "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
+      "plan": "image-two-opt-in",
+      "status": "held",
+      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+    },
+    {
+      "path": "wav-short-stereo.wav",
+      "sha256": "53faaf3c2ec153dbfea282ff09d2a4a01a44ecbd2d092fb3e4b1b2233ff0862e",
+      "plan": "audio-metadata",
+      "status": "identity",
+      "identical": true,
+      "detail": "decoded stream identical"
+    },
+    {
+      "path": "wav-short-stereo.wav",
+      "sha256": "53faaf3c2ec153dbfea282ff09d2a4a01a44ecbd2d092fb3e4b1b2233ff0862e",
+      "plan": "AU01",
+      "status": "audio",
+      "lsd_db": 1.13
+    },
+    {
+      "path": "wav-short-stereo.wav",
+      "sha256": "53faaf3c2ec153dbfea282ff09d2a4a01a44ecbd2d092fb3e4b1b2233ff0862e",
+      "plan": "AU02",
+      "status": "audio",
+      "lsd_db": 0.045
+    },
+    {
+      "path": "wav-short-stereo.wav",
+      "sha256": "53faaf3c2ec153dbfea282ff09d2a4a01a44ecbd2d092fb3e4b1b2233ff0862e",
+      "plan": "AU03",
+      "status": "held",
+      "reason": "AU03 is reserved and not runnable in this version"
+    },
+    {
+      "path": "wav-short-stereo.wav",
+      "sha256": "53faaf3c2ec153dbfea282ff09d2a4a01a44ecbd2d092fb3e4b1b2233ff0862e",
+      "plan": "AU04",
+      "status": "audio",
+      "lsd_db": 1.243
+    },
+    {
+      "path": "wav-short-stereo.wav",
+      "sha256": "53faaf3c2ec153dbfea282ff09d2a4a01a44ecbd2d092fb3e4b1b2233ff0862e",
+      "plan": "AU05",
+      "status": "audio",
+      "lsd_db": 5.252
+    },
+    {
+      "path": "wav-short-stereo.wav",
+      "sha256": "53faaf3c2ec153dbfea282ff09d2a4a01a44ecbd2d092fb3e4b1b2233ff0862e",
+      "plan": "audio-safe",
+      "status": "audio",
+      "lsd_db": 1.13
+    },
+    {
+      "path": "wav-short-stereo.wav",
+      "sha256": "53faaf3c2ec153dbfea282ff09d2a4a01a44ecbd2d092fb3e4b1b2233ff0862e",
+      "plan": "audio-aggressive+AU04",
+      "status": "audio",
+      "lsd_db": 1.69
+    },
+    {
+      "path": "wav-short-stereo.wav",
+      "sha256": "53faaf3c2ec153dbfea282ff09d2a4a01a44ecbd2d092fb3e4b1b2233ff0862e",
+      "plan": "audio-aggressive+AU05",
+      "status": "audio",
+      "lsd_db": 5.253
+    },
+    {
+      "path": "wav-short-stereo.wav",
+      "sha256": "53faaf3c2ec153dbfea282ff09d2a4a01a44ecbd2d092fb3e4b1b2233ff0862e",
+      "plan": "audio-aggressive",
+      "status": "audio",
+      "lsd_db": 5.253
+    },
+    {
+      "path": "wav-short-stereo.wav",
+      "sha256": "53faaf3c2ec153dbfea282ff09d2a4a01a44ecbd2d092fb3e4b1b2233ff0862e",
+      "plan": "audio-two-opt-in",
+      "status": "audio",
+      "lsd_db": 5.483
+    },
+    {
+      "path": "wav-medium-24bit.wav",
+      "sha256": "d5a1bbb2505816001837e6d78c8214968ba649016a535499b5a3d036e81c45ed",
+      "plan": "audio-metadata",
+      "status": "identity",
+      "identical": true,
+      "detail": "decoded stream identical"
+    },
+    {
+      "path": "wav-medium-24bit.wav",
+      "sha256": "d5a1bbb2505816001837e6d78c8214968ba649016a535499b5a3d036e81c45ed",
+      "plan": "AU01",
+      "status": "audio",
+      "lsd_db": 1.557
+    },
+    {
+      "path": "wav-medium-24bit.wav",
+      "sha256": "d5a1bbb2505816001837e6d78c8214968ba649016a535499b5a3d036e81c45ed",
+      "plan": "AU02",
+      "status": "audio",
+      "lsd_db": 0.056
+    },
+    {
+      "path": "wav-medium-24bit.wav",
+      "sha256": "d5a1bbb2505816001837e6d78c8214968ba649016a535499b5a3d036e81c45ed",
+      "plan": "AU03",
+      "status": "held",
+      "reason": "AU03 is reserved and not runnable in this version"
+    },
+    {
+      "path": "wav-medium-24bit.wav",
+      "sha256": "d5a1bbb2505816001837e6d78c8214968ba649016a535499b5a3d036e81c45ed",
+      "plan": "AU04",
+      "status": "audio",
+      "lsd_db": 1.226
+    },
+    {
+      "path": "wav-medium-24bit.wav",
+      "sha256": "d5a1bbb2505816001837e6d78c8214968ba649016a535499b5a3d036e81c45ed",
+      "plan": "AU05",
+      "status": "audio",
+      "lsd_db": 9.044
+    },
+    {
+      "path": "wav-medium-24bit.wav",
+      "sha256": "d5a1bbb2505816001837e6d78c8214968ba649016a535499b5a3d036e81c45ed",
+      "plan": "audio-safe",
+      "status": "audio",
+      "lsd_db": 1.558
+    },
+    {
+      "path": "wav-medium-24bit.wav",
+      "sha256": "d5a1bbb2505816001837e6d78c8214968ba649016a535499b5a3d036e81c45ed",
+      "plan": "audio-aggressive+AU04",
+      "status": "audio",
+      "lsd_db": 2.006
+    },
+    {
+      "path": "wav-medium-24bit.wav",
+      "sha256": "d5a1bbb2505816001837e6d78c8214968ba649016a535499b5a3d036e81c45ed",
+      "plan": "audio-aggressive+AU05",
+      "status": "audio",
+      "lsd_db": 9.047
+    },
+    {
+      "path": "wav-medium-24bit.wav",
+      "sha256": "d5a1bbb2505816001837e6d78c8214968ba649016a535499b5a3d036e81c45ed",
+      "plan": "audio-aggressive",
+      "status": "audio",
+      "lsd_db": 9.047
+    },
+    {
+      "path": "wav-medium-24bit.wav",
+      "sha256": "d5a1bbb2505816001837e6d78c8214968ba649016a535499b5a3d036e81c45ed",
+      "plan": "audio-two-opt-in",
+      "status": "audio",
+      "lsd_db": 9.106
+    },
+    {
+      "path": "wav-long.wav",
+      "sha256": "5587565accf30a45b7f286743bb6f9194882bfd01bbc10e8dc1a04f34607365c",
+      "plan": "audio-metadata",
+      "status": "identity",
+      "identical": true,
+      "detail": "decoded stream identical"
+    },
+    {
+      "path": "wav-long.wav",
+      "sha256": "5587565accf30a45b7f286743bb6f9194882bfd01bbc10e8dc1a04f34607365c",
+      "plan": "AU01",
+      "status": "audio",
+      "lsd_db": 1.604
+    },
+    {
+      "path": "wav-long.wav",
+      "sha256": "5587565accf30a45b7f286743bb6f9194882bfd01bbc10e8dc1a04f34607365c",
+      "plan": "AU02",
+      "status": "audio",
+      "lsd_db": 0.053
+    },
+    {
+      "path": "wav-long.wav",
+      "sha256": "5587565accf30a45b7f286743bb6f9194882bfd01bbc10e8dc1a04f34607365c",
+      "plan": "AU03",
+      "status": "held",
+      "reason": "AU03 is reserved and not runnable in this version"
+    },
+    {
+      "path": "wav-long.wav",
+      "sha256": "5587565accf30a45b7f286743bb6f9194882bfd01bbc10e8dc1a04f34607365c",
+      "plan": "AU04",
+      "status": "audio",
+      "lsd_db": 1.186
+    },
+    {
+      "path": "wav-long.wav",
+      "sha256": "5587565accf30a45b7f286743bb6f9194882bfd01bbc10e8dc1a04f34607365c",
+      "plan": "AU05",
+      "status": "audio",
+      "lsd_db": 4.239
+    },
+    {
+      "path": "wav-long.wav",
+      "sha256": "5587565accf30a45b7f286743bb6f9194882bfd01bbc10e8dc1a04f34607365c",
+      "plan": "audio-safe",
+      "status": "audio",
+      "lsd_db": 1.605
+    },
+    {
+      "path": "wav-long.wav",
+      "sha256": "5587565accf30a45b7f286743bb6f9194882bfd01bbc10e8dc1a04f34607365c",
+      "plan": "audio-aggressive+AU04",
+      "status": "audio",
+      "lsd_db": 2.033
+    },
+    {
+      "path": "wav-long.wav",
+      "sha256": "5587565accf30a45b7f286743bb6f9194882bfd01bbc10e8dc1a04f34607365c",
+      "plan": "audio-aggressive+AU05",
+      "status": "audio",
+      "lsd_db": 4.67
+    },
+    {
+      "path": "wav-long.wav",
+      "sha256": "5587565accf30a45b7f286743bb6f9194882bfd01bbc10e8dc1a04f34607365c",
+      "plan": "audio-aggressive",
+      "status": "audio",
+      "lsd_db": 4.67
+    },
+    {
+      "path": "wav-long.wav",
+      "sha256": "5587565accf30a45b7f286743bb6f9194882bfd01bbc10e8dc1a04f34607365c",
+      "plan": "audio-two-opt-in",
+      "status": "audio",
+      "lsd_db": 4.888
+    },
+    {
+      "path": "flac-short-stereo.flac",
+      "sha256": "f98eaf11670b07a3c893dd9d9b71d19c842084c3c066d81706a237f61f923ef3",
+      "plan": "audio-metadata",
+      "status": "identity",
+      "identical": true,
+      "detail": "decoded stream identical"
+    },
+    {
+      "path": "flac-short-stereo.flac",
+      "sha256": "f98eaf11670b07a3c893dd9d9b71d19c842084c3c066d81706a237f61f923ef3",
+      "plan": "AU01",
+      "status": "audio",
+      "lsd_db": 1.913
+    },
+    {
+      "path": "flac-short-stereo.flac",
+      "sha256": "f98eaf11670b07a3c893dd9d9b71d19c842084c3c066d81706a237f61f923ef3",
+      "plan": "AU02",
+      "status": "audio",
+      "lsd_db": 0.044
+    },
+    {
+      "path": "flac-short-stereo.flac",
+      "sha256": "f98eaf11670b07a3c893dd9d9b71d19c842084c3c066d81706a237f61f923ef3",
+      "plan": "AU03",
+      "status": "held",
+      "reason": "AU03 is reserved and not runnable in this version"
+    },
+    {
+      "path": "flac-short-stereo.flac",
+      "sha256": "f98eaf11670b07a3c893dd9d9b71d19c842084c3c066d81706a237f61f923ef3",
+      "plan": "AU04",
+      "status": "audio",
+      "lsd_db": 1.245
+    },
+    {
+      "path": "flac-short-stereo.flac",
+      "sha256": "f98eaf11670b07a3c893dd9d9b71d19c842084c3c066d81706a237f61f923ef3",
+      "plan": "AU05",
+      "status": "audio",
+      "lsd_db": 4.982
+    },
+    {
+      "path": "flac-short-stereo.flac",
+      "sha256": "f98eaf11670b07a3c893dd9d9b71d19c842084c3c066d81706a237f61f923ef3",
+      "plan": "audio-safe",
+      "status": "audio",
+      "lsd_db": 1.913
+    },
+    {
+      "path": "flac-short-stereo.flac",
+      "sha256": "f98eaf11670b07a3c893dd9d9b71d19c842084c3c066d81706a237f61f923ef3",
+      "plan": "audio-aggressive+AU04",
+      "status": "audio",
+      "lsd_db": 2.26
+    },
+    {
+      "path": "flac-short-stereo.flac",
+      "sha256": "f98eaf11670b07a3c893dd9d9b71d19c842084c3c066d81706a237f61f923ef3",
+      "plan": "audio-aggressive+AU05",
+      "status": "audio",
+      "lsd_db": 5.158
+    },
+    {
+      "path": "flac-short-stereo.flac",
+      "sha256": "f98eaf11670b07a3c893dd9d9b71d19c842084c3c066d81706a237f61f923ef3",
+      "plan": "audio-aggressive",
+      "status": "audio",
+      "lsd_db": 5.158
+    },
+    {
+      "path": "flac-short-stereo.flac",
+      "sha256": "f98eaf11670b07a3c893dd9d9b71d19c842084c3c066d81706a237f61f923ef3",
+      "plan": "audio-two-opt-in",
+      "status": "audio",
+      "lsd_db": 5.37
+    },
+    {
+      "path": "flac-medium-24bit.flac",
+      "sha256": "c624dfbb6bb2781d5f09bb74cbc907f3d976bfb4409e8e874257fa8e2e4c23de",
+      "plan": "audio-metadata",
+      "status": "identity",
+      "identical": true,
+      "detail": "decoded stream identical"
+    },
+    {
+      "path": "flac-medium-24bit.flac",
+      "sha256": "c624dfbb6bb2781d5f09bb74cbc907f3d976bfb4409e8e874257fa8e2e4c23de",
+      "plan": "AU01",
+      "status": "audio",
+      "lsd_db": 1.59
+    },
+    {
+      "path": "flac-medium-24bit.flac",
+      "sha256": "c624dfbb6bb2781d5f09bb74cbc907f3d976bfb4409e8e874257fa8e2e4c23de",
+      "plan": "AU02",
+      "status": "audio",
+      "lsd_db": 0.056
+    },
+    {
+      "path": "flac-medium-24bit.flac",
+      "sha256": "c624dfbb6bb2781d5f09bb74cbc907f3d976bfb4409e8e874257fa8e2e4c23de",
+      "plan": "AU03",
+      "status": "held",
+      "reason": "AU03 is reserved and not runnable in this version"
+    },
+    {
+      "path": "flac-medium-24bit.flac",
+      "sha256": "c624dfbb6bb2781d5f09bb74cbc907f3d976bfb4409e8e874257fa8e2e4c23de",
+      "plan": "AU04",
+      "status": "audio",
+      "lsd_db": 1.224
+    },
+    {
+      "path": "flac-medium-24bit.flac",
+      "sha256": "c624dfbb6bb2781d5f09bb74cbc907f3d976bfb4409e8e874257fa8e2e4c23de",
+      "plan": "AU05",
+      "status": "audio",
+      "lsd_db": 10.214
+    },
+    {
+      "path": "flac-medium-24bit.flac",
+      "sha256": "c624dfbb6bb2781d5f09bb74cbc907f3d976bfb4409e8e874257fa8e2e4c23de",
+      "plan": "audio-safe",
+      "status": "audio",
+      "lsd_db": 1.591
+    },
+    {
+      "path": "flac-medium-24bit.flac",
+      "sha256": "c624dfbb6bb2781d5f09bb74cbc907f3d976bfb4409e8e874257fa8e2e4c23de",
+      "plan": "audio-aggressive+AU04",
+      "status": "audio",
+      "lsd_db": 2.038
+    },
+    {
+      "path": "flac-medium-24bit.flac",
+      "sha256": "c624dfbb6bb2781d5f09bb74cbc907f3d976bfb4409e8e874257fa8e2e4c23de",
+      "plan": "audio-aggressive+AU05",
+      "status": "audio",
+      "lsd_db": 10.216
+    },
+    {
+      "path": "flac-medium-24bit.flac",
+      "sha256": "c624dfbb6bb2781d5f09bb74cbc907f3d976bfb4409e8e874257fa8e2e4c23de",
+      "plan": "audio-aggressive",
+      "status": "audio",
+      "lsd_db": 10.216
+    },
+    {
+      "path": "flac-medium-24bit.flac",
+      "sha256": "c624dfbb6bb2781d5f09bb74cbc907f3d976bfb4409e8e874257fa8e2e4c23de",
+      "plan": "audio-two-opt-in",
+      "status": "audio",
+      "lsd_db": 10.279
+    },
+    {
+      "path": "flac-long.flac",
+      "sha256": "01638473a5d75ffcc0f599b1c84186ab1db9aa91fd06fb3519dc58098abd8872",
+      "plan": "audio-metadata",
+      "status": "identity",
+      "identical": true,
+      "detail": "decoded stream identical"
+    },
+    {
+      "path": "flac-long.flac",
+      "sha256": "01638473a5d75ffcc0f599b1c84186ab1db9aa91fd06fb3519dc58098abd8872",
+      "plan": "AU01",
+      "status": "audio",
+      "lsd_db": 1.552
+    },
+    {
+      "path": "flac-long.flac",
+      "sha256": "01638473a5d75ffcc0f599b1c84186ab1db9aa91fd06fb3519dc58098abd8872",
+      "plan": "AU02",
+      "status": "audio",
+      "lsd_db": 0.055
+    },
+    {
+      "path": "flac-long.flac",
+      "sha256": "01638473a5d75ffcc0f599b1c84186ab1db9aa91fd06fb3519dc58098abd8872",
+      "plan": "AU03",
+      "status": "held",
+      "reason": "AU03 is reserved and not runnable in this version"
+    },
+    {
+      "path": "flac-long.flac",
+      "sha256": "01638473a5d75ffcc0f599b1c84186ab1db9aa91fd06fb3519dc58098abd8872",
+      "plan": "AU04",
+      "status": "audio",
+      "lsd_db": 1.227
+    },
+    {
+      "path": "flac-long.flac",
+      "sha256": "01638473a5d75ffcc0f599b1c84186ab1db9aa91fd06fb3519dc58098abd8872",
+      "plan": "AU05",
+      "status": "audio",
+      "lsd_db": 3.628
+    },
+    {
+      "path": "flac-long.flac",
+      "sha256": "01638473a5d75ffcc0f599b1c84186ab1db9aa91fd06fb3519dc58098abd8872",
+      "plan": "audio-safe",
+      "status": "audio",
+      "lsd_db": 1.553
+    },
+    {
+      "path": "flac-long.flac",
+      "sha256": "01638473a5d75ffcc0f599b1c84186ab1db9aa91fd06fb3519dc58098abd8872",
+      "plan": "audio-aggressive+AU04",
+      "status": "audio",
+      "lsd_db": 2.006
+    },
+    {
+      "path": "flac-long.flac",
+      "sha256": "01638473a5d75ffcc0f599b1c84186ab1db9aa91fd06fb3519dc58098abd8872",
+      "plan": "audio-aggressive+AU05",
+      "status": "audio",
+      "lsd_db": 3.637
+    },
+    {
+      "path": "flac-long.flac",
+      "sha256": "01638473a5d75ffcc0f599b1c84186ab1db9aa91fd06fb3519dc58098abd8872",
+      "plan": "audio-aggressive",
+      "status": "audio",
+      "lsd_db": 3.637
+    },
+    {
+      "path": "flac-long.flac",
+      "sha256": "01638473a5d75ffcc0f599b1c84186ab1db9aa91fd06fb3519dc58098abd8872",
+      "plan": "audio-two-opt-in",
+      "status": "audio",
+      "lsd_db": 3.715
+    }
+  ]
+}

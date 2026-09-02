@@ -1,0 +1,290 @@
+{
+  "schema_version": "1.0.0",
+  "assets": [
+    {
+      "path": "png-small.png",
+      "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
+      "format": "png",
+      "width": 320,
+      "height": 200,
+      "duration_s": null,
+      "rate": null,
+      "channels": null,
+      "generator": "unmark calibration_fixtures (synthetic)",
+      "class": "dense texture",
+      "post_processed": false,
+      "control": false,
+      "fixture": true,
+      "round": "fixture",
+      "tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "path": "png-medium-alpha.png",
+      "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
+      "format": "png",
+      "width": 900,
+      "height": 40,
+      "duration_s": null,
+      "rate": null,
+      "channels": null,
+      "generator": "unmark calibration_fixtures (synthetic)",
+      "class": "dense texture",
+      "post_processed": false,
+      "control": false,
+      "fixture": true,
+      "round": "fixture",
+      "tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "path": "png-large.png",
+      "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
+      "format": "png",
+      "width": 1400,
+      "height": 32,
+      "duration_s": null,
+      "rate": null,
+      "channels": null,
+      "generator": "unmark calibration_fixtures (synthetic)",
+      "class": "dense texture",
+      "post_processed": false,
+      "control": false,
+      "fixture": true,
+      "round": "fixture",
+      "tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "path": "jpeg-small.jpg",
+      "sha256": "fa5d11d6878e1b75948e3a7a47b54d77c43713133d399d7dec73d4248d71dae9",
+      "format": "jpeg",
+      "width": 320,
+      "height": 208,
+      "duration_s": null,
+      "rate": null,
+      "channels": null,
+      "generator": "unmark calibration_fixtures (synthetic)",
+      "class": "dense texture",
+      "post_processed": false,
+      "control": false,
+      "fixture": true,
+      "round": "fixture",
+      "tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "path": "jpeg-medium.jpg",
+      "sha256": "73b59f4145bc82b3c9f998683a52340b592c1fa075aaf606dd469ce154f8ce6d",
+      "format": "jpeg",
+      "width": 904,
+      "height": 40,
+      "duration_s": null,
+      "rate": null,
+      "channels": null,
+      "generator": "unmark calibration_fixtures (synthetic)",
+      "class": "dense texture",
+      "post_processed": false,
+      "control": false,
+      "fixture": true,
+      "round": "fixture",
+      "tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "path": "jpeg-large.jpg",
+      "sha256": "b8dc5eccdc11cf5d4300be60a6fc0eb6bc214c48f7394e2c70a38ddc533bf215",
+      "format": "jpeg",
+      "width": 1408,
+      "height": 32,
+      "duration_s": null,
+      "rate": null,
+      "channels": null,
+      "generator": "unmark calibration_fixtures (synthetic)",
+      "class": "dense texture",
+      "post_processed": false,
+      "control": false,
+      "fixture": true,
+      "round": "fixture",
+      "tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "path": "webp-small-alpha.webp",
+      "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
+      "format": "webp",
+      "width": 320,
+      "height": 200,
+      "duration_s": null,
+      "rate": null,
+      "channels": null,
+      "generator": "unmark calibration_fixtures (synthetic)",
+      "class": "dense texture",
+      "post_processed": false,
+      "control": false,
+      "fixture": true,
+      "round": "fixture",
+      "tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "path": "webp-medium.webp",
+      "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
+      "format": "webp",
+      "width": 900,
+      "height": 40,
+      "duration_s": null,
+      "rate": null,
+      "channels": null,
+      "generator": "unmark calibration_fixtures (synthetic)",
+      "class": "dense texture",
+      "post_processed": false,
+      "control": false,
+      "fixture": true,
+      "round": "fixture",
+      "tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "path": "webp-large.webp",
+      "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
+      "format": "webp",
+      "width": 1300,
+      "height": 32,
+      "duration_s": null,
+      "rate": null,
+      "channels": null,
+      "generator": "unmark calibration_fixtures (synthetic)",
+      "class": "dense texture",
+      "post_processed": false,
+      "control": false,
+      "fixture": true,
+      "round": "fixture",
+      "tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "path": "wav-short-stereo.wav",
+      "sha256": "53faaf3c2ec153dbfea282ff09d2a4a01a44ecbd2d092fb3e4b1b2233ff0862e",
+      "format": "wav",
+      "width": null,
+      "height": null,
+      "duration_s": 1.0,
+      "rate": 44100,
+      "channels": 2,
+      "generator": "unmark calibration_fixtures (synthetic)",
+      "class": "tonal synthetic",
+      "post_processed": false,
+      "control": false,
+      "fixture": true,
+      "round": "fixture",
+      "tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "path": "wav-medium-24bit.wav",
+      "sha256": "d5a1bbb2505816001837e6d78c8214968ba649016a535499b5a3d036e81c45ed",
+      "format": "wav",
+      "width": null,
+      "height": null,
+      "duration_s": 12.0,
+      "rate": 8000,
+      "channels": 1,
+      "generator": "unmark calibration_fixtures (synthetic)",
+      "class": "tonal synthetic",
+      "post_processed": false,
+      "control": false,
+      "fixture": true,
+      "round": "fixture",
+      "tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "path": "wav-long.wav",
+      "sha256": "5587565accf30a45b7f286743bb6f9194882bfd01bbc10e8dc1a04f34607365c",
+      "format": "wav",
+      "width": null,
+      "height": null,
+      "duration_s": 61.0,
+      "rate": 4000,
+      "channels": 1,
+      "generator": "unmark calibration_fixtures (synthetic)",
+      "class": "tonal synthetic",
+      "post_processed": false,
+      "control": false,
+      "fixture": true,
+      "round": "fixture",
+      "tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "path": "flac-short-stereo.flac",
+      "sha256": "f98eaf11670b07a3c893dd9d9b71d19c842084c3c066d81706a237f61f923ef3",
+      "format": "flac",
+      "width": null,
+      "height": null,
+      "duration_s": 1.0,
+      "rate": 48000,
+      "channels": 2,
+      "generator": "unmark calibration_fixtures (synthetic)",
+      "class": "tonal synthetic",
+      "post_processed": false,
+      "control": false,
+      "fixture": true,
+      "round": "fixture",
+      "tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "path": "flac-medium-24bit.flac",
+      "sha256": "c624dfbb6bb2781d5f09bb74cbc907f3d976bfb4409e8e874257fa8e2e4c23de",
+      "format": "flac",
+      "width": null,
+      "height": null,
+      "duration_s": 11.0,
+      "rate": 8000,
+      "channels": 1,
+      "generator": "unmark calibration_fixtures (synthetic)",
+      "class": "tonal synthetic",
+      "post_processed": false,
+      "control": false,
+      "fixture": true,
+      "round": "fixture",
+      "tags": [
+        "synthetic"
+      ]
+    },
+    {
+      "path": "flac-long.flac",
+      "sha256": "01638473a5d75ffcc0f599b1c84186ab1db9aa91fd06fb3519dc58098abd8872",
+      "format": "flac",
+      "width": null,
+      "height": null,
+      "duration_s": 62.0,
+      "rate": 8000,
+      "channels": 1,
+      "generator": "unmark calibration_fixtures (synthetic)",
+      "class": "tonal synthetic",
+      "post_processed": false,
+      "control": false,
+      "fixture": true,
+      "round": "fixture",
+      "tags": [
+        "synthetic"
+      ]
+    }
+  ]
+}

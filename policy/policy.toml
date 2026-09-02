@@ -289,7 +289,7 @@ default = false
 milestone = 2
 params = { sigma = 6.0, distribution = "gaussian" }
 target = "Weak correlation marks"
-guard = "Add Gaussian noise at the pinned sigma to every channel. The seed is the policy base seed combined with the input's hash, so one asset always gets the same grain and two assets never share a pattern. A shared pattern would itself be a correlational mark."
+guard = "Add Gaussian noise at the pinned sigma to every color channel, alpha untouched. The seed is the policy base seed combined with the input's hash, so one asset always gets the same grain and two assets never share a pattern. A shared pattern would itself be a correlational mark."
 
 [[transform]]
 id = "PX04"
@@ -363,7 +363,7 @@ default = false
 milestone = 2
 params = {}
 target = "Fragile spectral marks"
-guard = "Reserved. No pure Rust MP3 or AAC encoder meets the dependency bar, so this entry holds the id and pins no parameters until the owner rules on the encoder. Selecting it is refused and the plan reports it as held."
+guard = "Reserved and not runnable in this version. No pure Rust MP3 or AAC encoder meets the dependency bar, so the entry holds the id, pins no parameters, and sits in no profile. A plan that names it is refused and reported as held."
 
 [[transform]]
 id = "AU02"
@@ -464,9 +464,9 @@ tier = "aggressive"
 milestone = 2
 feature = "audio"
 transforms = ["MC05", "MC09", "AU01", "AU02"]
-optional_transforms = ["AU03", "AU04", "AU05"]
+optional_transforms = ["AU04", "AU05"]
 budget = "audio-aggressive"
-notes = "The safe plan plus one opt-in. Audible on careful listening. AU03 is reserved until the owner rules on a lossy encoder."
+notes = "The safe plan plus one opt-in. Audible on careful listening. AU03 is reserved and not runnable in this version."
 
 [profile.repo-files]
 media = "files"
@@ -502,7 +502,7 @@ crop_area_min = 1.0
 [budget.image-aggressive]
 kind = "image"
 psnr_floor_db = 30.0
-ssim_floor = 0.90
+ssim_floor = 0.9
 resample_ratio_min = 0.50
 crop_area_min = 0.85
 
@@ -534,9 +534,9 @@ record = "policy/calibration.json"
 # calibrated. Every field below except base_seed and the percentile rules is
 # written by the harness.
 status = "provisional"
-record_sha256 = ""
-corpus_manifest_sha256 = ""
-date = ""
+record_sha256 = "ed95df69288a99f7008777b48fa51c5abe0cf32457473bc28a5a214ad22b8655"
+corpus_manifest_sha256 = "cc4a4fa43d5189384ca60b8fff7b4985a000b28a34c7a40c6a56e12c69689f47"
+date = "2026-09-02"
 # XORed with the first 8 bytes of sha256(input) to seed PX05 and AU02, so one
 # asset always gets the same noise and two assets never share a pattern.
 base_seed = 0x5eed2026_09020001

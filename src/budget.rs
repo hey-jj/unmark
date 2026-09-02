@@ -181,35 +181,157 @@ pub fn psnr(a: &[u8], b: &[u8]) -> Option<f64> {
     Some(10.0 * (255.0f64 * 255.0 / mse).log10())
 }
 
-/// Global structural similarity over two equal-length 8-bit buffers on the same
-/// grid. This is the single-window form: means, variances, and covariance over
-/// the whole buffer. Returns None when the lengths differ.
-pub fn ssim(a: &[u8], b: &[u8]) -> Option<f64> {
-    if a.len() != b.len() || a.is_empty() {
+/// Structural similarity as the mean over non-overlapping 8x8 windows of
+/// BT.601 luma, computed from interleaved 8-bit RGB or RGBA buffers on the
+/// same grid. Partial windows at the right and bottom edges are dropped, so
+/// an image narrower or shorter than the window is unscorable and returns
+/// None, as does a size or channel mismatch. Population variance and the
+/// standard constants with K1 0.01 and K2 0.03 on the 255 range.
+pub fn ssim(a: &[u8], b: &[u8], width: usize, height: usize, channels: usize) -> Option<f64> {
+    if a.len() != b.len() || a.len() != width * height * channels || !(3..=4).contains(&channels) {
         return None;
     }
-    let n = a.len() as f64;
-    let (mut ma, mut mb) = (0.0f64, 0.0f64);
-    for (x, y) in a.iter().zip(b) {
-        ma += *x as f64;
-        mb += *y as f64;
+    let window = SSIM_WINDOW;
+    if width < window || height < window {
+        return None;
     }
-    ma /= n;
-    mb /= n;
-    let (mut va, mut vb, mut cov) = (0.0f64, 0.0f64, 0.0f64);
-    for (x, y) in a.iter().zip(b) {
-        let dx = *x as f64 - ma;
-        let dy = *y as f64 - mb;
-        va += dx * dx;
-        vb += dy * dy;
-        cov += dx * dy;
-    }
-    va /= n;
-    vb /= n;
-    cov /= n;
+    let luma = |buf: &[u8], x: usize, y: usize| -> f64 {
+        let p = &buf[(y * width + x) * channels..];
+        0.299 * p[0] as f64 + 0.587 * p[1] as f64 + 0.114 * p[2] as f64
+    };
     let c1 = (0.01 * 255.0f64).powi(2);
     let c2 = (0.03 * 255.0f64).powi(2);
-    let num = (2.0 * ma * mb + c1) * (2.0 * cov + c2);
-    let den = (ma * ma + mb * mb + c1) * (va + vb + c2);
-    Some(num / den)
+    let n = (window * window) as f64;
+    let mut total = 0.0;
+    let mut count = 0usize;
+    for wy in 0..height / window {
+        for wx in 0..width / window {
+            let (mut ma, mut mb) = (0.0f64, 0.0f64);
+            for y in 0..window {
+                for x in 0..window {
+                    ma += luma(a, wx * window + x, wy * window + y);
+                    mb += luma(b, wx * window + x, wy * window + y);
+                }
+            }
+            ma /= n;
+            mb /= n;
+            let (mut va, mut vb, mut cov) = (0.0f64, 0.0f64, 0.0f64);
+            for y in 0..window {
+                for x in 0..window {
+                    let dx = luma(a, wx * window + x, wy * window + y) - ma;
+                    let dy = luma(b, wx * window + x, wy * window + y) - mb;
+                    va += dx * dx;
+                    vb += dy * dy;
+                    cov += dx * dy;
+                }
+            }
+            va /= n;
+            vb /= n;
+            cov /= n;
+            let num = (2.0 * ma * mb + c1) * (2.0 * cov + c2);
+            let den = (ma * ma + mb * mb + c1) * (va + vb + c2);
+            total += num / den;
+            count += 1;
+        }
+    }
+    Some(total / count as f64)
+}
+
+/// The SSIM window edge, pinned in the policy package as `ssim_window`.
+pub const SSIM_WINDOW: usize = 8;
+
+/// The pinned log-spectral-distance parameters.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct LsdParams {
+    pub frame: usize,
+    pub hop: usize,
+    pub power_floor: f64,
+    pub min_frames: usize,
+}
+
+impl LsdParams {
+    pub const PINNED: LsdParams = LsdParams {
+        frame: 2048,
+        hop: 1024,
+        power_floor: 1e-10,
+        min_frames: 4,
+    };
+}
+
+/// Per-frame log power spectra, dB, of a mono signal: periodic Hann frames
+/// of `frame` samples at `hop`, power |X_k / N|^2 floored at `power_floor`.
+/// Fewer than `min_frames` frames is unscorable and returns None.
+pub fn log_spectra(x: &[f64], p: &LsdParams) -> Option<Vec<Vec<f64>>> {
+    if x.len() < p.frame {
+        return None;
+    }
+    let frames = (x.len() - p.frame) / p.hop + 1;
+    if frames < p.min_frames {
+        return None;
+    }
+    let window = crate::dsp::hann_periodic(p.frame);
+    let mut out = Vec::with_capacity(frames);
+    for f in 0..frames {
+        let start = f * p.hop;
+        let power = crate::dsp::power_spectrum(&x[start..start + p.frame], &window);
+        out.push(
+            power
+                .iter()
+                .map(|&v| 10.0 * v.max(p.power_floor).log10())
+                .collect(),
+        );
+    }
+    Some(out)
+}
+
+/// Frame-wise log-spectral distance in dB between two mono signals on the
+/// same grid: RMS across bins per frame, mean across frames, over the frames
+/// both signals have. None when either is unscorable.
+pub fn lsd(reference: &[f64], output: &[f64], p: &LsdParams) -> Option<f64> {
+    let a = log_spectra(reference, p)?;
+    let b = log_spectra(output, p)?;
+    let frames = a.len().min(b.len());
+    if frames < p.min_frames {
+        return None;
+    }
+    let mut total = 0.0;
+    for f in 0..frames {
+        let bins = a[f].len();
+        let sq: f64 = a[f].iter().zip(&b[f]).map(|(x, y)| (x - y) * (x - y)).sum();
+        total += (sq / bins as f64).sqrt();
+    }
+    Some(total / frames as f64)
+}
+
+/// The AU05 metric: the RMS distance in dB between the time-averaged log
+/// power spectra of two mono signals that share no grid. Power averages in
+/// the linear domain across frames, then the floor and the log apply.
+pub fn averaged_spectrum_distance(reference: &[f64], output: &[f64], p: &LsdParams) -> Option<f64> {
+    let avg = |x: &[f64]| -> Option<Vec<f64>> {
+        if x.len() < p.frame {
+            return None;
+        }
+        let frames = (x.len() - p.frame) / p.hop + 1;
+        if frames < p.min_frames {
+            return None;
+        }
+        let window = crate::dsp::hann_periodic(p.frame);
+        let mut acc = vec![0.0f64; p.frame / 2 + 1];
+        for f in 0..frames {
+            let start = f * p.hop;
+            let power = crate::dsp::power_spectrum(&x[start..start + p.frame], &window);
+            for (a, v) in acc.iter_mut().zip(power) {
+                *a += v;
+            }
+        }
+        Some(
+            acc.iter()
+                .map(|v| 10.0 * (v / frames as f64).max(p.power_floor).log10())
+                .collect(),
+        )
+    };
+    let a = avg(reference)?;
+    let b = avg(output)?;
+    let sq: f64 = a.iter().zip(&b).map(|(x, y)| (x - y) * (x - y)).sum();
+    Some((sq / a.len() as f64).sqrt())
 }

@@ -166,6 +166,10 @@ pub struct PolicyPackage {
     pub allowlist: Vec<String>,
     /// Named budgets keyed by the `budget` string a profile references.
     pub budgets: Vec<(String, Budget)>,
+    /// Per-format overrides, `(budget, format, budget values)`, from
+    /// `[budget.<name>.override.<format>]`. Emitted by the calibration
+    /// harness only where separation fails at the profile-wide number.
+    pub overrides: Vec<(String, String, Budget)>,
     pub calibration: Calibration,
 }
 
@@ -191,6 +195,16 @@ impl PolicyPackage {
             .find(|(n, _)| n == name)
             .map(|(_, b)| b.clone())
             .unwrap_or(Budget::Exact)
+    }
+
+    /// The budget in force for a format: the per-format override when one
+    /// exists, otherwise the profile-wide numbers.
+    pub fn budget_for_format(&self, name: &str, format: &str) -> Budget {
+        self.overrides
+            .iter()
+            .find(|(n, f, _)| n == name && f == format)
+            .map(|(_, _, b)| b.clone())
+            .unwrap_or_else(|| self.budget_for(name))
     }
 }
 
@@ -359,27 +373,25 @@ pub fn load() -> Result<PolicyPackage, String> {
         .unwrap_or_default();
 
     let mut budgets = Vec::new();
+    let mut overrides = Vec::new();
     if let Some(tbl) = root.get("budget").and_then(|v| v.as_table()) {
         for (name, bv) in tbl {
             let b = bv.as_table().ok_or("budget must be a table")?;
             let kind = as_str(b.get("kind").ok_or("budget.kind")?, "kind")?;
-            let f = |k: &str| b.get(k).and_then(|v| v.as_float()).unwrap_or(0.0);
-            let budget = match kind.as_str() {
-                "image" => Budget::Image {
-                    psnr_floor_db: f("psnr_floor_db"),
-                    ssim_floor: f("ssim_floor"),
-                    resample_ratio_min: f("resample_ratio_min"),
-                    crop_area_min: f("crop_area_min"),
-                },
-                "audio" => Budget::Audio {
-                    lsd_ceiling_db: f("lsd_ceiling_db"),
-                    resample_ratio_min: f("resample_ratio_min"),
-                    time_stretch_min: f("time_stretch_min"),
-                    time_stretch_max: f("time_stretch_max"),
-                },
-                other => return Err(format!("unknown budget kind {other}")),
-            };
-            budgets.push((name.clone(), budget));
+            let budget = parse_budget(&kind, b, None)?;
+            budgets.push((name.clone(), budget.clone()));
+            if let Some(ov) = b.get("override").and_then(|v| v.as_table()) {
+                for (format, fv) in ov {
+                    let o = fv.as_table().ok_or("budget override must be a table")?;
+                    // An override carries the signal numbers only; the
+                    // geometry floors stay profile-wide.
+                    overrides.push((
+                        name.clone(),
+                        format.clone(),
+                        parse_budget(&kind, o, Some(&budget))?,
+                    ));
+                }
+            }
         }
     }
 
@@ -395,8 +407,70 @@ pub fn load() -> Result<PolicyPackage, String> {
         guards,
         allowlist,
         budgets,
+        overrides,
         calibration,
     })
+}
+
+/// Parse a budget table. With `base`, a missing key falls back to the base
+/// budget's value, which is how an override carries only the signal numbers.
+fn parse_budget(
+    kind: &str,
+    b: &toml::value::Table,
+    base: Option<&Budget>,
+) -> Result<Budget, String> {
+    let f = |k: &str, fallback: f64| {
+        b.get(k)
+            .and_then(|v| v.as_float().or_else(|| v.as_integer().map(|i| i as f64)))
+            .unwrap_or(fallback)
+    };
+    match kind {
+        "image" => {
+            let (p, s, r, c) = match base {
+                Some(Budget::Image {
+                    psnr_floor_db,
+                    ssim_floor,
+                    resample_ratio_min,
+                    crop_area_min,
+                }) => (
+                    *psnr_floor_db,
+                    *ssim_floor,
+                    *resample_ratio_min,
+                    *crop_area_min,
+                ),
+                _ => (0.0, 0.0, 0.0, 0.0),
+            };
+            Ok(Budget::Image {
+                psnr_floor_db: f("psnr_floor_db", p),
+                ssim_floor: f("ssim_floor", s),
+                resample_ratio_min: f("resample_ratio_min", r),
+                crop_area_min: f("crop_area_min", c),
+            })
+        }
+        "audio" => {
+            let (l, r, lo, hi) = match base {
+                Some(Budget::Audio {
+                    lsd_ceiling_db,
+                    resample_ratio_min,
+                    time_stretch_min,
+                    time_stretch_max,
+                }) => (
+                    *lsd_ceiling_db,
+                    *resample_ratio_min,
+                    *time_stretch_min,
+                    *time_stretch_max,
+                ),
+                _ => (0.0, 0.0, 0.0, 0.0),
+            };
+            Ok(Budget::Audio {
+                lsd_ceiling_db: f("lsd_ceiling_db", l),
+                resample_ratio_min: f("resample_ratio_min", r),
+                time_stretch_min: f("time_stretch_min", lo),
+                time_stretch_max: f("time_stretch_max", hi),
+            })
+        }
+        other => Err(format!("unknown budget kind {other}")),
+    }
 }
 
 fn load_calibration(root: &toml::value::Table) -> Result<Calibration, String> {

@@ -14,8 +14,12 @@
 
 pub mod asset;
 pub mod budget;
+#[cfg(feature = "image")]
+pub mod calibrate;
+pub mod codec;
 pub mod container;
 pub mod detect;
+pub mod dsp;
 pub mod guard;
 pub mod policy;
 pub mod report;
@@ -31,11 +35,32 @@ use scan::{Detections, Honesty, ScanState};
 pub const SCHEMA_VERSION: &str = "1.0.0";
 pub const TOOL_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// The codec identity behind a metadata rewrite. It re-encodes nothing, so the
-/// fingerprint names the container-rewrite path rather than an encoder version.
+/// The codec and resampler crates behind every encode, with their versions.
+/// A metadata rewrite re-encodes nothing and reports the same string, so a
+/// report and the calibration record name one fingerprint. The versions are
+/// pinned here and checked against Cargo.lock by the test suite, so a codec
+/// bump changes the fingerprint and fails CI until recalibration.
 pub fn encoder_fingerprint() -> String {
-    format!("container-rewrite/no-reencode; unmark {TOOL_VERSION}")
+    let parts: Vec<String> = CODEC_CRATES
+        .iter()
+        .map(|(name, version)| format!("{name} {version}"))
+        .collect();
+    format!(
+        "unmark {TOOL_VERSION}; container-rewrite/no-reencode; {}; jpeg-encoder in-crate baseline 4:4:4; resample in-crate lanczos3 and kaiser-sinc scalar",
+        parts.join("; ")
+    )
 }
+
+/// The external codec crates and the versions this build was calibrated
+/// against. Feature-independent on purpose: the fingerprint must read the
+/// same in a default build and an all-features build.
+pub const CODEC_CRATES: &[(&str, &str)] = &[
+    ("png", "0.18.1"),
+    ("jpeg-decoder", "0.3.2"),
+    ("image-webp", "0.2.4"),
+    ("claxon", "0.4.3"),
+    ("flacenc", "0.5.1"),
+];
 
 /// The mutating and read-only verbs.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
