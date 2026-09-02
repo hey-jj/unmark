@@ -1,0 +1,19 @@
+# Camera Make values used by the camera-origin heuristic (G3). EXIF that names
+# one of these alongside a lens and an exposure triple describes a photograph.
+Canon
+Nikon
+Sony
+FUJIFILM
+Panasonic
+OLYMPUS
+OM Digital Solutions
+Leica
+Hasselblad
+Pentax
+Ricoh
+Apple
+Google
+Samsung
+Xiaomi
+DJI
+GoPro

@@ -1,0 +1,27 @@
+# Generator and software tags seen in generative-tool metadata. Matched against
+# C2PA claim_generator, EXIF Software, XMP CreatorTool, and PNG text values.
+# One entry per line, matched case-insensitively as a substring. This is a
+# starting set, not a survey.
+stable diffusion
+stablediffusionwebui
+automatic1111
+comfyui
+invokeai
+novelai
+fooocus
+midjourney
+dall-e
+dalle
+openai
+firefly
+adobe firefly
+gemini
+imagen
+flux
+grok
+ideogram
+leonardo.ai
+playground
+runway
+stability.ai
+sdxl

@@ -1,0 +1,13 @@
+# PNG tEXt/iTXt/zTXt keywords that carry generation data. A chunk with one of
+# these keywords is confirmable generative provenance.
+parameters
+prompt
+negative_prompt
+workflow
+comfyui
+sd-metadata
+generation_data
+dream
+Software
+Comment
+Description

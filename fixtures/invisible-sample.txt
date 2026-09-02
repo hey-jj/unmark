@@ -1,0 +1,3 @@
+A line with a zero​width space and a ‮bidi‬ override.
+<!-- Generator: ComfyUI 1.0 -->
+Ordinary line.

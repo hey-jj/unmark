@@ -1,0 +1,11 @@
+# EXIF Software and ProcessingSoftware values that name a generative tool.
+# Matched case-insensitively as a substring.
+stable diffusion
+comfyui
+automatic1111
+invokeai
+novelai
+dall-e
+firefly
+midjourney
+flux

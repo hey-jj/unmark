@@ -1,0 +1,7 @@
+# XMP field paths that carry provenance or generator identity.
+xmp:CreatorTool
+dc:creator
+photoshop:Credit
+Iptc4xmpExt:DigitalSourceType
+c2pa:manifest
+xmpMM:History

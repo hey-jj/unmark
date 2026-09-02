@@ -1,0 +1,421 @@
+# unmark canonical policy package. Single source for the transform catalog, the
+# mark classes, the profile stances, the guardrails, and the fidelity budgets.
+# The crate and the skill snapshot both read this file. Transform and mark ids
+# are stable forever and never derived from display names.
+
+[policy]
+version = "0.1.0"
+# sha256 over the canonical serialization of the whole package (this file with
+# the digest emptied, LF endings, followed by each signature file path-sorted).
+# The build embeds the computed value in every result and snapshot.
+digest = ""
+
+[semantics]
+# scan_state: the state a detector reports per mark class.
+#   confirmed_present  found, with a location
+#   confirmed_absent   scanned exhaustively in a supported container, not present
+#   unsupported_format the container is not one this build scans for the class
+#   malformed          the structure was found and would not parse, presence unknown
+#   not_attempted      a blind class, or a detector this build does not carry
+# Only confirmed_absent licenses the word absent, and only over the enumerated
+# supported set. The supported set is a single constant in the code. This list
+# mirrors it for the reader and the code is the authority.
+supported_containers = ["jpeg", "png", "webp", "riff-wav", "isobmff", "flac", "svg", "html", "text"]
+# tier: the honesty level of a finding.
+#   removable  a confirmable mark is present and the profile strips it. Gates
+#              until removed and re-proven gone.
+#   residual   a blind mark class cannot be confirmed either way. Gates until
+#              acknowledged.
+#   note       instrumentation. Never gates.
+# honesty class of a mark: confirmable, blind, unaddressed.
+
+# ---------------------------------------------------------------------------
+# Mark classes
+# ---------------------------------------------------------------------------
+
+[[mark_class]]
+id = "c2pa"
+honesty = "confirmable"
+label = "C2PA manifest"
+guard = "A Content Credentials manifest. The parse reads the JUMBF box header and the claim generator. It does not verify the signature, so a refusal keys on the manifest's content: capture actions, camera signers, and publisher names."
+judge = "The manifest records who made this asset and how. Keeping it proves the asset is yours. Confirm the asset is your own generative output before removing it."
+
+[[mark_class]]
+id = "png_text"
+honesty = "confirmable"
+label = "PNG text chunk"
+guard = "A tEXt, iTXt, or zTXt chunk. Local generation pipelines write the prompt, the model, the seed, and the workflow graph here. This is the most identifying data on the asset and it reads in any viewer."
+
+[[mark_class]]
+id = "exif"
+honesty = "confirmable"
+label = "EXIF metadata"
+guard = "EXIF Software, ProcessingSoftware, ImageDescription, UserComment, and timestamps. A generative tool writes its name into Software."
+
+[[mark_class]]
+id = "xmp"
+honesty = "confirmable"
+label = "XMP packet"
+guard = "An XMP packet carrying CreatorTool and provenance fields. C2PA also references a manifest from XMP."
+
+[[mark_class]]
+id = "iptc"
+honesty = "confirmable"
+label = "IPTC block"
+guard = "An IPTC-IIM block carrying caption, credit, and source fields."
+
+[[mark_class]]
+id = "id3"
+honesty = "confirmable"
+label = "ID3 tag"
+guard = "An ID3v1 or ID3v2 tag. TXXX, COMM, PRIV, and GEOB frames carry tool identity and free-form data. ID3v1 sits at the end of the file, so a walker that reads only the front reports a clean strip while the tag is still there."
+
+[[mark_class]]
+id = "vorbis"
+honesty = "confirmable"
+label = "Vorbis comment"
+guard = "A Vorbis comment block. It routinely holds legitimate credits and chapter structure, so it stays on the preservation allowlist unless an explicit strip asks for it."
+
+[[mark_class]]
+id = "ilst"
+honesty = "confirmable"
+label = "MP4 ilst tag"
+guard = "An MP4 ilst metadata atom carrying tool and encoder identity."
+
+[[mark_class]]
+id = "riff_ancillary"
+honesty = "confirmable"
+label = "RIFF ancillary chunk"
+guard = "A LIST INFO chunk or an embedded id3 chunk in a WAV, WebP, or AVI container. A RIFF C2PA chunk is the manifest class and MC01 removes it. Dropping a RIFF chunk rebuilds every enclosing size field and honors even-boundary padding, or a decoder rejects the file."
+
+[[mark_class]]
+id = "invisibles"
+honesty = "confirmable"
+label = "invisible Unicode"
+guard = "Zero-width characters, variation selectors, and unusual spaces in a text file. A variation-selector run can also carry a C2PA text wrapper, so a run is classified before it is removed and a wrapper is routed to the manifest path."
+
+[[mark_class]]
+id = "synthid_image"
+honesty = "blind"
+label = "SynthID-Image"
+guard = "A keyed statistical mark in the pixel data. This build is offline and carries no authorized detector, so it cannot see the mark, cannot report its presence, and cannot report its absence. SynthID-Image survives the entire safe catalog, holding above 99 percent detection through re-encode, resize, crop, and noise."
+
+[[mark_class]]
+id = "tree_ring"
+honesty = "blind"
+label = "Tree-Ring"
+guard = "A keyed mark in the low-frequency Fourier structure of the initial noise. Compression and resampling preserve low frequencies, and a circular Fourier key rotates with the picture, so the mark holds through the safe catalog. This build cannot see it."
+
+[[mark_class]]
+id = "stable_signature"
+honesty = "blind"
+label = "Stable Signature"
+guard = "A keyed mark decoded from the pixels. It survives severe cropping, detecting in about 84 percent of images after a crop that keeps a tenth of the pixels. This build cannot see it."
+
+[[mark_class]]
+id = "synthid_audio"
+honesty = "blind"
+label = "SynthID-Audio"
+guard = "A keyed mark in the audio samples, specified to survive MP3 compression, added noise, and speed change. The same offline limit as SynthID-Image applies: no authorized detector, so presence and absence both go unreported."
+
+[[mark_class]]
+id = "audioseal"
+honesty = "blind"
+label = "AudioSeal"
+guard = "A neural audio mark reporting near-perfect accuracy after resampling and after MP3 and AAC transcoding. This build cannot see it."
+
+[[mark_class]]
+id = "visible_overlay"
+honesty = "unaddressed"
+label = "visible overlay"
+guard = "A visible logo or a corner mark. Removing it needs inpainting, which is model-based work. No transform here touches it."
+
+[[mark_class]]
+id = "c2pa_soft_binding"
+honesty = "unaddressed"
+label = "C2PA soft binding"
+guard = "A soft binding registered with an external service. The specification adds it so a file whose manifest was separated can still be matched back to its credential. Deleting the manifest does not delete that record."
+
+[[mark_class]]
+id = "generative_fingerprint"
+honesty = "unaddressed"
+label = "generative fingerprint"
+guard = "Frequency artifacts and upsampling traces that let a classifier flag a generated image with no watermark involved. No transform here touches them."
+
+# ---------------------------------------------------------------------------
+# Transform catalog. Metadata and container transforms, all confirmable, zero
+# fidelity cost. Applied in a fixed canonical order regardless of flag order.
+# Pixel (PX) and audio (AU) degrade transforms arrive in a later milestone.
+# ---------------------------------------------------------------------------
+
+[[transform]]
+id = "MC01"
+name = "strip-c2pa-manifest"
+order = 10
+tier = "removable"
+fidelity = "none"
+default = true
+target = "JUMBF in JPEG APP11, PNG caBX, MP4 uuid box, RIFF C2PA chunk"
+guard = "Remove the C2PA manifest. Removal is gated at runtime by the ownership assertion and by the third-party-provenance refusal, which exits 40 unless the override flag is passed."
+
+[[transform]]
+id = "MC02"
+name = "strip-xmp"
+order = 20
+tier = "removable"
+fidelity = "none"
+default = true
+target = "XMP packet and IPTC block with provenance and generator fields"
+guard = "Remove the XMP packet and the IPTC block."
+
+[[transform]]
+id = "MC03"
+name = "strip-exif"
+order = 30
+tier = "removable"
+fidelity = "none"
+default = true
+target = "EXIF Software, ProcessingSoftware, ImageDescription, timestamps"
+guard = "Remove the EXIF IFD."
+
+[[transform]]
+id = "MC04"
+name = "strip-png-text"
+order = 40
+tier = "removable"
+fidelity = "none"
+default = true
+target = "PNG tEXt, zTXt, iTXt chunks carrying prompts and workflow JSON"
+guard = "Remove the PNG text chunks, the highest-value strip in the catalog, at zero fidelity cost."
+
+[[transform]]
+id = "MC05"
+name = "strip-audio-tags"
+order = 50
+tier = "removable"
+fidelity = "none"
+default = true
+target = "ID3v1, ID3v2 including PRIV and GEOB, MP4 ilst"
+guard = "Remove the audio tags at both the leading and the trailing location. Broadcast production data on the allowlist stays unless an explicit strip asks for it."
+
+[[transform]]
+id = "MC09"
+name = "strip-riff-ancillary"
+order = 60
+tier = "removable"
+fidelity = "none"
+default = true
+target = "LIST INFO and an embedded id3 chunk in WAV, WebP, and AVI"
+guard = "Remove the named RIFF ancillary chunks and rebuild the enclosing sizes and even-boundary padding."
+
+[[transform]]
+id = "MC06"
+name = "strip-unlisted-chunks"
+order = 70
+tier = "removable"
+fidelity = "none"
+default = false
+target = "Any ancillary chunk not on the preservation keep list"
+guard = "It reads the preservation keep list and drops every ancillary chunk the list does not name, so the metadata tier stays lossless."
+
+[[transform]]
+id = "MC07"
+name = "strip-invisible-unicode"
+order = 80
+tier = "removable"
+fidelity = "none"
+default = false
+target = "Zero-width characters, variation selectors, unusual spaces in text files"
+guard = "Classify each variation-selector run before removing it. A run that parses as a C2PA text wrapper is routed to the manifest path where the refusal applies. A run that looks like a wrapper and fails to parse reports malformed and is left alone. Everything else is removed as invisible-character hygiene."
+
+[[transform]]
+id = "MC08"
+name = "strip-generator-headers"
+order = 90
+tier = "removable"
+fidelity = "none"
+default = false
+target = "SVG metadata, HTML X-Generator, PDF Producer and Creator, comment banners"
+guard = "Remove generator identity headers from text and document files."
+
+# ---------------------------------------------------------------------------
+# Preservation allowlist. MC06 keeps everything here and removes the rest. The
+# keep list is policy data rather than a constant in the source.
+# ---------------------------------------------------------------------------
+
+[allowlist]
+keep = [
+  "icc-profile",
+  "color-profile",
+  "colorimetry",
+  "gamma",
+  "chromaticity",
+  "codec-header",
+  "stream-config",
+  "dimensions",
+  "orientation",
+  "pixel-aspect",
+  "resolution",
+  "timing",
+  "duration",
+  "sample-rate",
+  "chapters",
+  "alpha",
+  "transparency",
+  "bext",
+  "ixml",
+  "vorbis-credits",
+]
+
+# ---------------------------------------------------------------------------
+# Profiles. The asset class and the fidelity the user trades, fused into one
+# axis. Milestone 1 ships the metadata-tier profiles. The safe and aggressive
+# profiles carry their budgets here so the machinery reads them, and select as
+# unavailable until the pixel and audio transforms ship.
+# ---------------------------------------------------------------------------
+
+[profile.image-metadata]
+media = "image"
+tier = "metadata"
+milestone = 1
+transforms = ["MC01", "MC02", "MC03", "MC04"]
+optional_transforms = ["MC06"]
+budget = "exact"
+notes = "Every claim provable and no fidelity cost. Encoded image data comes out byte-identical. Most people should run this and stop."
+
+[profile.image-safe]
+media = "image"
+tier = "safe"
+milestone = 2
+transforms = ["MC01", "MC02", "MC03", "MC04", "PX01", "PX02"]
+budget = "image-safe"
+notes = "Metadata plus one re-encode plus one mild resample. Every extra transform is opt-in and individually named."
+
+[profile.image-aggressive]
+media = "image"
+tier = "aggressive"
+milestone = 2
+transforms = ["MC01", "MC02", "MC03", "MC04"]
+budget = "image-aggressive"
+notes = "Visible on close inspection. Each aggressive transform is opt-in individually so stacking is hard to reach by accident."
+
+[profile.audio-metadata]
+media = "audio"
+tier = "metadata"
+milestone = 1
+feature = "audio"
+transforms = ["MC01", "MC05", "MC09"]
+optional_transforms = ["MC06"]
+budget = "exact"
+notes = "Sample data byte-identical. On WAV and standalone streams it removes ID3 tags and the named RIFF ancillary chunks at both file locations. On FLAC the Vorbis comment, including the encoder tag, is preserved by default and comes off only under the MC06 opt-in, so a default FLAC pass removes no tags and an encoder tag survives it. The 0.1.x target is a field-selective symmetric default: a default pass removes only tool-identity fields from both blocks, the ISFT and IENG-class fields in LIST INFO and the ENCODER, ENCODED_BY, and generator-naming COMMENT fields in Vorbis, keeps credits and chapters, and MC06 removes the whole block."
+
+[profile.audio-safe]
+media = "audio"
+tier = "safe"
+milestone = 2
+feature = "audio"
+transforms = ["MC05", "MC09", "AU01", "AU02"]
+budget = "audio-safe"
+notes = "Metadata plus one resample round trip."
+
+[profile.audio-aggressive]
+media = "audio"
+tier = "aggressive"
+milestone = 2
+feature = "audio"
+transforms = ["MC05", "MC09"]
+budget = "audio-aggressive"
+notes = "Audible on careful listening."
+
+[profile.repo-files]
+media = "files"
+tier = "metadata"
+milestone = 1
+transforms = ["MC01", "MC07", "MC08"]
+budget = "exact"
+notes = "Reads the working tree and never rewrites history. Strips invisible Unicode and generator headers from files as they sit on disk."
+
+# ---------------------------------------------------------------------------
+# Fidelity budgets. Metadata tiers gate on byte-identity of the pixel or sample
+# stream. Image tiers gate on PSNR and SSIM floors, audio on a log-spectral
+# distance ceiling. The budget splits into a signal-fidelity cost, measured on
+# the output grid, and a geometry cost, bounded by parameter floors. Both pass
+# or the plan refuses and exits 30.
+#
+# PROVISIONAL numbers. TODO: a corpus calibration pass sets the final ceilings,
+# owner-reviewed, before 0.1.0. The safe and aggressive metric numbers need
+# re-measurement against real generated assets. The direction, the metric
+# choice, the byte-identity metadata gate, and the two-cost split are firm.
+# ---------------------------------------------------------------------------
+
+[budget.image-safe]
+kind = "image"
+# signal-fidelity floors, measured against the input resampled to the output grid
+psnr_floor_db = 38.0
+ssim_floor = 0.98
+# geometry floors, bounds on the transform input
+resample_ratio_min = 0.75
+crop_area_min = 1.0
+
+[budget.image-aggressive]
+kind = "image"
+psnr_floor_db = 30.0
+ssim_floor = 0.90
+resample_ratio_min = 0.50
+crop_area_min = 0.85
+
+[budget.audio-safe]
+kind = "audio"
+# log-spectral-distance ceiling in dB, RMS over frames of the log power spectrum
+lsd_ceiling_db = 1.0
+resample_ratio_min = 0.90
+time_stretch_min = 1.0
+time_stretch_max = 1.0
+
+[budget.audio-aggressive]
+kind = "audio"
+lsd_ceiling_db = 3.0
+resample_ratio_min = 0.50
+time_stretch_min = 0.9
+time_stretch_max = 1.1
+
+# ---------------------------------------------------------------------------
+# Guardrails. The transforms are general-purpose, so no technical measure
+# prevents misuse. The goal is to make misuse hard to reach by accident and
+# hard-stop the strong-signal cases.
+# ---------------------------------------------------------------------------
+
+[[guard]]
+id = "G1"
+name = "ownership-assertion"
+guard = "clean requires the ownership flag. Its absence is a usage error naming the scope. Anyone can type the flag, and that is the point. Nobody strips provenance without stating the asset is theirs. The assertion is itself positive evidence of generative origin, so a clean run always carries a residual to acknowledge."
+
+[[guard]]
+id = "G2"
+name = "third-party-provenance-refusal"
+guard = "Refuse the manifest strip and exit 40 when the manifest carries a capture signal or a third-party publisher signal. Capture signals are a capture action, a camera vendor as signer, or capture-shaped assertions naming a lens and an exposure. Publisher signals are a news organization, an agency, or a named author who is not the user. A generative tool as claim generator does not fire the refusal, because that is the normal case for an asset in scope. The override is a single explicit flag."
+
+[[guard]]
+id = "G3"
+name = "camera-origin-heuristic"
+guard = "EXIF naming a real camera body with lens data and a shutter, aperture, and ISO triple describes a photograph. Warn and hold at the metadata tier unless overridden. A generative tool can write fake EXIF and a real photograph can be model-edited, so the warning asks for a second look at the asset's origin, and the override proceeds."
+
+[[guard]]
+id = "G4"
+name = "no-aggressive-batch"
+guard = "One asset per invocation for anything that touches provenance or pixels. A directory of images is the shape of the misuse case. A metadata strip over a user's own output directory can take a glob."
+
+[[guard]]
+id = "G5"
+name = "safety-hashes-out-of-scope"
+guard = "Perceptual hashes used for abuse-material matching are not generative watermarks. No transform targets them, none is tuned against them, and none would help. This boundary is permanent, and no flag or profile reaches it. A future transform proposed because it degrades such a hash is rejected on that basis alone."
+
+[[guard]]
+id = "G6"
+name = "no-keyed-mark-scorer"
+guard = "This build ships no estimator that scores how likely a keyed mark is present, and no reverse-detector. The blind class rests on saying plainly that this build cannot see the mark, and a number next to that sentence would erase it. The honest way to make a keyed mark confirmable is an authorized detector that actually knows."
+
+[[guard]]
+id = "G7"
+name = "never-fabricate-provenance"
+guard = "Remove marks and never write them. Never synthesize a manifest, forge a claim generator, backdate a timestamp, or write camera EXIF onto a generated asset. Removing a true record on a user's own asset is in scope. Manufacturing a false one has no code path."
