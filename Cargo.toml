@@ -26,13 +26,18 @@ include = [
 # Image metadata is the default surface. Audio, OCR, and ASR carry heavier
 # trees in milestone 2 and stay opt-in.
 default = ["image"]
-image = []
-audio = []
+image = ["dep:png", "dep:jpeg-decoder", "dep:image-webp"]
+audio = ["dep:claxon", "dep:flacenc"]
 ocr = []
 asr = []
 
 [dependencies]
 sha2 = "0.10"
+png = { version = "0.18", optional = true }
+jpeg-decoder = { version = "0.3", default-features = false, features = ["platform_independent"], optional = true }
+image-webp = { version = "0.2", optional = true }
+claxon = { version = "0.4", optional = true }
+flacenc = { version = "0.5", default-features = false, optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["raw_value"] }
 toml = "0.8"

@@ -4,7 +4,7 @@
 # are stable forever and never derived from display names.
 
 [policy]
-version = "0.1.0"
+version = "0.2.0"
 # sha256 over the canonical serialization of the whole package (this file with
 # the digest emptied, LF endings, followed by each signature file path-sorted).
 # The build embeds the computed value in every result and snapshot.
@@ -145,7 +145,10 @@ guard = "Frequency artifacts and upsampling traces that let a classifier flag a 
 # ---------------------------------------------------------------------------
 # Transform catalog. Metadata and container transforms, all confirmable, zero
 # fidelity cost. Applied in a fixed canonical order regardless of flag order.
-# Pixel (PX) and audio (AU) degrade transforms arrive in a later milestone.
+# Pixel (PX) and audio (AU) degrade transforms carry milestone = 2, a pinned
+# parameter table, and the residual tier, because the marks they weaken are
+# blind and nothing proves them gone. A parameter change invalidates the
+# calibration record, since the cell key includes the parameters.
 # ---------------------------------------------------------------------------
 
 [[transform]]
@@ -238,6 +241,142 @@ default = false
 target = "SVG metadata, HTML X-Generator, PDF Producer and Creator, comment banners"
 guard = "Remove generator identity headers from text and document files."
 
+# --- pixel degrade transforms, milestone 2, none confirmable ----------------
+
+[[transform]]
+id = "PX06"
+name = "flip-or-rotate"
+order = 100
+tier = "residual"
+fidelity = "geometry"
+default = false
+milestone = 2
+params = { op = "flip-horizontal" }
+target = "Marks without geometric invariance"
+guard = "Apply the pinned lossless flip. The reference for the signal metric is the input under the same flip, so the signal cost is the encode alone. A flip changes what the picture says, and a rotate buys nothing against a mark whose key is circular in Fourier space. The catalog states this plainly. Rotation is not an easy win."
+
+[[transform]]
+id = "PX03"
+name = "border-crop"
+order = 110
+tier = "residual"
+fidelity = "composition"
+default = false
+milestone = 2
+params = { area = 0.9, anchor = "center" }
+target = "Marks with spatial registration"
+guard = "Crop a centered window that keeps the pinned fraction of the area. The composition change is the cost and the crop floor bounds it. The reference for the signal metric is the input cropped to the same window."
+
+[[transform]]
+id = "PX02"
+name = "resample"
+order = 120
+tier = "residual"
+fidelity = "softening"
+default = true
+milestone = 2
+params = { ratio = 0.9, filter = "lanczos3" }
+target = "Marks tied to the exact pixel grid"
+guard = "Resample both edges by the pinned ratio with a separable Lanczos3 kernel on the scalar path. The geometry cost is the ratio and the profile's resample floor bounds it. The signal cost is measured against the input resampled by the same kernel, so the metric scores only the encode."
+
+[[transform]]
+id = "PX05"
+name = "add-noise"
+order = 130
+tier = "residual"
+fidelity = "grain"
+default = false
+milestone = 2
+params = { sigma = 6.0, distribution = "gaussian" }
+target = "Weak correlation marks"
+guard = "Add Gaussian noise at the pinned sigma to every channel. The seed is the policy base seed combined with the input's hash, so one asset always gets the same grain and two assets never share a pattern. A shared pattern would itself be a correlational mark."
+
+[[transform]]
+id = "PX04"
+name = "requantize"
+order = 140
+tier = "residual"
+fidelity = "banding"
+default = false
+milestone = 2
+params = { bits = 5 }
+target = "LSB marks in the pixel values"
+guard = "Round every channel to the pinned bit depth and scale back to eight bits. Banding on a smooth gradient is the visible cost. Opt in one transform at a time, since stacking the aggressive set lowers quality faster than it lowers detection."
+
+[[transform]]
+id = "PX01"
+name = "re-encode"
+order = 150
+tier = "residual"
+fidelity = "one-encode"
+default = true
+milestone = 2
+params = { jpeg_quality = 92, jpeg_chroma = "4:4:4" }
+target = "LSB marks and fragile high-frequency DCT structure"
+guard = "Decode and encode once at the pinned quality. A JPEG input comes back as a baseline JPEG at quality 92 with 4:4:4 chroma from the crate's own encoder. A PNG or WebP input has no lossy pure Rust encoder in this build, so the emitted format on those inputs awaits the owner's ruling and the plan reports the transform as held."
+
+# --- audio degrade transforms, milestone 2, none confirmable ----------------
+
+[[transform]]
+id = "AU01"
+name = "resample-round-trip"
+order = 200
+tier = "residual"
+fidelity = "mild"
+default = true
+milestone = 2
+params = { filter = "kaiser-sinc", half_taps = 64, beta = 10.0, cutoff = 0.97 }
+target = "Marks tied to the sample grid"
+guard = "Resample to the partner rate and back with a Kaiser-windowed sinc on the scalar path, 44.1 kHz to 48 kHz and 48 kHz to 44.1 kHz, any other rate through 48 kHz. The output keeps the input rate and length, so the reference is the input and the cost sits in the band near Nyquist."
+
+[[transform]]
+id = "AU04"
+name = "eq-tilt"
+order = 210
+tier = "residual"
+fidelity = "tonal"
+default = false
+milestone = 2
+params = { pivot_hz = 1000.0, low_gain_db = 1.5, high_gain_db = -1.5, slope = 1.0 }
+target = "Fixed-band spread-spectrum marks"
+guard = "Tilt the spectrum around the pivot with a low shelf and a high shelf of opposite gain. The tonal change is audible on careful listening and the log-spectral distance measures it directly."
+
+[[transform]]
+id = "AU05"
+name = "time-stretch"
+order = 220
+tier = "residual"
+fidelity = "tempo"
+default = false
+milestone = 2
+params = { factor = 1.03, method = "resample" }
+target = "Echo hiding and time-correlated marks"
+guard = "Change the speed by the pinned factor through the same sinc resampler, which shifts tempo and pitch together. The output has no sample grid in common with the input, so its signal cost is the distance between the time-averaged log power spectra in place of the frame-wise distance."
+
+[[transform]]
+id = "AU03"
+name = "lossy-transcode-round-trip"
+order = 230
+tier = "residual"
+fidelity = "held"
+default = false
+milestone = 2
+params = {}
+target = "Fragile spectral marks"
+guard = "Reserved. No pure Rust MP3 or AAC encoder meets the dependency bar, so this entry holds the id and pins no parameters until the owner rules on the encoder. Selecting it is refused and the plan reports it as held."
+
+[[transform]]
+id = "AU02"
+name = "dither-requantize"
+order = 240
+tier = "residual"
+fidelity = "noise-floor"
+default = true
+milestone = 2
+params = { bits = 16, dither = "tpdf", dither_lsb = 1.0 }
+target = "LSB marks in PCM samples"
+guard = "Requantize to the pinned bit depth with triangular dither at one step. The raised noise floor is the cost. The dither seed derives from the base seed and the input hash, as the PX05 seed does."
+
 # ---------------------------------------------------------------------------
 # Preservation allowlist. MC06 keeps everything here and removes the rest. The
 # keep list is policy data rather than a constant in the source.
@@ -295,9 +434,10 @@ notes = "Metadata plus one re-encode plus one mild resample. Every extra transfo
 media = "image"
 tier = "aggressive"
 milestone = 2
-transforms = ["MC01", "MC02", "MC03", "MC04"]
+transforms = ["MC01", "MC02", "MC03", "MC04", "PX01", "PX02"]
+optional_transforms = ["PX03", "PX04", "PX05", "PX06"]
 budget = "image-aggressive"
-notes = "Visible on close inspection. Each aggressive transform is opt-in individually so stacking is hard to reach by accident."
+notes = "The safe plan plus one opt-in. Visible on close inspection. Each aggressive transform is opt-in individually so stacking is hard to reach by accident, and the calibration scores exactly one opt-in per run."
 
 [profile.audio-metadata]
 media = "audio"
@@ -316,16 +456,17 @@ milestone = 2
 feature = "audio"
 transforms = ["MC05", "MC09", "AU01", "AU02"]
 budget = "audio-safe"
-notes = "Metadata plus one resample round trip."
+notes = "Metadata plus one resample round trip plus dithered requantization to 16 bits."
 
 [profile.audio-aggressive]
 media = "audio"
 tier = "aggressive"
 milestone = 2
 feature = "audio"
-transforms = ["MC05", "MC09"]
+transforms = ["MC05", "MC09", "AU01", "AU02"]
+optional_transforms = ["AU03", "AU04", "AU05"]
 budget = "audio-aggressive"
-notes = "Audible on careful listening."
+notes = "The safe plan plus one opt-in. Audible on careful listening. AU03 is reserved until the owner rules on a lossy encoder."
 
 [profile.repo-files]
 media = "files"
@@ -342,10 +483,11 @@ notes = "Reads the working tree and never rewrites history. Strips invisible Uni
 # the output grid, and a geometry cost, bounded by parameter floors. Both pass
 # or the plan refuses and exits 30.
 #
-# PROVISIONAL numbers. TODO: a corpus calibration pass sets the final ceilings,
-# owner-reviewed, before 0.1.0. The safe and aggressive metric numbers need
-# re-measurement against real generated assets. The direction, the metric
-# choice, the byte-identity metadata gate, and the two-cost split are firm.
+# The metric numbers are set by the calibration record named in [calibration].
+# While that table's status reads provisional, the numbers below are the
+# reasoned defaults and the record carries no qualified cell. The direction,
+# the metric choice, the byte-identity metadata gate, and the two-cost split
+# are firm and no calibration moves them.
 # ---------------------------------------------------------------------------
 
 [budget.image-safe]
@@ -378,6 +520,61 @@ lsd_ceiling_db = 3.0
 resample_ratio_min = 0.50
 time_stretch_min = 0.9
 time_stretch_max = 1.1
+
+# ---------------------------------------------------------------------------
+# Calibration. The fidelity-ceiling harness (examples/calibrate.rs over the
+# calibrate module) writes the derived numbers into the [budget.*] tables and
+# names its record here, so the package digest covers the record transitively.
+# Bands are a stratification of the corpus and never appear here.
+# ---------------------------------------------------------------------------
+
+[calibration]
+record = "policy/calibration.json"
+# status is provisional until a record with qualified cells lands, then
+# calibrated. Every field below except base_seed and the percentile rules is
+# written by the harness.
+status = "provisional"
+record_sha256 = ""
+corpus_manifest_sha256 = ""
+date = ""
+# XORed with the first 8 bytes of sha256(input) to seed PX05 and AU02, so one
+# asset always gets the same noise and two assets never share a pattern.
+base_seed = 0x5eed2026_09020001
+percentile_image = 5
+percentile_audio = 95
+n_min = 40
+# rounding steps: floors round down, the ceiling rounds up
+psnr_step_db = 0.5
+ssim_step = 0.005
+lsd_step_db = 0.05
+
+[calibration.metrics]
+# PSNR over every 8-bit channel after decoding to RGB, alpha included when
+# the reference carries it. Identical buffers score the ceiling below.
+psnr_channels = "rgb-plus-alpha-when-present"
+psnr_identical_db = 120.0
+# SSIM as the mean over non-overlapping 8x8 windows on BT.601 luma, partial
+# edge windows dropped, population variance, the standard constants.
+ssim_window = 8
+ssim_luma = "bt601"
+ssim_k1 = 0.01
+ssim_k2 = 0.03
+# LSD: mono downmix by channel mean, periodic Hann frames, DFT scaled by 1/N,
+# log10 power floored, RMS across bins per frame, mean across frames. A clip
+# under lsd_min_frames frames is unscorable and refuses.
+lsd_frame = 2048
+lsd_hop = 1024
+lsd_window = "hann-periodic"
+lsd_power_scale = "dft-over-n"
+lsd_power_floor = 1e-10
+lsd_min_frames = 4
+lsd_downmix = "mean"
+# AU05 shares no grid with its input, so its cost is the RMS distance between
+# the time-averaged log power spectra, averaged in linear power first.
+au05_metric = "time-averaged-log-power-spectrum"
+# near-blank and near-silent exclusions, kept in the record
+blank_luma_stddev_min = 4.0
+silent_rms_min = 0.001
 
 # ---------------------------------------------------------------------------
 # Guardrails. The transforms are general-purpose, so no technical measure

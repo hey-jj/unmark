@@ -53,11 +53,14 @@ pub fn generate(pkg: &PolicyPackage) -> String {
     for t in &pkg.transforms {
         let _ = writeln!(
             w,
-            "### {} {} (tier {}, fidelity {}, default {})",
-            t.id, t.name, t.tier, t.fidelity, t.default
+            "### {} {} (tier {}, fidelity {}, default {}, milestone {})",
+            t.id, t.name, t.tier, t.fidelity, t.default, t.milestone
         );
         let _ = writeln!(w);
         let _ = writeln!(w, "- target: {}", t.target);
+        if !t.params.is_empty() {
+            let _ = writeln!(w, "- parameters: {}", t.params_rendered());
+        }
         let _ = writeln!(w, "- {}", t.guard);
         let _ = writeln!(w);
     }
@@ -80,6 +83,52 @@ pub fn generate(pkg: &PolicyPackage) -> String {
             p.transforms.join(" "),
             p.budget
         );
+    }
+    let _ = writeln!(w);
+
+    let _ = writeln!(w, "## Fidelity budgets");
+    let _ = writeln!(w);
+    let c = &pkg.calibration;
+    let _ = writeln!(
+        w,
+        "Calibration status: {}. Record: {}. Record sha256: {}. Corpus manifest sha256: {}. Date: {}.",
+        c.status,
+        c.record,
+        if c.record_sha256.is_empty() { "none" } else { &c.record_sha256 },
+        if c.corpus_manifest_sha256.is_empty() { "none" } else { &c.corpus_manifest_sha256 },
+        if c.date.is_empty() { "none" } else { &c.date }
+    );
+    let _ = writeln!(w);
+    let _ = writeln!(w, "| Budget | Kind | Signal floor or ceiling | Geometry |");
+    let _ = writeln!(w, "|---|---|---|---|");
+    for (name, b) in &pkg.budgets {
+        match b {
+            crate::budget::Budget::Exact => {
+                let _ = writeln!(w, "| {name} | exact | byte identity | none |");
+            }
+            crate::budget::Budget::Image {
+                psnr_floor_db,
+                ssim_floor,
+                resample_ratio_min,
+                crop_area_min,
+            } => {
+                let _ = writeln!(
+                    w,
+                    "| {name} | image | PSNR at or above {psnr_floor_db:.1} dB, SSIM at or above {ssim_floor:.3} | resample ratio at or above {resample_ratio_min:.2}, crop keeps at or above {crop_area_min:.2} of the area |"
+                );
+            }
+            crate::budget::Budget::Audio {
+                lsd_ceiling_db,
+                resample_ratio_min,
+                time_stretch_min,
+                time_stretch_max,
+            } => {
+                let _ = writeln!(
+                    w,
+                    "| {name} | audio | log-spectral distance at or below {lsd_ceiling_db:.2} dB | resample ratio at or above {resample_ratio_min:.2}, time-stretch within {time_stretch_min:.2} to {time_stretch_max:.2} |"
+                );
+            }
+        }
     }
     let _ = writeln!(w);
 

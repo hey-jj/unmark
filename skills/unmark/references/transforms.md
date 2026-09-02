@@ -2,8 +2,8 @@
 
 Regenerate with `unmark policy snapshot` after any policy change. Edits here are overwritten.
 
-- policy version: 0.1.0
-- policy digest: sha256:3ff4b6ea05558c964a8c7d8c64f62564cd7bfbea0e819d69dcee0645c1895bc6
+- policy version: 0.2.0
+- policy digest: sha256:6096fee72aa69b4fb9aefa6917190f56a0e96bd30172e3f74c49350de34fcd53
 
 ## What the tool may say about each mark
 
@@ -103,62 +103,138 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 ## Transforms
 
-### MC01 strip-c2pa-manifest (tier removable, fidelity none, default true)
+### MC01 strip-c2pa-manifest (tier removable, fidelity none, default true, milestone 1)
 
 - target: JUMBF in JPEG APP11, PNG caBX, MP4 uuid box, RIFF C2PA chunk
 - Remove the C2PA manifest. Removal is gated at runtime by the ownership assertion and by the third-party-provenance refusal, which exits 40 unless the override flag is passed.
 
-### MC02 strip-xmp (tier removable, fidelity none, default true)
+### MC02 strip-xmp (tier removable, fidelity none, default true, milestone 1)
 
 - target: XMP packet and IPTC block with provenance and generator fields
 - Remove the XMP packet and the IPTC block.
 
-### MC03 strip-exif (tier removable, fidelity none, default true)
+### MC03 strip-exif (tier removable, fidelity none, default true, milestone 1)
 
 - target: EXIF Software, ProcessingSoftware, ImageDescription, timestamps
 - Remove the EXIF IFD.
 
-### MC04 strip-png-text (tier removable, fidelity none, default true)
+### MC04 strip-png-text (tier removable, fidelity none, default true, milestone 1)
 
 - target: PNG tEXt, zTXt, iTXt chunks carrying prompts and workflow JSON
 - Remove the PNG text chunks, the highest-value strip in the catalog, at zero fidelity cost.
 
-### MC05 strip-audio-tags (tier removable, fidelity none, default true)
+### MC05 strip-audio-tags (tier removable, fidelity none, default true, milestone 1)
 
 - target: ID3v1, ID3v2 including PRIV and GEOB, MP4 ilst
 - Remove the audio tags at both the leading and the trailing location. Broadcast production data on the allowlist stays unless an explicit strip asks for it.
 
-### MC09 strip-riff-ancillary (tier removable, fidelity none, default true)
+### MC09 strip-riff-ancillary (tier removable, fidelity none, default true, milestone 1)
 
 - target: LIST INFO and an embedded id3 chunk in WAV, WebP, and AVI
 - Remove the named RIFF ancillary chunks and rebuild the enclosing sizes and even-boundary padding.
 
-### MC06 strip-unlisted-chunks (tier removable, fidelity none, default false)
+### MC06 strip-unlisted-chunks (tier removable, fidelity none, default false, milestone 1)
 
 - target: Any ancillary chunk not on the preservation keep list
 - It reads the preservation keep list and drops every ancillary chunk the list does not name, so the metadata tier stays lossless.
 
-### MC07 strip-invisible-unicode (tier removable, fidelity none, default false)
+### MC07 strip-invisible-unicode (tier removable, fidelity none, default false, milestone 1)
 
 - target: Zero-width characters, variation selectors, unusual spaces in text files
 - Classify each variation-selector run before removing it. A run that parses as a C2PA text wrapper is routed to the manifest path where the refusal applies. A run that looks like a wrapper and fails to parse reports malformed and is left alone. Everything else is removed as invisible-character hygiene.
 
-### MC08 strip-generator-headers (tier removable, fidelity none, default false)
+### MC08 strip-generator-headers (tier removable, fidelity none, default false, milestone 1)
 
 - target: SVG metadata, HTML X-Generator, PDF Producer and Creator, comment banners
 - Remove generator identity headers from text and document files.
+
+### PX06 flip-or-rotate (tier residual, fidelity geometry, default false, milestone 2)
+
+- target: Marks without geometric invariance
+- parameters: op=flip-horizontal
+- Apply the pinned lossless flip. The reference for the signal metric is the input under the same flip, so the signal cost is the encode alone. A flip changes what the picture says, and a rotate buys nothing against a mark whose key is circular in Fourier space. The catalog states this plainly. Rotation is not an easy win.
+
+### PX03 border-crop (tier residual, fidelity composition, default false, milestone 2)
+
+- target: Marks with spatial registration
+- parameters: anchor=center, area=0.9
+- Crop a centered window that keeps the pinned fraction of the area. The composition change is the cost and the crop floor bounds it. The reference for the signal metric is the input cropped to the same window.
+
+### PX02 resample (tier residual, fidelity softening, default true, milestone 2)
+
+- target: Marks tied to the exact pixel grid
+- parameters: filter=lanczos3, ratio=0.9
+- Resample both edges by the pinned ratio with a separable Lanczos3 kernel on the scalar path. The geometry cost is the ratio and the profile's resample floor bounds it. The signal cost is measured against the input resampled by the same kernel, so the metric scores only the encode.
+
+### PX05 add-noise (tier residual, fidelity grain, default false, milestone 2)
+
+- target: Weak correlation marks
+- parameters: distribution=gaussian, sigma=6.0
+- Add Gaussian noise at the pinned sigma to every channel. The seed is the policy base seed combined with the input's hash, so one asset always gets the same grain and two assets never share a pattern. A shared pattern would itself be a correlational mark.
+
+### PX04 requantize (tier residual, fidelity banding, default false, milestone 2)
+
+- target: LSB marks in the pixel values
+- parameters: bits=5
+- Round every channel to the pinned bit depth and scale back to eight bits. Banding on a smooth gradient is the visible cost. Opt in one transform at a time, since stacking the aggressive set lowers quality faster than it lowers detection.
+
+### PX01 re-encode (tier residual, fidelity one-encode, default true, milestone 2)
+
+- target: LSB marks and fragile high-frequency DCT structure
+- parameters: jpeg_chroma=4:4:4, jpeg_quality=92
+- Decode and encode once at the pinned quality. A JPEG input comes back as a baseline JPEG at quality 92 with 4:4:4 chroma from the crate's own encoder. A PNG or WebP input has no lossy pure Rust encoder in this build, so the emitted format on those inputs awaits the owner's ruling and the plan reports the transform as held.
+
+### AU01 resample-round-trip (tier residual, fidelity mild, default true, milestone 2)
+
+- target: Marks tied to the sample grid
+- parameters: beta=10.0, cutoff=0.97, filter=kaiser-sinc, half_taps=64
+- Resample to the partner rate and back with a Kaiser-windowed sinc on the scalar path, 44.1 kHz to 48 kHz and 48 kHz to 44.1 kHz, any other rate through 48 kHz. The output keeps the input rate and length, so the reference is the input and the cost sits in the band near Nyquist.
+
+### AU04 eq-tilt (tier residual, fidelity tonal, default false, milestone 2)
+
+- target: Fixed-band spread-spectrum marks
+- parameters: high_gain_db=-1.5, low_gain_db=1.5, pivot_hz=1000.0, slope=1.0
+- Tilt the spectrum around the pivot with a low shelf and a high shelf of opposite gain. The tonal change is audible on careful listening and the log-spectral distance measures it directly.
+
+### AU05 time-stretch (tier residual, fidelity tempo, default false, milestone 2)
+
+- target: Echo hiding and time-correlated marks
+- parameters: factor=1.03, method=resample
+- Change the speed by the pinned factor through the same sinc resampler, which shifts tempo and pitch together. The output has no sample grid in common with the input, so its signal cost is the distance between the time-averaged log power spectra in place of the frame-wise distance.
+
+### AU03 lossy-transcode-round-trip (tier residual, fidelity held, default false, milestone 2)
+
+- target: Fragile spectral marks
+- Reserved. No pure Rust MP3 or AAC encoder meets the dependency bar, so this entry holds the id and pins no parameters until the owner rules on the encoder. Selecting it is refused and the plan reports it as held.
+
+### AU02 dither-requantize (tier residual, fidelity noise-floor, default true, milestone 2)
+
+- target: LSB marks in PCM samples
+- parameters: bits=16, dither=tpdf, dither_lsb=1.0
+- Requantize to the pinned bit depth with triangular dither at one step. The raised noise floor is the cost. The dither seed derives from the base seed and the input hash, as the PX05 seed does.
 
 ## Profiles
 
 | Profile | Media | Tier | Milestone | Transforms | Budget |
 |---|---|---|---|---|---|
-| audio-aggressive | audio | aggressive | 2 | MC05 MC09 | audio-aggressive |
+| audio-aggressive | audio | aggressive | 2 | MC05 MC09 AU01 AU02 | audio-aggressive |
 | audio-metadata | audio | metadata | 1 | MC01 MC05 MC09 | exact |
 | audio-safe | audio | safe | 2 | MC05 MC09 AU01 AU02 | audio-safe |
-| image-aggressive | image | aggressive | 2 | MC01 MC02 MC03 MC04 | image-aggressive |
+| image-aggressive | image | aggressive | 2 | MC01 MC02 MC03 MC04 PX01 PX02 | image-aggressive |
 | image-metadata | image | metadata | 1 | MC01 MC02 MC03 MC04 | exact |
 | image-safe | image | safe | 2 | MC01 MC02 MC03 MC04 PX01 PX02 | image-safe |
 | repo-files | files | metadata | 1 | MC01 MC07 MC08 | exact |
+
+## Fidelity budgets
+
+Calibration status: provisional. Record: policy/calibration.json. Record sha256: none. Corpus manifest sha256: none. Date: none.
+
+| Budget | Kind | Signal floor or ceiling | Geometry |
+|---|---|---|---|
+| audio-aggressive | audio | log-spectral distance at or below 3.00 dB | resample ratio at or above 0.50, time-stretch within 0.90 to 1.10 |
+| audio-safe | audio | log-spectral distance at or below 1.00 dB | resample ratio at or above 0.90, time-stretch within 1.00 to 1.00 |
+| image-aggressive | image | PSNR at or above 30.0 dB, SSIM at or above 0.900 | resample ratio at or above 0.50, crop keeps at or above 0.85 of the area |
+| image-safe | image | PSNR at or above 38.0 dB, SSIM at or above 0.980 | resample ratio at or above 0.75, crop keeps at or above 1.00 of the area |
 
 ## Guardrails
 
