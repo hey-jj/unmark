@@ -44,6 +44,17 @@ pub fn is_lossy(bytes: &[u8]) -> Result<bool, CodecError> {
 }
 
 pub fn encode_lossless(img: &Image) -> Result<Vec<u8>, CodecError> {
+    encode_lossless_with(img, None, None, None)
+}
+
+/// Lossless VP8L with the metadata chunks the encoder carries: EXIF, XMP,
+/// and an ICC profile, each as the chunk payload.
+pub fn encode_lossless_with(
+    img: &Image,
+    exif: Option<Vec<u8>>,
+    xmp: Option<Vec<u8>>,
+    icc: Option<Vec<u8>>,
+) -> Result<Vec<u8>, CodecError> {
     let color = match img.channels {
         3 => image_webp::ColorType::Rgb8,
         4 => image_webp::ColorType::Rgba8,
@@ -54,6 +65,15 @@ pub fn encode_lossless(img: &Image) -> Result<Vec<u8>, CodecError> {
     let mut params = image_webp::EncoderParams::default();
     params.use_predictor_transform = true;
     enc.set_params(params);
+    if let Some(e) = exif {
+        enc.set_exif_metadata(e);
+    }
+    if let Some(x) = xmp {
+        enc.set_xmp_metadata(x);
+    }
+    if let Some(i) = icc {
+        enc.set_icc_profile(i);
+    }
     enc.encode(&img.data, img.width as u32, img.height as u32, color)
         .map_err(|e| CodecError::Setting(format!("webp: {e}")))?;
     Ok(out)

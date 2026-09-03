@@ -15,17 +15,40 @@ fn the_digest_is_deterministic_and_embedded() {
 }
 
 #[test]
-fn the_package_carries_the_transforms_and_profiles() {
+fn the_package_carries_the_default_run_and_the_held_list() {
     let pkg = policy::load().unwrap();
     for id in [
-        "MC01", "MC02", "MC03", "MC04", "MC05", "MC06", "MC07", "MC08", "MC09",
+        "MC01", "MC02", "MC03", "MC04", "MC05", "MC06", "MC07", "MC08", "MC09", "MC10", "PX01",
+        "PX02", "AU06",
     ] {
         assert!(pkg.transform(id).is_some(), "missing transform {id}");
     }
-    for name in ["image-metadata", "audio-metadata", "repo-files"] {
-        assert!(pkg.profile(name).is_some(), "missing profile {name}");
+    for id in ["PX04", "PX05", "AU01", "AU02", "AU04", "AU05", "AU03"] {
+        assert!(pkg.held.iter().any(|h| h.id == id), "{id} is not held");
+        assert!(pkg.transform(id).is_none(), "{id} must not be runnable");
     }
-    assert_eq!(pkg.guards.len(), 7, "seven guardrails");
+    assert_eq!(pkg.guards.len(), 5);
+    assert!(pkg.transform("PX02").unwrap().cited_effect.is_some());
+    assert!(pkg.mark_class("dwtdct").is_some());
+    assert_eq!(pkg.sanity.status, "proposed");
+}
+
+#[test]
+fn the_shipped_policy_carries_no_calibration_or_profile_vocabulary() {
+    let text = policy::POLICY_TOML.to_ascii_lowercase();
+    for word in [
+        "[profile",
+        "[budget",
+        "band",
+        "cell",
+        "percentile",
+        "residual",
+        "content_class",
+        "i-generated-this",
+        "acknowledge",
+    ] {
+        assert!(!text.contains(word), "policy.toml carries {word:?}");
+    }
 }
 
 #[test]
@@ -47,6 +70,7 @@ fn the_snapshot_generates_and_names_the_digest() {
     let snap = skill::generate(&pkg);
     assert!(snap.contains(&pkg.digest));
     assert!(snap.contains("MC04"));
+    assert!(snap.contains("Held, not runnable"));
     assert!(snap.contains("never emits a clean verdict"));
 }
 

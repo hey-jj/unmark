@@ -11,20 +11,11 @@ use std::path::PathBuf;
 use unmark::asset::Format;
 use unmark::container;
 use unmark::detect;
-use unmark::report::EXIT_UNSUPPORTED;
 use unmark::scan::ScanState;
-use unmark::{clean, policy, Options};
+use unmark::{clean, policy, Options, UnmarkError};
 
 fn pkg() -> policy::PolicyPackage {
     policy::load().expect("policy loads")
-}
-
-fn ack_opts() -> Options {
-    Options {
-        i_generated_this: true,
-        acknowledge_residual: true,
-        ..Default::default()
-    }
 }
 
 fn fixture(name: &str) -> Vec<u8> {
@@ -102,26 +93,10 @@ fn malformed_jpeg_reports_c2pa_as_malformed() {
 }
 
 #[test]
-fn clean_on_a_malformed_jpeg_fails_closed_before_any_rewrite() {
+fn clean_on_a_malformed_jpeg_fails_the_required_inspection() {
     let jpg = malformed_jpeg_with_c2pa_after_corruption();
-    let out = clean(&jpg, "image-metadata", &ack_opts(), &pkg()).unwrap();
-    assert_eq!(
-        out.report.exit_code, EXIT_UNSUPPORTED,
-        "a targeted class in the malformed state must fail closed"
-    );
-    assert!(out.output.is_none(), "nothing may be written");
-    assert!(
-        out.report
-            .actions
-            .iter()
-            .any(|a| a.outcome.contains("malformed")),
-        "the refusal names the malformed class: {:?}",
-        out.report.actions
-    );
-    assert!(
-        !out.report.actions.iter().any(|a| a.outcome == "applied"),
-        "no transform may be recorded as applied"
-    );
+    let err = clean(&jpg, &Options::default(), &pkg()).unwrap_err();
+    assert!(matches!(err, UnmarkError::Inspection(_)), "got {err}");
 }
 
 // --- FLAC --------------------------------------------------------------------
@@ -142,7 +117,7 @@ fn malformed_flac_reports_vorbis_as_malformed_and_refuses_to_rewrite() {
     for spec in [
         container::DropSpec::default(),
         container::DropSpec {
-            unlisted: true,
+            vorbis: true,
             ..Default::default()
         },
     ] {
@@ -158,22 +133,8 @@ fn malformed_flac_reports_vorbis_as_malformed_and_refuses_to_rewrite() {
 #[test]
 fn clean_on_a_malformed_flac_fails_closed() {
     let flac = malformed_flac();
-    let p = pkg();
-    // With the opt-in the malformed vorbis class is targeted: the clean-level
-    // gate fires before any rewrite.
-    let opts = Options {
-        opt_in: vec!["MC06".to_string()],
-        ..ack_opts()
-    };
-    let out = clean(&flac, "audio-metadata", &opts, &p).unwrap();
-    assert_eq!(out.report.exit_code, EXIT_UNSUPPORTED);
-    assert!(out.output.is_none());
-    // Without the opt-in the rewriter's own completeness check refuses.
-    let err = clean(&flac, "audio-metadata", &ack_opts(), &p).unwrap_err();
-    assert!(
-        matches!(err, unmark::UnmarkError::Malformed(_)),
-        "got {err}"
-    );
+    let err = clean(&flac, &Options::default(), &pkg()).unwrap_err();
+    assert!(matches!(err, UnmarkError::Inspection(_)), "got {err}");
 }
 
 // --- ISOBMFF -----------------------------------------------------------------
@@ -201,14 +162,8 @@ fn malformed_mp4_reports_c2pa_as_malformed_and_refuses_to_rewrite() {
 #[test]
 fn clean_on_a_malformed_mp4_fails_closed_before_any_rewrite() {
     let mp4 = malformed_mp4_with_c2pa_after_corruption();
-    let out = clean(&mp4, "audio-metadata", &ack_opts(), &pkg()).unwrap();
-    assert_eq!(out.report.exit_code, EXIT_UNSUPPORTED);
-    assert!(out.output.is_none());
-    assert!(out
-        .report
-        .actions
-        .iter()
-        .any(|a| a.outcome.contains("malformed")));
+    let err = clean(&mp4, &Options::default(), &pkg()).unwrap_err();
+    assert!(matches!(err, UnmarkError::Inspection(_)), "got {err}");
 }
 
 // --- Committed fixtures --------------------------------------------------------
@@ -219,9 +174,8 @@ fn malformed_jpg_fixture_fails_closed() {
     let det = detect::inspect(&jpg);
     assert_eq!(det.get("c2pa").map(|d| d.state), Some(ScanState::Malformed));
     assert_never_absent(&det);
-    let out = clean(&jpg, "image-metadata", &ack_opts(), &pkg()).unwrap();
-    assert_eq!(out.report.exit_code, EXIT_UNSUPPORTED);
-    assert!(out.output.is_none());
+    let err = clean(&jpg, &Options::default(), &pkg()).unwrap_err();
+    assert!(matches!(err, UnmarkError::Inspection(_)), "got {err}");
 }
 
 #[test]

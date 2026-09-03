@@ -504,6 +504,22 @@ impl Biquad {
         }
     }
 
+    /// A second-order highpass from the Audio EQ Cookbook forms, with `q` the
+    /// resonance (1/sqrt(2) for a Butterworth response).
+    pub fn highpass(rate: f64, freq_hz: f64, q: f64) -> Biquad {
+        let w0 = 2.0 * PI * freq_hz / rate;
+        let (sw, cw) = (sin(w0), cos(w0));
+        let alpha = sw / (2.0 * q);
+        let a0 = 1.0 + alpha;
+        Biquad {
+            b0: ((1.0 + cw) / 2.0) / a0,
+            b1: (-(1.0 + cw)) / a0,
+            b2: ((1.0 + cw) / 2.0) / a0,
+            a1: (-2.0 * cw) / a0,
+            a2: (1.0 - alpha) / a0,
+        }
+    }
+
     /// Filter a channel from rest, sequentially.
     pub fn apply(&self, x: &[f64]) -> Vec<f64> {
         let (mut x1, mut x2, mut y1, mut y2) = (0.0, 0.0, 0.0, 0.0);

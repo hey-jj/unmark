@@ -1,7 +1,11 @@
-# unmark canonical policy package. Single source for the transform catalog, the
-# mark classes, the profile stances, the guardrails, and the fidelity budgets.
-# The crate and the skill snapshot both read this file. Transform and mark ids
-# are stable forever and never derived from display names.
+# unmark canonical policy package. Single source for the mark classes, the
+# transform catalog, the held list, the guardrails, and the sanity floor. The
+# crate and the skill snapshot both read this file. Transform and mark ids are
+# stable forever and never derived from display names.
+#
+# The posture: strip every mark unmark can find by default, keep provenance only
+# where a well-formed C2PA claim identifies a camera or sensor capture with no
+# later generative action, and let every policy flag turn a strip off.
 
 [policy]
 version = "0.2.0"
@@ -12,7 +16,7 @@ digest = ""
 
 [semantics]
 # scan_state: the state a detector reports per mark class.
-#   confirmed_present  found, with a location
+#   confirmed_present  found, with a location or a decoded payload
 #   confirmed_absent   scanned exhaustively in a supported container, not present
 #   unsupported_format the container is not one this build scans for the class
 #   malformed          the structure was found and would not parse, presence unknown
@@ -21,13 +25,11 @@ digest = ""
 # supported set. The supported set is a single constant in the code. This list
 # mirrors it for the reader and the code is the authority.
 supported_containers = ["jpeg", "png", "webp", "riff-wav", "isobmff", "flac", "svg", "html", "text"]
-# tier: the honesty level of a finding.
-#   removable  a confirmable mark is present and the profile strips it. Gates
-#              until removed and re-proven gone.
-#   residual   a blind mark class cannot be confirmed either way. Gates until
-#              acknowledged.
-#   note       instrumentation. Never gates.
-# honesty class of a mark: confirmable, blind, unaddressed.
+# honesty class of a mark: confirmable, blind, unaddressed. A confirmable mark
+# has a structural address or a public decoder, so removal is provable. A blind
+# mark is keyed and this offline build cannot see it, so the report names the
+# transform applied and cites what is known about survival. An unaddressed mark
+# is named so its absence from the action list is not read as its absence.
 
 # ---------------------------------------------------------------------------
 # Mark classes
@@ -37,8 +39,7 @@ supported_containers = ["jpeg", "png", "webp", "riff-wav", "isobmff", "flac", "s
 id = "c2pa"
 honesty = "confirmable"
 label = "C2PA manifest"
-guard = "A Content Credentials manifest. The parse reads the JUMBF box header and the claim generator. It does not verify the signature, so a refusal keys on the manifest's content: capture actions, camera signers, and publisher names."
-judge = "The manifest records who made this asset and how. Keeping it proves the asset is yours. Confirm the asset is your own generative output before removing it."
+guard = "A Content Credentials manifest. The parse reads the JUMBF box and the claim's content. It does not verify the signature. A manifest is stripped by default. It is kept only under the certified-capture rule or under --keep c2pa."
 
 [[mark_class]]
 id = "png_text"
@@ -50,7 +51,7 @@ guard = "A tEXt, iTXt, or zTXt chunk. Local generation pipelines write the promp
 id = "exif"
 honesty = "confirmable"
 label = "EXIF metadata"
-guard = "EXIF Software, ProcessingSoftware, ImageDescription, UserComment, and timestamps. A generative tool writes its name into Software."
+guard = "EXIF Software, ProcessingSoftware, ImageDescription, UserComment, camera fields, and timestamps. A generative tool writes its name into Software. Camera-style EXIF without a qualifying C2PA claim is uncertain and is stripped by default, with the hint named in the report."
 
 [[mark_class]]
 id = "xmp"
@@ -74,13 +75,13 @@ guard = "An ID3v1 or ID3v2 tag. TXXX, COMM, PRIV, and GEOB frames carry tool ide
 id = "vorbis"
 honesty = "confirmable"
 label = "Vorbis comment"
-guard = "A Vorbis comment block. It routinely holds legitimate credits and chapter structure, so it stays on the preservation allowlist unless an explicit strip asks for it."
+guard = "A Vorbis comment block. It carries the encoder tag and any tool identity. The whole block is stripped by default. Use --keep vorbis to preserve credits and chapters."
 
 [[mark_class]]
 id = "ilst"
 honesty = "confirmable"
 label = "MP4 ilst tag"
-guard = "An MP4 ilst metadata atom carrying tool and encoder identity."
+guard = "An MP4 ilst metadata atom carrying tool and encoder identity. The atom is removed and the sample offset tables are corrected by the removed byte count."
 
 [[mark_class]]
 id = "riff_ancillary"
@@ -95,34 +96,51 @@ label = "invisible Unicode"
 guard = "Zero-width characters, variation selectors, and unusual spaces in a text file. A variation-selector run can also carry a C2PA text wrapper, so a run is classified before it is removed and a wrapper is routed to the manifest path."
 
 [[mark_class]]
+id = "dwtdct"
+honesty = "confirmable"
+label = "dwtDct pixel mark"
+guard = "The keyless dwtDct mark from the invisible-watermark package, embedded by the CompVis Stable Diffusion script as the 136-bit text StableDiffusionV1 and by the Diffusers SDXL pipeline as the fixed 48-bit payload B3EC907BB19E. The decoder reads the U channel after a BGR to YUV conversion, takes one level of Haar wavelet, quantizes the largest non-first value of each 4x4 low-low block with step 36, and majority-votes the repetitions. Presence is a Hamming agreement with a known payload at or above the declared threshold. The resize at the pinned ratio removes it."
+citation = "https://github.com/ShieldMnt/invisible-watermark/wiki/Frequency-Methods"
+
+[[mark_class]]
 id = "synthid_image"
 honesty = "blind"
 label = "SynthID-Image"
-guard = "A keyed statistical mark in the pixel data. This build is offline and carries no authorized detector, so it cannot see the mark, cannot report its presence, and cannot report its absence. SynthID-Image survives the entire safe catalog, holding above 99 percent detection through re-encode, resize, crop, and noise."
+guard = "A keyed statistical mark in the pixel data of every image the Gemini API generates, vendor-stated. This offline build carries no authorized detector, so it cannot report presence or absence. The default run is applied and the mark is reported as surviving."
+survives = "applied, survives. The vendor states every Gemini API image carries it. Conventional-transform survival figures exist only for the external SynthID-O variant: worst-category detection 99.99 percent under quality, 99.97 under spatial, and 99.96 under noise transforms at 0.1 percent false positives. Production figures are not stated."
+citation = "https://ai.google.dev/gemini-api/docs/image-generation and https://arxiv.org/html/2510.09263"
 
 [[mark_class]]
 id = "tree_ring"
 honesty = "blind"
 label = "Tree-Ring"
-guard = "A keyed mark in the low-frequency Fourier structure of the initial noise. Compression and resampling preserve low frequencies, and a circular Fourier key rotates with the picture, so the mark holds through the safe catalog. This build cannot see it."
+guard = "A keyed mark in the low-frequency Fourier structure of the initial noise. This build cannot see it."
+survives = "survives the default run. The cited figures show an effect only from rotation and blur, at average detection 0.375 and 0.563 at 0.1 percent false positives, and their tested strengths are not stated, so neither is runnable."
+citation = "https://arxiv.org/html/2401.08573"
 
 [[mark_class]]
 id = "stable_signature"
 honesty = "blind"
 label = "Stable Signature"
-guard = "A keyed mark decoded from the pixels. It survives severe cropping, detecting in about 84 percent of images after a crop that keeps a tenth of the pixels. This build cannot see it."
+guard = "A keyed mark decoded from the pixels. This build cannot see it."
+survives = "survives the default run. It detects in 84 percent of images after a crop that keeps a tenth of the pixels at a false-positive rate of one in a billion, which is survival, not an effect."
+citation = "https://arxiv.org/html/2303.15435"
 
 [[mark_class]]
 id = "synthid_audio"
 honesty = "blind"
 label = "SynthID-Audio"
-guard = "A keyed mark in the audio samples, specified to survive MP3 compression, added noise, and speed change. The same offline limit as SynthID-Image applies: no authorized detector, so presence and absence both go unreported."
+guard = "A keyed mark in the audio samples. This build cannot see it."
+survives = "survives the default run. The vendor states it survives added noise, MP3 compression, and speed changes."
+citation = "https://deepmind.google/models/synthid/"
 
 [[mark_class]]
 id = "audioseal"
 honesty = "blind"
 label = "AudioSeal"
-guard = "A neural audio mark reporting near-perfect accuracy after resampling and after MP3 and AAC transcoding. This build cannot see it."
+guard = "A neural audio mark. This build cannot see it."
+survives = "the 1500 Hz highpass is the one cited transform with an effect: detection accuracy 0.61, true and false positive rates 0.82 and 0.60. The mark is reported as applied against with that figure, never as removed."
+citation = "https://arxiv.org/html/2401.17264"
 
 [[mark_class]]
 id = "visible_overlay"
@@ -143,31 +161,27 @@ label = "generative fingerprint"
 guard = "Frequency artifacts and upsampling traces that let a classifier flag a generated image with no watermark involved. No transform here touches them."
 
 # ---------------------------------------------------------------------------
-# Transform catalog. Metadata and container transforms, all confirmable, zero
-# fidelity cost. Applied in a fixed canonical order regardless of flag order.
-# Pixel (PX) and audio (AU) degrade transforms carry milestone = 2, a pinned
-# parameter table, and the residual tier, because the marks they weaken are
-# blind and nothing proves them gone. A parameter change invalidates the
-# calibration record, since the cell key includes the parameters.
+# Transform catalog. Every entry here runs by default on the containers it
+# applies to. `kind` is metadata, pixel, audio, or text. A degrade transform
+# carries the cited effect and strength it runs at. Applied in a fixed
+# canonical order regardless of flag order.
 # ---------------------------------------------------------------------------
 
 [[transform]]
 id = "MC01"
 name = "strip-c2pa-manifest"
 order = 10
-tier = "removable"
-fidelity = "none"
-default = true
-target = "JUMBF in JPEG APP11, PNG caBX, MP4 uuid box, RIFF C2PA chunk"
-guard = "Remove the C2PA manifest. Removal is gated at runtime by the ownership assertion and by the third-party-provenance refusal, which exits 40 unless the override flag is passed."
+kind = "metadata"
+applies = ["jpeg", "png", "webp", "riff-wav", "isobmff", "text", "svg", "html"]
+target = "JUMBF in JPEG APP11, PNG caBX, MP4 uuid box, RIFF C2PA chunk, a C2PA text wrapper"
+guard = "Remove the C2PA manifest. The certified-capture rule keeps it when the claim identifies a camera or sensor capture with no later generative action, and --strip-capture overrides that keep. A publisher manifest without a capture action is stripped by default."
 
 [[transform]]
 id = "MC02"
 name = "strip-xmp"
 order = 20
-tier = "removable"
-fidelity = "none"
-default = true
+kind = "metadata"
+applies = ["jpeg", "png", "webp"]
 target = "XMP packet and IPTC block with provenance and generator fields"
 guard = "Remove the XMP packet and the IPTC block."
 
@@ -175,19 +189,17 @@ guard = "Remove the XMP packet and the IPTC block."
 id = "MC03"
 name = "strip-exif"
 order = 30
-tier = "removable"
-fidelity = "none"
-default = true
-target = "EXIF Software, ProcessingSoftware, ImageDescription, timestamps"
-guard = "Remove the EXIF IFD."
+kind = "metadata"
+applies = ["jpeg", "png", "webp"]
+target = "EXIF Software, ProcessingSoftware, ImageDescription, camera fields, timestamps"
+guard = "Remove the EXIF IFD. Camera-style EXIF without a qualifying C2PA claim is uncertain and goes with everything else. Use --keep exif to preserve it."
 
 [[transform]]
 id = "MC04"
 name = "strip-png-text"
 order = 40
-tier = "removable"
-fidelity = "none"
-default = true
+kind = "metadata"
+applies = ["png"]
 target = "PNG tEXt, zTXt, iTXt chunks carrying prompts and workflow JSON"
 guard = "Remove the PNG text chunks, the highest-value strip in the catalog, at zero fidelity cost."
 
@@ -195,191 +207,161 @@ guard = "Remove the PNG text chunks, the highest-value strip in the catalog, at 
 id = "MC05"
 name = "strip-audio-tags"
 order = 50
-tier = "removable"
-fidelity = "none"
-default = true
+kind = "metadata"
+applies = ["riff-wav", "mp3", "isobmff"]
 target = "ID3v1, ID3v2 including PRIV and GEOB, MP4 ilst"
-guard = "Remove the audio tags at both the leading and the trailing location. Broadcast production data on the allowlist stays unless an explicit strip asks for it."
+guard = "Remove the audio tags at both the leading and the trailing location, and the MP4 ilst atom with its sample offsets corrected."
 
 [[transform]]
 id = "MC09"
 name = "strip-riff-ancillary"
 order = 60
-tier = "removable"
-fidelity = "none"
-default = true
+kind = "metadata"
+applies = ["riff-wav", "webp"]
 target = "LIST INFO and an embedded id3 chunk in WAV, WebP, and AVI"
 guard = "Remove the named RIFF ancillary chunks and rebuild the enclosing sizes and even-boundary padding."
+
+[[transform]]
+id = "MC10"
+name = "strip-vorbis-comment"
+order = 65
+kind = "metadata"
+applies = ["flac"]
+target = "The FLAC Vorbis comment block, encoder tag included"
+guard = "Remove the whole Vorbis comment block and rebuild the last-block flag. Use --keep vorbis to preserve credits and chapters."
 
 [[transform]]
 id = "MC06"
 name = "strip-unlisted-chunks"
 order = 70
-tier = "removable"
-fidelity = "none"
-default = false
-target = "Any ancillary chunk not on the preservation keep list"
-guard = "It reads the preservation keep list and drops every ancillary chunk the list does not name, so the metadata tier stays lossless."
+kind = "metadata"
+applies = ["png", "webp", "riff-wav", "flac"]
+target = "Any ancillary chunk not required for decoding and valid output"
+guard = "Drop every ancillary chunk the keep list does not name. The keep list holds only what decoding and valid output require, so a color profile and a colorimetry chunk stay and everything else goes."
 
 [[transform]]
 id = "MC07"
 name = "strip-invisible-unicode"
 order = 80
-tier = "removable"
-fidelity = "none"
-default = false
+kind = "text"
+applies = ["text", "svg", "html"]
 target = "Zero-width characters, variation selectors, unusual spaces in text files"
-guard = "Classify each variation-selector run before removing it. A run that parses as a C2PA text wrapper is routed to the manifest path where the refusal applies. A run that looks like a wrapper and fails to parse reports malformed and is left alone. Everything else is removed as invisible-character hygiene."
+guard = "Classify each variation-selector run before removing it. A run that parses as a C2PA text wrapper is routed to the manifest path. A run that looks like a wrapper and fails to parse reports malformed and is left alone. Everything else is removed as invisible-character hygiene."
 
 [[transform]]
 id = "MC08"
 name = "strip-generator-headers"
 order = 90
-tier = "removable"
-fidelity = "none"
-default = false
+kind = "text"
+applies = ["text", "svg", "html"]
 target = "SVG metadata, HTML X-Generator, PDF Producer and Creator, comment banners"
 guard = "Remove generator identity headers from text and document files."
 
-# --- pixel degrade transforms, milestone 2, none confirmable ----------------
-
-[[transform]]
-id = "PX06"
-name = "flip-or-rotate"
-order = 100
-tier = "residual"
-fidelity = "geometry"
-default = false
-milestone = 2
-params = { op = "flip-horizontal" }
-target = "Marks without geometric invariance"
-guard = "Apply the pinned lossless flip. The reference for the signal metric is the input under the same flip, so the signal cost is the encode alone. A flip changes what the picture says, and a rotate buys nothing against a mark whose key is circular in Fourier space. The catalog states this plainly. Rotation is not an easy win."
-
-[[transform]]
-id = "PX03"
-name = "border-crop"
-order = 110
-tier = "residual"
-fidelity = "composition"
-default = false
-milestone = 2
-params = { area = 0.9, anchor = "center" }
-target = "Marks with spatial registration"
-guard = "Crop a centered window that keeps the pinned fraction of the area. The composition change is the cost and the crop floor bounds it. The reference for the signal metric is the input cropped to the same window."
-
 [[transform]]
 id = "PX02"
-name = "resample"
+name = "resize"
 order = 120
-tier = "residual"
-fidelity = "softening"
-default = true
-milestone = 2
-params = { ratio = 0.9, filter = "lanczos3" }
-target = "Marks tied to the exact pixel grid"
-guard = "Resample both edges by the pinned ratio with a separable Lanczos3 kernel on the scalar path. The geometry cost is the ratio and the profile's resample floor bounds it. The signal cost is measured against the input resampled by the same kernel, so the metric scores only the encode."
-
-[[transform]]
-id = "PX05"
-name = "add-noise"
-order = 130
-tier = "residual"
-fidelity = "grain"
-default = false
-milestone = 2
-params = { sigma = 6.0, distribution = "gaussian" }
-target = "Weak correlation marks"
-guard = "Add Gaussian noise at the pinned sigma to every color channel, alpha untouched. The seed is the policy base seed combined with the input's hash, so one asset always gets the same grain and two assets never share a pattern. A shared pattern would itself be a correlational mark."
-
-[[transform]]
-id = "PX04"
-name = "requantize"
-order = 140
-tier = "residual"
-fidelity = "banding"
-default = false
-milestone = 2
-params = { bits = 5 }
-target = "LSB marks in the pixel values"
-guard = "Round every channel to the pinned bit depth and scale back to eight bits. Banding on a smooth gradient is the visible cost. Opt in one transform at a time, since stacking the aggressive set lowers quality faster than it lowers detection."
+kind = "pixel"
+applies = ["png", "jpeg", "webp"]
+params = { ratio = 0.95, filter = "lanczos3" }
+strength = "both edges to 95 percent, Lanczos3 on the scalar path"
+cited_effect = "dwtDct fails to decode after a 50 percent resize. The sweep over the efficacy fixtures found no fixture decoding at any ratio from 99.5 percent down, and 95 percent is the mildest ratio that changes both dimensions of every image at or above 10 pixels, so the resample can never round back onto the input grid."
+citation = "https://github.com/ShieldMnt/invisible-watermark"
+target = "The dwtDct pixel mark"
+guard = "Resample both edges by the pinned ratio with a separable Lanczos3 kernel. This is the removal path for the dwtDct mark, and re-inspection proves the payload no longer decodes. Use --no-degrade or --keep PX02 to skip it."
 
 [[transform]]
 id = "PX01"
 name = "re-encode"
 order = 150
-tier = "residual"
-fidelity = "one-encode"
-default = true
-milestone = 2
+kind = "pixel"
+applies = ["jpeg"]
 params = { jpeg_quality = 92, jpeg_chroma = "4:4:4" }
-target = "LSB marks and fragile high-frequency DCT structure"
-guard = "Decode and encode once at the pinned quality with the crate's own baseline JPEG encoder, quality 92 and 4:4:4 chroma. A JPEG input always comes back as JPEG. A PNG or WebP input comes back as JPEG when the decoded image is opaque. When it carries alpha, the re-encode is skipped and the plan and report say so in one line, since no lossy encoder in this build keeps alpha and flattening it would invent a background. The output container is named in the report, and clean refuses an output path whose extension contradicts it."
-
-# --- audio degrade transforms, milestone 2, none confirmable ----------------
-
-[[transform]]
-id = "AU01"
-name = "resample-round-trip"
-order = 200
-tier = "residual"
-fidelity = "mild"
-default = true
-milestone = 2
-params = { filter = "kaiser-sinc", half_taps = 64, beta = 10.0, cutoff = 0.97 }
-target = "Marks tied to the sample grid"
-guard = "Resample to the partner rate and back with a Kaiser-windowed sinc on the scalar path, 44.1 kHz to 48 kHz and 48 kHz to 44.1 kHz, any other rate through 48 kHz. The output keeps the input rate and length, so the reference is the input and the cost sits in the band near Nyquist."
+strength = "quality 92, 4:4:4 chroma, the crate's own baseline encoder"
+cited_effect = "none claimed. A JPEG has no lossless write, so this is the same-container path for a JPEG input and the pin is reported in the result."
+target = "The container write for a JPEG input"
+guard = "Write a JPEG input back as a baseline JPEG at the pinned quality. No removal is claimed for the encode itself. A PNG or WebP input is written losslessly in its own container."
 
 [[transform]]
-id = "AU04"
-name = "eq-tilt"
-order = 210
-tier = "residual"
-fidelity = "tonal"
-default = false
-milestone = 2
-params = { pivot_hz = 1000.0, low_gain_db = 1.5, high_gain_db = -1.5, slope = 1.0 }
-target = "Fixed-band spread-spectrum marks"
-guard = "Tilt the spectrum around the pivot with a low shelf and a high shelf of opposite gain. The tonal change is audible on careful listening and the log-spectral distance measures it directly."
-
-[[transform]]
-id = "AU05"
-name = "speed-change"
-order = 220
-tier = "residual"
-fidelity = "tempo"
-default = false
-milestone = 2
-params = { factor = 1.03, method = "resample" }
-target = "Echo hiding and time-correlated marks"
-guard = "A speed change, not a tempo-only stretch. Change the speed by the pinned factor through the same sinc resampler, which shifts tempo and pitch together. The output has no sample grid in common with the input, so its signal cost is the distance between the time-averaged log power spectra in place of the frame-wise distance."
-
-[[transform]]
-id = "AU03"
-name = "lossy-transcode-round-trip"
-order = 230
-tier = "residual"
-fidelity = "held"
-default = false
-milestone = 2
-params = {}
-target = "Fragile spectral marks"
-guard = "Reserved and not runnable in this version. No pure Rust MP3 or AAC encoder meets the dependency bar, so the entry holds the id, pins no parameters, and sits in no profile. A plan that names it is refused and reported as held."
-
-[[transform]]
-id = "AU02"
-name = "dither-requantize"
-order = 240
-tier = "residual"
-fidelity = "noise-floor"
-default = true
-milestone = 2
-params = { bits = 16, dither = "tpdf", dither_lsb = 1.0 }
-target = "LSB marks in PCM samples"
-guard = "Requantize to the pinned bit depth with triangular dither at one step. The raised noise floor is the cost. The dither seed derives from the base seed and the input hash, as the PX05 seed does."
+id = "AU06"
+name = "highpass"
+order = 250
+kind = "audio"
+applies = ["riff-wav", "flac"]
+params = { cutoff_hz = 1500.0, order = 2 }
+strength = "second-order highpass at 1500 Hz"
+cited_effect = "AudioSeal detection accuracy falls to 0.61 under a 1500 Hz highpass, true and false positive rates 0.82 and 0.60."
+citation = "https://arxiv.org/html/2401.17264"
+target = "AudioSeal"
+guard = "Apply the highpass on the scalar path and write the samples back as emitted, integer or float32. The report names the cited figure and never says the mark was removed. Use --no-degrade or --keep AU06 to skip it."
 
 # ---------------------------------------------------------------------------
-# Preservation allowlist. MC06 keeps everything here and removes the rest. The
-# keep list is policy data rather than a constant in the source.
+# Held transforms. Each has no flag, does not run, and appears under "cannot
+# do" with its reason.
+# ---------------------------------------------------------------------------
+
+[[held]]
+id = "PX01-lossy"
+name = "re-encode as a degrade on lossy input"
+reason = "no cited effect on any mark"
+
+[[held]]
+id = "PX03"
+name = "border-crop"
+reason = "no cited figure shows an effect at a stated strength. A crop keeping a tenth of the pixels leaves Stable Signature at 84 percent detection."
+
+[[held]]
+id = "PX04"
+name = "requantize"
+reason = "no cited effect on any mark"
+
+[[held]]
+id = "PX05"
+name = "add-noise"
+reason = "no cited effect on any mark"
+
+[[held]]
+id = "PX06"
+name = "rotate-or-flip"
+reason = "no cited figure shows an effect at a stated strength. Tree-Ring average detection 0.375 under rotation is cited without its tested strength."
+
+[[held]]
+id = "PX07"
+name = "blur"
+reason = "no cited figure shows an effect at a stated strength. Tree-Ring average detection 0.563 under blur is cited without its tested strength."
+
+[[held]]
+id = "PX08"
+name = "jpeg-quality-degrade"
+reason = "no cited figure shows an effect. Tree-Ring AUC 0.999 at quality 25 against 1.000 clean is survival."
+
+[[held]]
+id = "AU01"
+name = "resample-round-trip"
+reason = "no cited effect on any mark"
+
+[[held]]
+id = "AU02"
+name = "dither-requantize"
+reason = "no cited effect on any mark"
+
+[[held]]
+id = "AU03"
+name = "lossy-transcode-round-trip"
+reason = "dropped from this release. No pure Rust MP3 or AAC encoder meets the dependency bar."
+
+[[held]]
+id = "AU04"
+name = "eq-tilt"
+reason = "no cited effect on any mark"
+
+[[held]]
+id = "AU05"
+name = "speed-change"
+reason = "no cited effect on any mark"
+
+# ---------------------------------------------------------------------------
+# Keep list for MC06. Only what decoding and valid output require.
 # ---------------------------------------------------------------------------
 
 [allowlist]
@@ -394,229 +376,47 @@ keep = [
   "dimensions",
   "orientation",
   "pixel-aspect",
-  "resolution",
-  "timing",
-  "duration",
-  "sample-rate",
-  "chapters",
   "alpha",
   "transparency",
-  "bext",
-  "ixml",
-  "vorbis-credits",
 ]
 
 # ---------------------------------------------------------------------------
-# Profiles. The asset class and the fidelity the user trades, fused into one
-# axis. Milestone 1 ships the metadata-tier profiles. The safe and aggressive
-# profiles carry their budgets here so the machinery reads them, and select as
-# unavailable until the pixel and audio transforms ship.
+# Sanity floor. The one refusal in the run: an output whose signal fidelity
+# against the grid-matched reference falls below this is a broken encode, and
+# clean exits 50 with nothing written. The values are PROPOSED to the owner
+# with the fixture evidence in the release report.
 # ---------------------------------------------------------------------------
 
-[profile.image-metadata]
-media = "image"
-tier = "metadata"
-milestone = 1
-transforms = ["MC01", "MC02", "MC03", "MC04"]
-optional_transforms = ["MC06"]
-budget = "exact"
-notes = "Every claim provable and no fidelity cost. Encoded image data comes out byte-identical. Most people should run this and stop."
-
-[profile.image-safe]
-media = "image"
-tier = "safe"
-milestone = 2
-transforms = ["MC01", "MC02", "MC03", "MC04", "PX01", "PX02"]
-budget = "image-safe"
-notes = "Metadata plus one re-encode plus one mild resample. Every extra transform is opt-in and individually named."
-
-[profile.image-aggressive]
-media = "image"
-tier = "aggressive"
-milestone = 2
-transforms = ["MC01", "MC02", "MC03", "MC04", "PX01", "PX02"]
-optional_transforms = ["PX03", "PX04", "PX05", "PX06"]
-budget = "image-aggressive"
-notes = "The safe plan plus one opt-in. Visible on close inspection. Each aggressive transform is opt-in individually so stacking is hard to reach by accident, and the calibration scores exactly one opt-in per run."
-
-[profile.audio-metadata]
-media = "audio"
-tier = "metadata"
-milestone = 1
-feature = "audio"
-transforms = ["MC01", "MC05", "MC09"]
-optional_transforms = ["MC06"]
-budget = "exact"
-notes = "Sample data byte-identical. On WAV and standalone streams it removes ID3 tags and the named RIFF ancillary chunks at both file locations. On FLAC the Vorbis comment, including the encoder tag, is preserved by default and comes off only under the MC06 opt-in, so a default FLAC pass removes no tags and an encoder tag survives it. The 0.1.x target is a field-selective symmetric default: a default pass removes only tool-identity fields from both blocks, the ISFT and IENG-class fields in LIST INFO and the ENCODER, ENCODED_BY, and generator-naming COMMENT fields in Vorbis, keeps credits and chapters, and MC06 removes the whole block."
-
-[profile.audio-safe]
-media = "audio"
-tier = "safe"
-milestone = 2
-feature = "audio"
-transforms = ["MC05", "MC09", "AU01", "AU02"]
-budget = "audio-safe"
-notes = "Metadata plus one resample round trip plus dithered requantization to 16 bits."
-
-[profile.audio-aggressive]
-media = "audio"
-tier = "aggressive"
-milestone = 2
-feature = "audio"
-transforms = ["MC05", "MC09", "AU01", "AU02"]
-optional_transforms = ["AU04", "AU05"]
-budget = "audio-aggressive"
-notes = "The safe plan plus one opt-in. Audible on careful listening. AU03 is reserved and not runnable in this version."
-
-[profile.repo-files]
-media = "files"
-tier = "metadata"
-milestone = 1
-transforms = ["MC01", "MC07", "MC08"]
-budget = "exact"
-notes = "Reads the working tree and never rewrites history. Strips invisible Unicode and generator headers from files as they sit on disk."
+[sanity]
+status = "proposed"
+psnr_floor_db = 25.0
+ssim_floor = 0.6
 
 # ---------------------------------------------------------------------------
-# Fidelity budgets. Metadata tiers gate on byte-identity of the pixel or sample
-# stream. Image tiers gate on PSNR and SSIM floors, audio on a log-spectral
-# distance ceiling. The budget splits into a signal-fidelity cost, measured on
-# the output grid, and a geometry cost, bounded by parameter floors. Both pass
-# or the plan refuses and exits 30.
-#
-# The metric numbers are set by the calibration record named in [calibration].
-# While that table's status reads provisional, the numbers below are the
-# reasoned defaults and the record carries no qualified cell. The direction,
-# the metric choice, the byte-identity metadata gate, and the two-cost split
-# are firm and no calibration moves them.
+# Guardrails.
 # ---------------------------------------------------------------------------
-
-[budget.image-safe]
-kind = "image"
-# signal-fidelity floors, measured against the input resampled to the output grid
-psnr_floor_db = 38.0
-ssim_floor = 0.98
-# geometry floors, bounds on the transform input
-resample_ratio_min = 0.75
-crop_area_min = 1.0
-
-[budget.image-aggressive]
-kind = "image"
-psnr_floor_db = 30.0
-ssim_floor = 0.9
-resample_ratio_min = 0.50
-crop_area_min = 0.85
-
-[budget.audio-safe]
-kind = "audio"
-# log-spectral-distance ceiling in dB, RMS over frames of the log power spectrum
-lsd_ceiling_db = 1.0
-resample_ratio_min = 0.90
-time_stretch_min = 1.0
-time_stretch_max = 1.0
-
-[budget.audio-aggressive]
-kind = "audio"
-lsd_ceiling_db = 3.0
-resample_ratio_min = 0.50
-time_stretch_min = 0.9
-time_stretch_max = 1.1
-
-# ---------------------------------------------------------------------------
-# Calibration. The fidelity-ceiling harness (examples/calibrate.rs over the
-# calibrate module) writes the derived numbers into the [budget.*] tables and
-# names its record here, so the package digest covers the record transitively.
-# Bands are a stratification of the corpus and never appear here.
-# ---------------------------------------------------------------------------
-
-[calibration]
-record = "policy/calibration.json"
-# status is provisional until a record with qualified cells lands, then
-# calibrated. Every field below except base_seed and the percentile rules is
-# written by the harness.
-status = "provisional"
-record_sha256 = "3d7b45e16b53ae39cfe0d30547a57a833e4b34cf31a159914f0b712a36be742d"
-corpus_manifest_sha256 = "2b2c8cd9c78f0d15ea20b43a173e0fdb391436ad3d5ffaa6ff2f9a23dc9a584f"
-date = "2026-09-03"
-# XORed with the first 8 bytes of sha256(input) to seed PX05 and AU02, so one
-# asset always gets the same noise and two assets never share a pattern.
-base_seed = 0x5eed2026_09020001
-percentile_image = 5
-percentile_audio = 95
-n_min = 40
-# every required content class for the medium must reach class_min in a
-# cell before it qualifies; a cell at n_min without that coverage is
-# count-qualified and sets nothing
-class_min = 10
-# rounding steps: floors round down, the ceiling rounds up
-psnr_step_db = 0.5
-ssim_step = 0.005
-lsd_step_db = 0.05
-
-[calibration.metrics]
-# PSNR over every 8-bit channel after decoding to RGB, alpha included when
-# the reference carries it. Identical buffers score the ceiling below.
-psnr_channels = "rgb-plus-alpha-when-present"
-psnr_identical_db = 120.0
-# SSIM as the mean over non-overlapping 8x8 windows on BT.601 luma, partial
-# edge windows dropped, population variance, the standard constants.
-ssim_window = 8
-ssim_luma = "bt601"
-ssim_k1 = 0.01
-ssim_k2 = 0.03
-# LSD: mono downmix by channel mean, periodic Hann frames, DFT scaled by 1/N,
-# log10 power floored, RMS across bins per frame, mean across frames. A clip
-# under lsd_min_frames frames is unscorable and refuses.
-lsd_frame = 2048
-lsd_hop = 1024
-lsd_window = "hann-periodic"
-lsd_power_scale = "dft-over-n"
-lsd_power_floor = 1e-10
-lsd_min_frames = 4
-lsd_downmix = "mean"
-# AU05 shares no grid with its input, so its cost is the RMS distance between
-# the time-averaged log power spectra, averaged in linear power first.
-au05_metric = "time-averaged-log-power-spectrum"
-# near-blank and near-silent exclusions, kept in the record
-blank_luma_stddev_min = 4.0
-silent_rms_min = 0.001
-
-# ---------------------------------------------------------------------------
-# Guardrails. The transforms are general-purpose, so no technical measure
-# prevents misuse. The goal is to make misuse hard to reach by accident and
-# hard-stop the strong-signal cases.
-# ---------------------------------------------------------------------------
-
-[[guard]]
-id = "G1"
-name = "ownership-assertion"
-guard = "clean requires the ownership flag. Its absence is a usage error naming the scope. Anyone can type the flag, and that is the point. Nobody strips provenance without stating the asset is theirs. The assertion is itself positive evidence of generative origin, so a clean run always carries a residual to acknowledge."
 
 [[guard]]
 id = "G2"
-name = "third-party-provenance-refusal"
-guard = "Refuse the manifest strip and exit 40 when the manifest carries a capture signal or a third-party publisher signal. Capture signals are a capture action, a camera vendor as signer, or capture-shaped assertions naming a lens and an exposure. Publisher signals are a news organization, an agency, or a named author who is not the user. A generative tool as claim generator does not fire the refusal, because that is the normal case for an asset in scope. The override is a single explicit flag."
+name = "certified-capture"
+guard = "An asset is certified capture when its active, well-formed C2PA manifest carries a c2pa.created action whose digital source type is digitalCapture, or a signer naming a camera vendor, and no later action naming a generative tool. The default run is a no-op on it and exits 0, and the report quotes the claim and says it is not signature-verified. --strip-capture overrides the keep and is recorded. A captured image with a later generative action is stripped by default."
 
 [[guard]]
 id = "G3"
-name = "camera-origin-heuristic"
-guard = "EXIF naming a real camera body with lens data and a shutter, aperture, and ISO triple describes a photograph. Warn and hold at the metadata tier unless overridden. A generative tool can write fake EXIF and a real photograph can be model-edited, so the warning asks for a second look at the asset's origin, and the override proceeds."
-
-[[guard]]
-id = "G4"
-name = "no-aggressive-batch"
-guard = "One asset per invocation for anything that touches provenance or pixels. A directory of images is the shape of the misuse case. A metadata strip over a user's own output directory can take a glob."
+name = "capture-uncertain"
+guard = "Camera-style EXIF without a qualifying C2PA claim is uncertain. The asset is stripped by default and the report names the hint and says --keep exif preserves it. A generative tool can write fake EXIF and a real photograph can be model-edited, so EXIF alone certifies nothing."
 
 [[guard]]
 id = "G5"
 name = "safety-hashes-out-of-scope"
-guard = "Perceptual hashes used for abuse-material matching are not generative watermarks. No transform targets them, none is tuned against them, and none would help. This boundary is permanent, and no flag or profile reaches it. A future transform proposed because it degrades such a hash is rejected on that basis alone."
+guard = "Perceptual hashes used for abuse-material matching are not generative watermarks. No transform targets them, none is tuned against them, and none would help. This boundary is permanent, and no flag reaches it. A future transform proposed because it degrades such a hash is rejected on that basis alone."
 
 [[guard]]
 id = "G6"
 name = "no-keyed-mark-scorer"
-guard = "This build ships no estimator that scores how likely a keyed mark is present, and no reverse-detector. The blind class rests on saying plainly that this build cannot see the mark, and a number next to that sentence would erase it. The honest way to make a keyed mark confirmable is an authorized detector that actually knows."
+guard = "This build ships no estimator that scores how likely a keyed mark is present. A blind class is reported as applied and surviving with its citation, never with a number that would read as a detection. The dwtDct detector is different in kind: the mark is keyless and its decoder is public, so presence is a declared agreement rule with a measured false-positive fraction."
 
 [[guard]]
 id = "G7"
 name = "never-fabricate-provenance"
-guard = "Remove marks and never write them. Never synthesize a manifest, forge a claim generator, backdate a timestamp, or write camera EXIF onto a generated asset. Removing a true record on a user's own asset is in scope. Manufacturing a false one has no code path."
+guard = "Remove marks and never write them. Never synthesize a manifest, forge a claim generator, backdate a timestamp, or write camera EXIF onto an asset. Removing a record is in scope. Manufacturing a false one has no code path."

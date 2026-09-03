@@ -1,17 +1,16 @@
-//! Report consistency: the removed-and-proven list describes the file the
-//! user now has. When no output was written there is no such file, so the list
-//! is empty whatever the in-memory re-inspection found.
+//! Report consistency: the stripped-and-proven-gone list describes the file
+//! the user now has. When no output was written there is no such file, so
+//! the list is empty whatever the in-memory re-inspection found.
 
 mod common;
 use common::*;
 #[cfg(feature = "audio")]
-use unmark::report::EXIT_INSTRUMENTATION;
-use unmark::report::EXIT_RESIDUAL;
+use unmark::UnmarkError;
 use unmark::{clean, policy, Options};
 
 /// A WAV with a `fmt ` chunk and a LIST INFO chunk and no `data` chunk. The
-/// strip succeeds in memory, but the signal stream is empty on both sides, so
-/// the identity gate refuses at exit 30 and nothing is written.
+/// tag strip succeeds in memory, but the audio path cannot decode a file
+/// with no samples, so the required inspection fails and nothing is written.
 #[cfg(feature = "audio")]
 fn no_data_wav() -> Vec<u8> {
     let mut fmt = Vec::new();
@@ -43,57 +42,34 @@ fn no_data_wav() -> Vec<u8> {
 
 #[cfg(feature = "audio")]
 #[test]
-fn identity_failure_at_exit_30_leaves_removed_and_proven_empty() {
+fn a_wav_with_no_samples_fails_the_required_inspection_and_writes_nothing() {
     let wav = no_data_wav();
     let pkg = policy::load().unwrap();
+    let err = clean(&wav, &Options::default(), &pkg).unwrap_err();
+    assert!(matches!(err, UnmarkError::Inspection(_)), "got {err}");
+    // Without the audio path the tag strip alone completes.
     let opts = Options {
-        i_generated_this: true,
-        acknowledge_residual: true,
+        no_degrade: true,
         ..Default::default()
     };
-    let out = clean(&wav, "audio-metadata", &opts, &pkg).unwrap();
-    assert_eq!(out.report.exit_code, EXIT_INSTRUMENTATION);
-    assert!(out.output.is_none());
-    assert!(
-        out.report.removed_and_proven.is_empty(),
-        "nothing was written, so nothing is proven removed: {:?}",
-        out.report.removed_and_proven
-    );
-}
-
-#[test]
-fn unacknowledged_residual_at_exit_20_leaves_removed_and_proven_empty() {
-    // The strip succeeds in memory and the marks are gone from the candidate
-    // output, but the run gates before writing, so the list stays empty.
-    let png = build_png(&PngOpts {
-        text: true,
-        c2pa: true,
-        ..Default::default()
-    });
-    let pkg = policy::load().unwrap();
-    let opts = Options {
-        i_generated_this: true,
-        ..Default::default()
-    };
-    let out = clean(&png, "image-metadata", &opts, &pkg).unwrap();
-    assert_eq!(out.report.exit_code, EXIT_RESIDUAL);
-    assert!(out.output.is_none());
-    assert!(out.report.removed_and_proven.is_empty());
-}
-
-#[test]
-fn a_written_output_keeps_its_removed_and_proven_list() {
-    let png = build_png(&PngOpts {
-        text: true,
-        ..Default::default()
-    });
-    let pkg = policy::load().unwrap();
-    let opts = Options {
-        i_generated_this: true,
-        acknowledge_residual: true,
-        ..Default::default()
-    };
-    let out = clean(&png, "image-metadata", &opts, &pkg).unwrap();
+    let out = clean(&wav, &opts, &pkg).unwrap();
+    assert_eq!(out.report.exit_code, 0);
     assert!(out.output.is_some());
-    assert!(!out.report.removed_and_proven.is_empty());
+}
+
+#[test]
+fn a_written_output_keeps_its_stripped_list_and_a_refusal_clears_it() {
+    let png = build_png(&PngOpts {
+        text: true,
+        ..Default::default()
+    });
+    let pkg = policy::load().unwrap();
+    let out = clean(&png, &Options::default(), &pkg).unwrap();
+    assert!(out.output.is_some());
+    assert!(!out.report.stripped_and_proven_gone.is_empty());
+    // Every action names its outcome and its result; nothing says weakened.
+    for a in &out.report.actions {
+        assert!(!a.outcome.is_empty() && !a.result.is_empty());
+        assert!(!a.result.contains("weakened"));
+    }
 }

@@ -12,26 +12,15 @@ use unmark::budget;
 use unmark::container;
 use unmark::detect;
 use unmark::policy;
-#[cfg(feature = "audio")]
-use unmark::report::EXIT_UNSUPPORTED;
 use unmark::scan::ScanState;
 #[cfg(feature = "audio")]
-use unmark::{clean, Options};
+use unmark::{clean, Options, UnmarkError};
 
 fn fixture(name: &str) -> Vec<u8> {
     let path: PathBuf = [env!("CARGO_MANIFEST_DIR"), "fixtures", name]
         .iter()
         .collect();
     std::fs::read(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()))
-}
-
-#[cfg(feature = "audio")]
-fn ack_opts() -> Options {
-    Options {
-        i_generated_this: true,
-        acknowledge_residual: true,
-        ..Default::default()
-    }
 }
 
 /// The review probe: a WAV whose RIFF size covers only the form tag and the
@@ -111,13 +100,8 @@ fn understated_riff_size_refuses_to_rewrite() {
 fn clean_on_an_understated_riff_size_fails_closed_and_writes_nothing() {
     let wav = understated_size_wav();
     let pkg = policy::load().unwrap();
-    let out = clean(&wav, "audio-metadata", &ack_opts(), &pkg).unwrap();
-    assert_eq!(out.report.exit_code, EXIT_UNSUPPORTED);
-    assert!(out.output.is_none());
-    assert!(
-        !out.report.actions.iter().any(|a| a.outcome == "applied"),
-        "no transform may be recorded as applied"
-    );
+    let err = clean(&wav, &Options::default(), &pkg).unwrap_err();
+    assert!(matches!(err, UnmarkError::Inspection(_)), "got {err}");
 }
 
 #[test]

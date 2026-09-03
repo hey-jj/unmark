@@ -5,48 +5,65 @@ Keep a Changelog, and the project uses semantic versioning.
 
 ## [0.2.0] - 2026-09-03
 
-The image degrade profiles `image-safe` and
-`image-aggressive` now run. The audio degrade profiles stay a usage error at
-exit 2 until the audio ceilings calibrate. Every ceiling is provisional until a
-calibration record with qualified cells lands.
+unmark strips every mark it can find by default and keeps provenance only where
+a well-formed C2PA claim identifies a camera or sensor capture with no later
+generative action. Capture claims are read, not signature-verified. Every
+policy flag turns a strip off. The report lists what was stripped and proven
+gone, what was kept and why, and what survived.
 
 ### Added
 
-- Pixel transforms PX01 through PX06 and audio transforms AU01, AU02, AU04, and
-  AU05, each with pinned parameters in the policy package. AU03 is reserved and
-  not runnable.
+- The dwtDct detector, an in-crate implementation of the reference decode over
+  the U channel, one Haar level, 4x4 blocks, and a quantization step of 36,
+  for both documented payloads. The presence rule is a Hamming agreement of
+  0.80 with a measured false-positive fraction of zero over 205 unmarked
+  images.
+- `PX02`, a resize at ratio 0.95 with a Lanczos3 filter, the measured removal
+  path for the dwtDct mark. `PX01`, a same-container re-encode at quality 92
+  with 4:4:4 chroma on JPEG input. `AU06`, a 1500 Hz highpass cited against
+  AudioSeal.
+- Certified capture: a well-formed C2PA capture claim with no later generative
+  action is kept byte-identical and reported with its quoted claim and the
+  signature status. `--strip-capture` strips it.
+- The capture-uncertain hint for camera EXIF without a claim.
+- `--keep <id|class>`, repeatable, and `--no-degrade`. Every preserved item is
+  reported as kept by flag.
+- MP4 `ilst` removal with `stco` and `co64` correction, and `MC10`, the FLAC
+  Vorbis comment strip.
+- A directory input, processed one file at a time with one report per file.
+- Exit 50, the sanity floor: an output whose PSNR or SSIM against its
+  grid-matched reference falls below the proposed floor is refused and nothing
+  is written.
+- Builder-rendered efficacy fixtures under `fixtures/efficacy/`, watermarked
+  through the invisible-watermark package as a subprocess oracle, and
+  `examples/metrics.rs` over a directory.
 - Pure-Rust codecs behind the transforms, PNG, JPEG with an in-crate baseline
-  encoder, WebP with a lossless write, WAV, and FLAC, and an encoder fingerprint
-  naming each crate and version.
-- Libm-free sine, cosine, logarithm, and exponential in `dsp`, so every
-  transform produces the same bytes on every platform.
-- The fidelity-ceiling calibration harness, `examples/calibrate.rs` over the
-  `calibrate` module. It carries a cell model over plan, format, and band, a
-  nearest-rank percentile derivation, the acceptance properties, a committed
-  record and owner table, and a CI suite that pins the fixture subset at three
-  decimals.
-- The windowed 8x8 SSIM, the log-spectral distance, and the time-averaged
-  spectrum distance in `budget`.
-- Manifest-driven corpus selection with eligibility classes, a prepare pass,
-  lossless container derivations, synthetic clips, documented-marks splits, and
-  a report-only ladder over post-processed assets.
-- `output_format` and `fidelity` in the report. `clean` exits 2 when the
-  `--out` extension contradicts the container the plan emits.
+  encoder, WebP with a lossless write, WAV, and FLAC, and libm-free sine,
+  cosine, logarithm, and exponential in `dsp`.
 
 ### Changed
 
-- PX01 on a PNG or WebP input emits a baseline JPEG when the image is opaque
-  and stands down with a one-line note when it carries alpha. Alpha is never
-  flattened.
-- The global single-window SSIM is replaced by the windowed form.
+- unmark has no profiles. Each sniffed container receives one default run.
+  Use `--keep <id|class>` or `--no-degrade` to preserve selected content. Use
+  `--strip-capture` to override the certified-capture keep.
+- A publisher manifest without a capture action is stripped by default.
+- Survivors are named with evidence and a citation. SynthID reads as applied
+  and surviving.
+- The report schema is 2.0.0.
+
+### Removed
+
+- `--profile`, `--i-generated-this`, `--opt-in`, `--acknowledge-residual`,
+  `--force-provenance-strip`, the residual tier, exit 20, and the one-asset
+  limit.
+- The fidelity-ceiling calibration harness, its record, its bands and cells,
+  and the CI pins.
+- `PX03` through `PX08` and `AU01` through `AU05` are held and not runnable.
+  Only `PX01`, `PX02`, and `AU06` run, and `PX01` runs only on JPEG input.
 
 ## [0.1.0] - 2026-08-21
 
-First release, the metadata tier. Only the `image-metadata`, `audio-metadata`, and
-`repo-files` profiles run. Selecting a degrade profile is a usage error at exit 2.
-Keyed marks such as SynthID survive every clean in this version. The fidelity
-ceilings in the policy package are provisional pending owner review, and the
-degrade transforms follow with the reviewed ceilings in 0.2.0.
+First release, the metadata tier.
 
 ### Added
 
@@ -58,20 +75,6 @@ degrade transforms follow with the reviewed ceilings in 0.2.0.
   over the enumerated supported-container set.
 - Metadata transforms MC01 through MC09, each a byte-level container rewrite
   that leaves the encoded pixel or sample stream identical.
-- The verbs inspect, plan, clean, and verify, with the exit contract 0, 2, 10,
-  20, 30, and 40.
-- Guardrails G1 through G7: the ownership assertion, the third-party refusal on a
-  capture or publisher manifest, the camera-origin heuristic, one asset per
-  invocation, safety hashes out of scope, no keyed-mark scorer, and no fabricated
-  credentials.
-- The fidelity-budget machinery, with a byte-identity gate for the metadata
-  tiers and provisional PSNR, SSIM, and log-spectral-distance ceilings for the
-  pixel and audio tiers that arrive in 0.2.0.
+- The verbs inspect, plan, clean, and verify.
 - An embedded policy package with a sha256 digest reported in every result, and
   a skill that runs the whole loop.
-- The default audio pass strips LIST INFO whole and leaves a FLAC Vorbis comment
-  in place, so a default FLAC pass removes no tags and an encoder tag survives
-  it. The 0.1.x target is a field-selective symmetric default: a default pass
-  removes only tool-identity fields from both blocks, the ISFT and IENG-class
-  fields in LIST INFO and the ENCODER, ENCODED_BY, and generator-naming COMMENT
-  fields in Vorbis, keeps credits and chapters, and MC06 removes the whole block.

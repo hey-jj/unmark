@@ -113,7 +113,7 @@ pub fn decode(bytes: &[u8]) -> Result<Audio, CodecError> {
 
 pub fn encode(audio: &Audio, bits: u16) -> Result<Vec<u8>, CodecError> {
     let float = bits == 32 && audio.float;
-    if !(matches!(bits, 16 | 24) || float) {
+    if !(matches!(bits, 8 | 16 | 24) || float) {
         return Err(CodecError::Setting(format!("wav: {bits}-bit output")));
     }
     let channels = audio.channels.len() as u16;
@@ -149,6 +149,7 @@ pub fn encode(audio: &Audio, bits: u16) -> Result<Vec<u8>, CodecError> {
         for s in audio.quantize(bits) {
             let b = s.to_le_bytes();
             match bits {
+                8 => out.push((s + 128) as u8),
                 16 => out.extend_from_slice(&b[..2]),
                 _ => out.extend_from_slice(&b[..3]),
             }

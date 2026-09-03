@@ -24,8 +24,10 @@ pub struct DropSpec {
     pub id3: bool,
     pub ilst: bool,
     pub riff_ancillary: bool,
-    /// MC06: drop ancillary chunks not on the preservation keep list.
+    /// MC06: drop ancillary chunks not on the keep list.
     pub unlisted: bool,
+    /// MC10: drop the FLAC Vorbis comment block whole.
+    pub vorbis: bool,
 }
 
 /// The reason a rewrite could not be completed for a container in this build.
@@ -108,4 +110,121 @@ fn text_signal(bytes: &[u8]) -> Vec<u8> {
     visible.push_str(&text[last..]);
     // Drop generator-header lines, the other class a text strip may remove.
     crate::transform::strip_generator_headers(&visible).into_bytes()
+}
+
+/// CRC-32/ISO-HDLC, the PNG chunk CRC.
+fn crc32(data: &[u8]) -> u32 {
+    let mut crc: u32 = 0xFFFF_FFFF;
+    for &b in data {
+        crc ^= b as u32;
+        for _ in 0..8 {
+            crc = if crc & 1 != 0 {
+                (crc >> 1) ^ 0xEDB8_8320
+            } else {
+                crc >> 1
+            };
+        }
+    }
+    !crc
+}
+
+fn png_chunk(kind: &[u8; 4], data: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(data.len() + 12);
+    out.extend_from_slice(&(data.len() as u32).to_be_bytes());
+    out.extend_from_slice(kind);
+    out.extend_from_slice(data);
+    let mut crc_input = kind.to_vec();
+    crc_input.extend_from_slice(data);
+    out.extend_from_slice(&crc32(&crc_input).to_be_bytes());
+    out
+}
+
+/// Carry the ancillary metadata that survived the metadata strips in
+/// `source` into `fresh`, a container the pixel path re-encoded from the
+/// same image. A `--keep` on a metadata class means the class is present in
+/// `source`, so copying every ancillary structure across preserves exactly
+/// the kept items. PNG copies every chunk that is not critical to the pixel
+/// stream after the fresh IHDR; JPEG copies every APP1 through APP15 and
+/// COM segment after the fresh APP0. WebP is carried by the encoder itself.
+pub fn carry_ancillary(source: &[u8], fresh: &[u8], format: Format) -> Vec<u8> {
+    match format {
+        Format::Png => {
+            let (src, _) = crate::detect::png_text::chunks(source);
+            let carried: Vec<Vec<u8>> = src
+                .iter()
+                .filter(|c| !matches!(&c.kind, b"IHDR" | b"IDAT" | b"IEND" | b"PLTE" | b"tRNS"))
+                .map(|c| png_chunk(&c.kind, c.data))
+                .collect();
+            if carried.is_empty() {
+                return fresh.to_vec();
+            }
+            let (dst, _) = crate::detect::png_text::chunks(fresh);
+            let Some(ihdr) = dst.iter().find(|c| &c.kind == b"IHDR") else {
+                return fresh.to_vec();
+            };
+            let cut = ihdr.start + ihdr.total;
+            let mut out = fresh[..cut].to_vec();
+            for c in carried {
+                out.extend_from_slice(&c);
+            }
+            out.extend_from_slice(&fresh[cut..]);
+            out
+        }
+        Format::Jpeg => {
+            let (src, _) = crate::detect::jpeg::segments(source);
+            let carried: Vec<&[u8]> = src
+                .iter()
+                .filter(|s| (0xE1..=0xEF).contains(&s.marker) || s.marker == 0xFE)
+                .filter_map(|s| source.get(s.start..s.start + s.total))
+                .collect();
+            if carried.is_empty() {
+                return fresh.to_vec();
+            }
+            let (dst, _) = crate::detect::jpeg::segments(fresh);
+            // After the fresh APP0 when there is one, else right after SOI.
+            let cut = dst
+                .iter()
+                .find(|s| s.marker == 0xE0)
+                .map(|s| s.start + s.total)
+                .unwrap_or(2);
+            let mut out = fresh[..cut].to_vec();
+            for seg in carried {
+                out.extend_from_slice(seg);
+            }
+            out.extend_from_slice(&fresh[cut..]);
+            out
+        }
+        _ => fresh.to_vec(),
+    }
+}
+
+/// The WebP metadata the lossless encoder can carry, plus whether a chunk
+/// it cannot carry (a C2PA chunk) is present.
+#[derive(Debug, Default, Clone)]
+pub struct WebpMetadata {
+    pub exif: Option<Vec<u8>>,
+    pub xmp: Option<Vec<u8>>,
+    pub icc: Option<Vec<u8>>,
+    pub uncarried_c2pa: bool,
+}
+
+impl WebpMetadata {
+    pub fn any_carried(&self) -> bool {
+        self.exif.is_some() || self.xmp.is_some() || self.icc.is_some()
+    }
+}
+
+pub fn webp_metadata(source: &[u8]) -> WebpMetadata {
+    let (chunks, _) = crate::detect::riff::chunks(source);
+    let mut m = WebpMetadata::default();
+    for c in chunks {
+        match &c.id {
+            b"EXIF" => m.exif = Some(c.data.to_vec()),
+            b"XMP " => m.xmp = Some(c.data.to_vec()),
+            b"ICCP" => m.icc = Some(c.data.to_vec()),
+            b"C2PA" => m.uncarried_c2pa = true,
+            _ => {}
+        }
+    }
+    m
 }

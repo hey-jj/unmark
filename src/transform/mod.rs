@@ -1,8 +1,8 @@
-//! The metadata transform layer. It turns an ordered plan into a container drop
-//! spec or a text edit and applies it. It never re-encodes a pixel or a sample.
-//! A container that cannot be rewritten safely returns an error so the caller
-//! fails closed. The pixel and audio degrade transforms live in the sibling
-//! modules `pixel` and `audio`; this module never decodes.
+//! The transform layer. The metadata transforms turn an ordered plan into a
+//! container drop spec or a text edit and apply it without decoding a pixel
+//! or a sample. The pixel and audio transforms live in the sibling modules
+//! `pixel` and `audio`. A container that cannot be rewritten safely returns
+//! an error so the caller fails closed.
 
 #[cfg(feature = "audio")]
 pub mod audio;
@@ -18,8 +18,26 @@ pub struct Applied {
     pub bytes: Vec<u8>,
 }
 
+/// The confirmable mark classes a transform strips.
+pub fn targeted_classes(id: &str) -> &'static [&'static str] {
+    match id {
+        "MC01" => &["c2pa"],
+        "MC02" => &["xmp", "iptc"],
+        "MC03" => &["exif"],
+        "MC04" => &["png_text"],
+        "MC05" => &["id3", "ilst"],
+        "MC06" => &[],
+        "MC07" => &["invisibles"],
+        "MC08" => &[],
+        "MC09" => &["riff_ancillary", "id3"],
+        "MC10" => &["vorbis"],
+        "PX02" => &["dwtdct"],
+        _ => &[],
+    }
+}
+
 /// Build a container drop spec from the transform ids in a plan.
-fn drop_spec(transforms: &[String]) -> DropSpec {
+pub fn drop_spec(transforms: &[String]) -> DropSpec {
     let mut s = DropSpec::default();
     for t in transforms {
         match t.as_str() {
@@ -39,21 +57,20 @@ fn drop_spec(transforms: &[String]) -> DropSpec {
                 s.riff_ancillary = true;
                 s.id3 = true;
             }
+            "MC10" => s.vorbis = true,
             _ => {}
         }
     }
     s
 }
 
-/// Apply the plan's transforms to the asset. Pure: a function of the bytes and
-/// the plan.
+/// Apply the metadata transforms of a plan to the asset. Pure: a function of
+/// the bytes and the plan.
 pub fn apply(bytes: &[u8], format: Format, transforms: &[String]) -> Result<Applied, RewriteError> {
     if format.is_text() {
         return Ok(apply_text(bytes, transforms));
     }
     let spec = drop_spec(transforms);
-    // A Declined error propagates so the caller fails the run closed rather
-    // than claiming a removal it did not perform.
     let out = container::rewrite(bytes, format, &spec)?;
     Ok(Applied { bytes: out })
 }
@@ -123,8 +140,6 @@ pub fn strip_generator_headers(text: &str) -> String {
 }
 
 fn remove_svg_metadata(text: &str) -> String {
-    // Remove a <metadata>...</metadata> element, which SVG editors fill with
-    // generator and provenance data.
     let mut out = text.to_string();
     while let (Some(open), Some(close)) = (out.find("<metadata"), out.find("</metadata>")) {
         if open < close {

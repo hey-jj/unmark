@@ -1,5 +1,6 @@
-//! FLAC rewriter. It removes the Vorbis comment block under an explicit opt-in
-//! and rebuilds the last-block flag so the metadata chain stays valid. The audio
+//! FLAC rewriter. It removes the Vorbis comment block whole, the default in
+//! this release with --keep vorbis as the opt-out, and rebuilds the last-block
+//! flag so the metadata chain stays valid. The audio
 //! frames and the kept blocks are copied verbatim. A walk that never reached
 //! the last-block flag cannot place the audio frames, so the rewriter refuses
 //! rather than copy an unknown layout.
@@ -14,9 +15,7 @@ pub fn rewrite(bytes: &[u8], spec: &DropSpec) -> Result<Vec<u8>, RewriteError> {
             "the FLAC metadata chain did not reach its last block".to_string(),
         ));
     }
-    // Vorbis comments are production data on the preservation allowlist, so a
-    // strip is opt-in through MC06 rather than a default metadata pass.
-    if !spec.unlisted || blocks.is_empty() {
+    if !(spec.vorbis || spec.unlisted) || blocks.is_empty() {
         return Ok(bytes.to_vec());
     }
     let mut kept: Vec<&crate::detect::flac::Block> =

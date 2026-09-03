@@ -3,12 +3,12 @@
 Regenerate with `unmark policy snapshot` after any policy change. Edits here are overwritten.
 
 - policy version: 0.2.0
-- policy digest: sha256:87195ab30a872688e091c5927935a77c9a4f4ec22d45c966c2c288d02924db2f
+- policy digest: sha256:8e26ce3f7df162c45827b1a6e092747df7ae2386f8ac29f20cba52f776944d89
 
 ## What the tool may say about each mark
 
-- A confirmable mark has a structural address. The tool removes it and re-inspection proves it gone.
-- A blind mark is a keyed statistical signal this offline build cannot see, so it reports the mark as not_attempted, the scan state for a class this build cannot examine.
+- A confirmable mark has a structural address or a public decoder. The tool removes it and re-inspection proves it gone.
+- A blind mark is a keyed statistical signal this offline build cannot see. The default run is applied to the asset anyway, and the report names the mark as surviving with its citation.
 - An unaddressed mark is one the tool knows and does nothing to, named so its absence from the action list is not read as its absence from the asset.
 - Only confirmed_absent over the enumerated supported set licenses the word absent. The build never emits a clean verdict and never renders no marks found as human authorship.
 
@@ -30,8 +30,7 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 ### c2pa (confirmable)
 
-- C2PA manifest: A Content Credentials manifest. The parse reads the JUMBF box header and the claim generator. It does not verify the signature, so a refusal keys on the manifest's content: capture actions, camera signers, and publisher names.
-- judge: The manifest records who made this asset and how. Keeping it proves the asset is yours. Confirm the asset is your own generative output before removing it.
+- C2PA manifest: A Content Credentials manifest. The parse reads the JUMBF box and the claim's content. It does not verify the signature. A manifest is stripped by default. It is kept only under the certified-capture rule or under --keep c2pa.
 
 ### png_text (confirmable)
 
@@ -39,7 +38,7 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 ### exif (confirmable)
 
-- EXIF metadata: EXIF Software, ProcessingSoftware, ImageDescription, UserComment, and timestamps. A generative tool writes its name into Software.
+- EXIF metadata: EXIF Software, ProcessingSoftware, ImageDescription, UserComment, camera fields, and timestamps. A generative tool writes its name into Software. Camera-style EXIF without a qualifying C2PA claim is uncertain and is stripped by default, with the hint named in the report.
 
 ### xmp (confirmable)
 
@@ -55,11 +54,11 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 ### vorbis (confirmable)
 
-- Vorbis comment: A Vorbis comment block. It routinely holds legitimate credits and chapter structure, so it stays on the preservation allowlist unless an explicit strip asks for it.
+- Vorbis comment: A Vorbis comment block. It carries the encoder tag and any tool identity. The whole block is stripped by default. Use --keep vorbis to preserve credits and chapters.
 
 ### ilst (confirmable)
 
-- MP4 ilst tag: An MP4 ilst metadata atom carrying tool and encoder identity.
+- MP4 ilst tag: An MP4 ilst metadata atom carrying tool and encoder identity. The atom is removed and the sample offset tables are corrected by the removed byte count.
 
 ### riff_ancillary (confirmable)
 
@@ -69,25 +68,40 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 - invisible Unicode: Zero-width characters, variation selectors, and unusual spaces in a text file. A variation-selector run can also carry a C2PA text wrapper, so a run is classified before it is removed and a wrapper is routed to the manifest path.
 
+### dwtdct (confirmable)
+
+- dwtDct pixel mark: The keyless dwtDct mark from the invisible-watermark package, embedded by the CompVis Stable Diffusion script as the 136-bit text StableDiffusionV1 and by the Diffusers SDXL pipeline as the fixed 48-bit payload B3EC907BB19E. The decoder reads the U channel after a BGR to YUV conversion, takes one level of Haar wavelet, quantizes the largest non-first value of each 4x4 low-low block with step 36, and majority-votes the repetitions. Presence is a Hamming agreement with a known payload at or above the declared threshold. The resize at the pinned ratio removes it.
+- citation: https://github.com/ShieldMnt/invisible-watermark/wiki/Frequency-Methods
+
 ### synthid_image (blind)
 
-- SynthID-Image: A keyed statistical mark in the pixel data. This build is offline and carries no authorized detector, so it cannot see the mark, cannot report its presence, and cannot report its absence. SynthID-Image survives the entire safe catalog, holding above 99 percent detection through re-encode, resize, crop, and noise.
+- SynthID-Image: A keyed statistical mark in the pixel data of every image the Gemini API generates, vendor-stated. This offline build carries no authorized detector, so it cannot report presence or absence. The default run is applied and the mark is reported as surviving.
+- survival: applied, survives. The vendor states every Gemini API image carries it. Conventional-transform survival figures exist only for the external SynthID-O variant: worst-category detection 99.99 percent under quality, 99.97 under spatial, and 99.96 under noise transforms at 0.1 percent false positives. Production figures are not stated.
+- citation: https://ai.google.dev/gemini-api/docs/image-generation and https://arxiv.org/html/2510.09263
 
 ### tree_ring (blind)
 
-- Tree-Ring: A keyed mark in the low-frequency Fourier structure of the initial noise. Compression and resampling preserve low frequencies, and a circular Fourier key rotates with the picture, so the mark holds through the safe catalog. This build cannot see it.
+- Tree-Ring: A keyed mark in the low-frequency Fourier structure of the initial noise. This build cannot see it.
+- survival: survives the default run. The cited figures show an effect only from rotation and blur, at average detection 0.375 and 0.563 at 0.1 percent false positives, and their tested strengths are not stated, so neither is runnable.
+- citation: https://arxiv.org/html/2401.08573
 
 ### stable_signature (blind)
 
-- Stable Signature: A keyed mark decoded from the pixels. It survives severe cropping, detecting in about 84 percent of images after a crop that keeps a tenth of the pixels. This build cannot see it.
+- Stable Signature: A keyed mark decoded from the pixels. This build cannot see it.
+- survival: survives the default run. It detects in 84 percent of images after a crop that keeps a tenth of the pixels at a false-positive rate of one in a billion, which is survival, not an effect.
+- citation: https://arxiv.org/html/2303.15435
 
 ### synthid_audio (blind)
 
-- SynthID-Audio: A keyed mark in the audio samples, specified to survive MP3 compression, added noise, and speed change. The same offline limit as SynthID-Image applies: no authorized detector, so presence and absence both go unreported.
+- SynthID-Audio: A keyed mark in the audio samples. This build cannot see it.
+- survival: survives the default run. The vendor states it survives added noise, MP3 compression, and speed changes.
+- citation: https://deepmind.google/models/synthid/
 
 ### audioseal (blind)
 
-- AudioSeal: A neural audio mark reporting near-perfect accuracy after resampling and after MP3 and AAC transcoding. This build cannot see it.
+- AudioSeal: A neural audio mark. This build cannot see it.
+- survival: the 1500 Hz highpass is the one cited transform with an effect: detection accuracy 0.61, true and false positive rates 0.82 and 0.60. The mark is reported as applied against with that figure, never as removed.
+- citation: https://arxiv.org/html/2401.17264
 
 ### visible_overlay (unaddressed)
 
@@ -101,168 +115,124 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 - generative fingerprint: Frequency artifacts and upsampling traces that let a classifier flag a generated image with no watermark involved. No transform here touches them.
 
-## Transforms
+## Transforms in the default run
 
-### MC01 strip-c2pa-manifest (tier removable, fidelity none, default true, milestone 1)
+### MC01 strip-c2pa-manifest (metadata, on jpeg png webp riff-wav isobmff text svg html)
 
-- target: JUMBF in JPEG APP11, PNG caBX, MP4 uuid box, RIFF C2PA chunk
-- Remove the C2PA manifest. Removal is gated at runtime by the ownership assertion and by the third-party-provenance refusal, which exits 40 unless the override flag is passed.
+- target: JUMBF in JPEG APP11, PNG caBX, MP4 uuid box, RIFF C2PA chunk, a C2PA text wrapper
+- Remove the C2PA manifest. The certified-capture rule keeps it when the claim identifies a camera or sensor capture with no later generative action, and --strip-capture overrides that keep. A publisher manifest without a capture action is stripped by default.
 
-### MC02 strip-xmp (tier removable, fidelity none, default true, milestone 1)
+### MC02 strip-xmp (metadata, on jpeg png webp)
 
 - target: XMP packet and IPTC block with provenance and generator fields
 - Remove the XMP packet and the IPTC block.
 
-### MC03 strip-exif (tier removable, fidelity none, default true, milestone 1)
+### MC03 strip-exif (metadata, on jpeg png webp)
 
-- target: EXIF Software, ProcessingSoftware, ImageDescription, timestamps
-- Remove the EXIF IFD.
+- target: EXIF Software, ProcessingSoftware, ImageDescription, camera fields, timestamps
+- Remove the EXIF IFD. Camera-style EXIF without a qualifying C2PA claim is uncertain and goes with everything else. Use --keep exif to preserve it.
 
-### MC04 strip-png-text (tier removable, fidelity none, default true, milestone 1)
+### MC04 strip-png-text (metadata, on png)
 
 - target: PNG tEXt, zTXt, iTXt chunks carrying prompts and workflow JSON
 - Remove the PNG text chunks, the highest-value strip in the catalog, at zero fidelity cost.
 
-### MC05 strip-audio-tags (tier removable, fidelity none, default true, milestone 1)
+### MC05 strip-audio-tags (metadata, on riff-wav mp3 isobmff)
 
 - target: ID3v1, ID3v2 including PRIV and GEOB, MP4 ilst
-- Remove the audio tags at both the leading and the trailing location. Broadcast production data on the allowlist stays unless an explicit strip asks for it.
+- Remove the audio tags at both the leading and the trailing location, and the MP4 ilst atom with its sample offsets corrected.
 
-### MC09 strip-riff-ancillary (tier removable, fidelity none, default true, milestone 1)
+### MC09 strip-riff-ancillary (metadata, on riff-wav webp)
 
 - target: LIST INFO and an embedded id3 chunk in WAV, WebP, and AVI
 - Remove the named RIFF ancillary chunks and rebuild the enclosing sizes and even-boundary padding.
 
-### MC06 strip-unlisted-chunks (tier removable, fidelity none, default false, milestone 1)
+### MC10 strip-vorbis-comment (metadata, on flac)
 
-- target: Any ancillary chunk not on the preservation keep list
-- It reads the preservation keep list and drops every ancillary chunk the list does not name, so the metadata tier stays lossless.
+- target: The FLAC Vorbis comment block, encoder tag included
+- Remove the whole Vorbis comment block and rebuild the last-block flag. Use --keep vorbis to preserve credits and chapters.
 
-### MC07 strip-invisible-unicode (tier removable, fidelity none, default false, milestone 1)
+### MC06 strip-unlisted-chunks (metadata, on png webp riff-wav flac)
+
+- target: Any ancillary chunk not required for decoding and valid output
+- Drop every ancillary chunk the keep list does not name. The keep list holds only what decoding and valid output require, so a color profile and a colorimetry chunk stay and everything else goes.
+
+### MC07 strip-invisible-unicode (text, on text svg html)
 
 - target: Zero-width characters, variation selectors, unusual spaces in text files
-- Classify each variation-selector run before removing it. A run that parses as a C2PA text wrapper is routed to the manifest path where the refusal applies. A run that looks like a wrapper and fails to parse reports malformed and is left alone. Everything else is removed as invisible-character hygiene.
+- Classify each variation-selector run before removing it. A run that parses as a C2PA text wrapper is routed to the manifest path. A run that looks like a wrapper and fails to parse reports malformed and is left alone. Everything else is removed as invisible-character hygiene.
 
-### MC08 strip-generator-headers (tier removable, fidelity none, default false, milestone 1)
+### MC08 strip-generator-headers (text, on text svg html)
 
 - target: SVG metadata, HTML X-Generator, PDF Producer and Creator, comment banners
 - Remove generator identity headers from text and document files.
 
-### PX06 flip-or-rotate (tier residual, fidelity geometry, default false, milestone 2)
+### PX02 resize (pixel, on png jpeg webp)
 
-- target: Marks without geometric invariance
-- parameters: op=flip-horizontal
-- Apply the pinned lossless flip. The reference for the signal metric is the input under the same flip, so the signal cost is the encode alone. A flip changes what the picture says, and a rotate buys nothing against a mark whose key is circular in Fourier space. The catalog states this plainly. Rotation is not an easy win.
+- target: The dwtDct pixel mark
+- parameters: filter=lanczos3, ratio=0.95
+- strength: both edges to 95 percent, Lanczos3 on the scalar path
+- cited effect: dwtDct fails to decode after a 50 percent resize. The sweep over the efficacy fixtures found no fixture decoding at any ratio from 99.5 percent down, and 95 percent is the mildest ratio that changes both dimensions of every image at or above 10 pixels, so the resample can never round back onto the input grid.
+- citation: https://github.com/ShieldMnt/invisible-watermark
+- Resample both edges by the pinned ratio with a separable Lanczos3 kernel. This is the removal path for the dwtDct mark, and re-inspection proves the payload no longer decodes. Use --no-degrade or --keep PX02 to skip it.
 
-### PX03 border-crop (tier residual, fidelity composition, default false, milestone 2)
+### PX01 re-encode (pixel, on jpeg)
 
-- target: Marks with spatial registration
-- parameters: anchor=center, area=0.9
-- Crop a centered window that keeps the pinned fraction of the area. The composition change is the cost and the crop floor bounds it. The reference for the signal metric is the input cropped to the same window.
-
-### PX02 resample (tier residual, fidelity softening, default true, milestone 2)
-
-- target: Marks tied to the exact pixel grid
-- parameters: filter=lanczos3, ratio=0.9
-- Resample both edges by the pinned ratio with a separable Lanczos3 kernel on the scalar path. The geometry cost is the ratio and the profile's resample floor bounds it. The signal cost is measured against the input resampled by the same kernel, so the metric scores only the encode.
-
-### PX05 add-noise (tier residual, fidelity grain, default false, milestone 2)
-
-- target: Weak correlation marks
-- parameters: distribution=gaussian, sigma=6.0
-- Add Gaussian noise at the pinned sigma to every color channel, alpha untouched. The seed is the policy base seed combined with the input's hash, so one asset always gets the same grain and two assets never share a pattern. A shared pattern would itself be a correlational mark.
-
-### PX04 requantize (tier residual, fidelity banding, default false, milestone 2)
-
-- target: LSB marks in the pixel values
-- parameters: bits=5
-- Round every channel to the pinned bit depth and scale back to eight bits. Banding on a smooth gradient is the visible cost. Opt in one transform at a time, since stacking the aggressive set lowers quality faster than it lowers detection.
-
-### PX01 re-encode (tier residual, fidelity one-encode, default true, milestone 2)
-
-- target: LSB marks and fragile high-frequency DCT structure
+- target: The container write for a JPEG input
 - parameters: jpeg_chroma=4:4:4, jpeg_quality=92
-- Decode and encode once at the pinned quality with the crate's own baseline JPEG encoder, quality 92 and 4:4:4 chroma. A JPEG input always comes back as JPEG. A PNG or WebP input comes back as JPEG when the decoded image is opaque. When it carries alpha, the re-encode is skipped and the plan and report say so in one line, since no lossy encoder in this build keeps alpha and flattening it would invent a background. The output container is named in the report, and clean refuses an output path whose extension contradicts it.
+- strength: quality 92, 4:4:4 chroma, the crate's own baseline encoder
+- cited effect: none claimed. A JPEG has no lossless write, so this is the same-container path for a JPEG input and the pin is reported in the result.
+- Write a JPEG input back as a baseline JPEG at the pinned quality. No removal is claimed for the encode itself. A PNG or WebP input is written losslessly in its own container.
 
-### AU01 resample-round-trip (tier residual, fidelity mild, default true, milestone 2)
+### AU06 highpass (audio, on riff-wav flac)
 
-- target: Marks tied to the sample grid
-- parameters: beta=10.0, cutoff=0.97, filter=kaiser-sinc, half_taps=64
-- Resample to the partner rate and back with a Kaiser-windowed sinc on the scalar path, 44.1 kHz to 48 kHz and 48 kHz to 44.1 kHz, any other rate through 48 kHz. The output keeps the input rate and length, so the reference is the input and the cost sits in the band near Nyquist.
+- target: AudioSeal
+- parameters: cutoff_hz=1500.0, order=2
+- strength: second-order highpass at 1500 Hz
+- cited effect: AudioSeal detection accuracy falls to 0.61 under a 1500 Hz highpass, true and false positive rates 0.82 and 0.60.
+- citation: https://arxiv.org/html/2401.17264
+- Apply the highpass on the scalar path and write the samples back as emitted, integer or float32. The report names the cited figure and never says the mark was removed. Use --no-degrade or --keep AU06 to skip it.
 
-### AU04 eq-tilt (tier residual, fidelity tonal, default false, milestone 2)
+## Held, not runnable
 
-- target: Fixed-band spread-spectrum marks
-- parameters: high_gain_db=-1.5, low_gain_db=1.5, pivot_hz=1000.0, slope=1.0
-- Tilt the spectrum around the pivot with a low shelf and a high shelf of opposite gain. The tonal change is audible on careful listening and the log-spectral distance measures it directly.
+| Id | Transform | Reason |
+|---|---|---|
+| PX01-lossy | re-encode as a degrade on lossy input | no cited effect on any mark |
+| PX03 | border-crop | no cited figure shows an effect at a stated strength. A crop keeping a tenth of the pixels leaves Stable Signature at 84 percent detection. |
+| PX04 | requantize | no cited effect on any mark |
+| PX05 | add-noise | no cited effect on any mark |
+| PX06 | rotate-or-flip | no cited figure shows an effect at a stated strength. Tree-Ring average detection 0.375 under rotation is cited without its tested strength. |
+| PX07 | blur | no cited figure shows an effect at a stated strength. Tree-Ring average detection 0.563 under blur is cited without its tested strength. |
+| PX08 | jpeg-quality-degrade | no cited figure shows an effect. Tree-Ring AUC 0.999 at quality 25 against 1.000 clean is survival. |
+| AU01 | resample-round-trip | no cited effect on any mark |
+| AU02 | dither-requantize | no cited effect on any mark |
+| AU03 | lossy-transcode-round-trip | dropped from this release. No pure Rust MP3 or AAC encoder meets the dependency bar. |
+| AU04 | eq-tilt | no cited effect on any mark |
+| AU05 | speed-change | no cited effect on any mark |
 
-### AU05 speed-change (tier residual, fidelity tempo, default false, milestone 2)
+## Sanity floor
 
-- target: Echo hiding and time-correlated marks
-- parameters: factor=1.03, method=resample
-- A speed change, not a tempo-only stretch. Change the speed by the pinned factor through the same sinc resampler, which shifts tempo and pitch together. The output has no sample grid in common with the input, so its signal cost is the distance between the time-averaged log power spectra in place of the frame-wise distance.
-
-### AU03 lossy-transcode-round-trip (tier residual, fidelity held, default false, milestone 2)
-
-- target: Fragile spectral marks
-- Reserved and not runnable in this version. No pure Rust MP3 or AAC encoder meets the dependency bar, so the entry holds the id, pins no parameters, and sits in no profile. A plan that names it is refused and reported as held.
-
-### AU02 dither-requantize (tier residual, fidelity noise-floor, default true, milestone 2)
-
-- target: LSB marks in PCM samples
-- parameters: bits=16, dither=tpdf, dither_lsb=1.0
-- Requantize to the pinned bit depth with triangular dither at one step. The raised noise floor is the cost. The dither seed derives from the base seed and the input hash, as the PX05 seed does.
-
-## Profiles
-
-| Profile | Media | Tier | Milestone | Transforms | Budget |
-|---|---|---|---|---|---|
-| audio-aggressive | audio | aggressive | 2 | MC05 MC09 AU01 AU02 | audio-aggressive |
-| audio-metadata | audio | metadata | 1 | MC01 MC05 MC09 | exact |
-| audio-safe | audio | safe | 2 | MC05 MC09 AU01 AU02 | audio-safe |
-| image-aggressive | image | aggressive | 2 | MC01 MC02 MC03 MC04 PX01 PX02 | image-aggressive |
-| image-metadata | image | metadata | 1 | MC01 MC02 MC03 MC04 | exact |
-| image-safe | image | safe | 2 | MC01 MC02 MC03 MC04 PX01 PX02 | image-safe |
-| repo-files | files | metadata | 1 | MC01 MC07 MC08 | exact |
-
-## Fidelity budgets
-
-Calibration status: provisional. Record: policy/calibration.json. Record sha256: 3d7b45e16b53ae39cfe0d30547a57a833e4b34cf31a159914f0b712a36be742d. Corpus manifest sha256: 2b2c8cd9c78f0d15ea20b43a173e0fdb391436ad3d5ffaa6ff2f9a23dc9a584f. Date: 2026-09-03.
-
-| Budget | Kind | Signal floor or ceiling | Geometry |
-|---|---|---|---|
-| audio-aggressive | audio | log-spectral distance at or below 3.00 dB | resample ratio at or above 0.50, time-stretch within 0.90 to 1.10 |
-| audio-safe | audio | log-spectral distance at or below 1.00 dB | resample ratio at or above 0.90, time-stretch within 1.00 to 1.00 |
-| image-aggressive | image | PSNR at or above 30.0 dB, SSIM at or above 0.900 | resample ratio at or above 0.50, crop keeps at or above 0.85 of the area |
-| image-safe | image | PSNR at or above 38.0 dB, SSIM at or above 0.980 | resample ratio at or above 0.75, crop keeps at or above 1.00 of the area |
+Status proposed. An output scoring below PSNR 25.0 dB or SSIM 0.60 against its grid-matched reference is a broken encode: clean exits 50 and writes nothing.
 
 ## Guardrails
 
-### G1 ownership-assertion
+### G2 certified-capture
 
-- clean requires the ownership flag. Its absence is a usage error naming the scope. Anyone can type the flag, and that is the point. Nobody strips provenance without stating the asset is theirs. The assertion is itself positive evidence of generative origin, so a clean run always carries a residual to acknowledge.
+- An asset is certified capture when its active, well-formed C2PA manifest carries a c2pa.created action whose digital source type is digitalCapture, or a signer naming a camera vendor, and no later action naming a generative tool. The default run is a no-op on it and exits 0, and the report quotes the claim and says it is not signature-verified. --strip-capture overrides the keep and is recorded. A captured image with a later generative action is stripped by default.
 
-### G2 third-party-provenance-refusal
+### G3 capture-uncertain
 
-- Refuse the manifest strip and exit 40 when the manifest carries a capture signal or a third-party publisher signal. Capture signals are a capture action, a camera vendor as signer, or capture-shaped assertions naming a lens and an exposure. Publisher signals are a news organization, an agency, or a named author who is not the user. A generative tool as claim generator does not fire the refusal, because that is the normal case for an asset in scope. The override is a single explicit flag.
-
-### G3 camera-origin-heuristic
-
-- EXIF naming a real camera body with lens data and a shutter, aperture, and ISO triple describes a photograph. Warn and hold at the metadata tier unless overridden. A generative tool can write fake EXIF and a real photograph can be model-edited, so the warning asks for a second look at the asset's origin, and the override proceeds.
-
-### G4 no-aggressive-batch
-
-- One asset per invocation for anything that touches provenance or pixels. A directory of images is the shape of the misuse case. A metadata strip over a user's own output directory can take a glob.
+- Camera-style EXIF without a qualifying C2PA claim is uncertain. The asset is stripped by default and the report names the hint and says --keep exif preserves it. A generative tool can write fake EXIF and a real photograph can be model-edited, so EXIF alone certifies nothing.
 
 ### G5 safety-hashes-out-of-scope
 
-- Perceptual hashes used for abuse-material matching are not generative watermarks. No transform targets them, none is tuned against them, and none would help. This boundary is permanent, and no flag or profile reaches it. A future transform proposed because it degrades such a hash is rejected on that basis alone.
+- Perceptual hashes used for abuse-material matching are not generative watermarks. No transform targets them, none is tuned against them, and none would help. This boundary is permanent, and no flag reaches it. A future transform proposed because it degrades such a hash is rejected on that basis alone.
 
 ### G6 no-keyed-mark-scorer
 
-- This build ships no estimator that scores how likely a keyed mark is present, and no reverse-detector. The blind class rests on saying plainly that this build cannot see the mark, and a number next to that sentence would erase it. The honest way to make a keyed mark confirmable is an authorized detector that actually knows.
+- This build ships no estimator that scores how likely a keyed mark is present. A blind class is reported as applied and surviving with its citation, never with a number that would read as a detection. The dwtDct detector is different in kind: the mark is keyless and its decoder is public, so presence is a declared agreement rule with a measured false-positive fraction.
 
 ### G7 never-fabricate-provenance
 
-- Remove marks and never write them. Never synthesize a manifest, forge a claim generator, backdate a timestamp, or write camera EXIF onto a generated asset. Removing a true record on a user's own asset is in scope. Manufacturing a false one has no code path.
+- Remove marks and never write them. Never synthesize a manifest, forge a claim generator, backdate a timestamp, or write camera EXIF onto an asset. Removing a record is in scope. Manufacturing a false one has no code path.
 

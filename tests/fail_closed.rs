@@ -1,27 +1,18 @@
-//! The review blockers, each proven by a test that the earlier green suite did
-//! not carry. A partial scan never reports absence, a malformed container is
-//! never rewritten, the text tier can succeed, and the third-party refusal reads
-//! a variation-selector wrapper.
+//! The review blockers. A partial scan never reports absence, a malformed
+//! container is never rewritten, the text run can succeed, and a capture claim
+//! inside a variation-selector wrapper is read like any other manifest.
 
 mod common;
 use common::*;
 use unmark::asset::Format;
 use unmark::container;
 use unmark::detect;
-use unmark::report::{EXIT_OK, EXIT_RESIDUAL, EXIT_UNSUPPORTED};
+use unmark::report::EXIT_OK;
 use unmark::scan::ScanState;
-use unmark::{clean, inspect, policy, Options};
+use unmark::{clean, inspect, policy, Options, UnmarkError};
 
 fn pkg() -> policy::PolicyPackage {
     policy::load().expect("policy loads")
-}
-
-fn ack_opts() -> Options {
-    Options {
-        i_generated_this: true,
-        acknowledge_residual: true,
-        ..Default::default()
-    }
 }
 
 /// A PNG whose second chunk declares an impossible length, followed by a real
@@ -154,19 +145,12 @@ fn riff_rewriter_refuses_an_incomplete_walk() {
 }
 
 #[test]
-fn clean_on_a_malformed_png_fails_closed_and_writes_nothing() {
+fn clean_on_a_malformed_png_fails_the_required_inspection_and_writes_nothing() {
     // The targeted classes past the corrupt chunk scan as malformed, so the
-    // clean-level gate refuses before any rewrite and reports exit 40.
+    // required inspection failed and the run refuses before any rewrite.
     let png = malformed_png_with_c2pa_after_corruption();
-    let out = clean(&png, "image-metadata", &ack_opts(), &pkg()).unwrap();
-    assert_eq!(out.report.exit_code, EXIT_UNSUPPORTED);
-    assert!(out.output.is_none(), "nothing may be written");
-    assert!(out
-        .report
-        .actions
-        .iter()
-        .any(|a| a.outcome.contains("malformed")));
-    // The rewriter itself also refuses, should the gate ever be bypassed.
+    let err = clean(&png, &Options::default(), &pkg()).unwrap_err();
+    assert!(matches!(err, UnmarkError::Inspection(_)), "got {err}");
     let spec = container::DropSpec {
         c2pa: true,
         png_text: true,
@@ -180,49 +164,32 @@ fn clean_on_a_malformed_png_fails_closed_and_writes_nothing() {
 #[test]
 fn clean_on_a_malformed_wav_fails_closed_and_writes_nothing() {
     let wav = malformed_wav_with_c2pa_after_corruption();
-    let out = clean(&wav, "audio-metadata", &ack_opts(), &pkg()).unwrap();
-    assert_eq!(out.report.exit_code, EXIT_UNSUPPORTED);
-    assert!(out.output.is_none());
+    let err = clean(&wav, &Options::default(), &pkg()).unwrap_err();
+    assert!(matches!(err, UnmarkError::Inspection(_)), "got {err}");
 }
 
-// --- BLOCKER 3: the text tier can succeed ----------------------------------
+// --- BLOCKER 3: the text run succeeds ------------------------------------
 
 #[test]
-fn repo_files_clean_removes_a_zero_width_space_and_reaches_exit_0() {
+fn a_text_run_removes_a_zero_width_space_and_reaches_exit_0() {
     let text = "hello\u{200B} world\n";
-    let out = clean(text.as_bytes(), "repo-files", &ack_opts(), &pkg()).unwrap();
-    assert_eq!(
-        out.report.exit_code, EXIT_OK,
-        "report: {:?}",
-        out.report.actions
-    );
-    let bytes = out.output.expect("exit 0 writes output");
+    let out = clean(text.as_bytes(), &Options::default(), &pkg()).unwrap();
+    assert_eq!(out.report.exit_code, EXIT_OK, "{:?}", out.report.actions);
+    let bytes = out.output.expect("the run writes");
     assert_eq!(String::from_utf8(bytes).unwrap(), "hello world\n");
     assert!(out
         .report
-        .removed_and_proven
+        .stripped_and_proven_gone
         .iter()
         .any(|l| l.contains("invisible")));
 }
 
 #[test]
-fn repo_files_clean_gates_on_residual_without_acknowledgment() {
-    let text = "hello\u{200B} world\n";
-    let opts = Options {
-        i_generated_this: true,
-        ..Default::default()
-    };
-    let out = clean(text.as_bytes(), "repo-files", &opts, &pkg()).unwrap();
-    assert_eq!(out.report.exit_code, EXIT_RESIDUAL);
-    assert!(out.output.is_none());
-}
-
-#[test]
-fn repo_files_clean_removes_a_generator_header_and_keeps_visible_text() {
+fn a_text_run_removes_a_generator_header_and_keeps_visible_text() {
     let text = "<!-- Generator: ComfyUI 1.0 -->\nA visible line.\n";
-    let out = clean(text.as_bytes(), "repo-files", &ack_opts(), &pkg()).unwrap();
+    let out = clean(text.as_bytes(), &Options::default(), &pkg()).unwrap();
     assert_eq!(out.report.exit_code, EXIT_OK);
-    let bytes = out.output.expect("exit 0 writes output");
+    let bytes = out.output.expect("the run writes");
     assert_eq!(String::from_utf8(bytes).unwrap(), "A visible line.\n");
 }
 
@@ -243,7 +210,7 @@ fn text_signal_ignores_removable_spans_and_catches_visible_edits() {
     );
 }
 
-// --- DEFECT 4: the third-party refusal reads a wrapper ---------------------
+// --- The capture rule reads a wrapper ----------------------------------------
 
 fn encode_vs(bytes: &[u8]) -> String {
     let mut s = String::new();
@@ -259,72 +226,49 @@ fn encode_vs(bytes: &[u8]) -> String {
 }
 
 #[test]
-fn a_wrapper_carrying_a_capture_signal_triggers_the_refusal() {
-    let wrapper = encode_vs(b"jumb c2pa.captured credit: Reuters");
+fn a_wrapper_carrying_a_capture_claim_is_certified_capture_and_kept() {
+    let wrapper = encode_vs(b"jumb c2pa.captured signer Leica Camera AG");
     let text = format!("caption{wrapper}\n");
-    let out = clean(text.as_bytes(), "repo-files", &ack_opts(), &pkg()).unwrap();
-    assert_eq!(
-        out.report.exit_code, EXIT_UNSUPPORTED,
-        "a capture or publisher signal inside a wrapper must refuse the strip"
-    );
-    assert!(out.output.is_none());
-    assert!(out
-        .report
-        .actions
-        .iter()
-        .any(|a| a.outcome.contains("refused")));
-}
-
-#[test]
-fn the_override_still_strips_a_wrapper_after_the_refusal() {
-    let wrapper = encode_vs(b"jumb c2pa.captured credit: Reuters");
-    let text = format!("caption{wrapper}\n");
-    let opts = Options {
-        force_provenance_strip: true,
-        ..ack_opts()
-    };
-    let out = clean(text.as_bytes(), "repo-files", &opts, &pkg()).unwrap();
+    let out = clean(text.as_bytes(), &Options::default(), &pkg()).unwrap();
     assert_eq!(out.report.exit_code, EXIT_OK);
-    let bytes = out.output.expect("exit 0 writes output");
-    assert_eq!(String::from_utf8(bytes).unwrap(), "caption\n");
+    assert_eq!(out.report.capture.status, "certified");
+    assert_eq!(
+        out.output.as_deref(),
+        Some(text.as_bytes()),
+        "byte-identical"
+    );
+    let strip = Options {
+        strip_capture: true,
+        ..Default::default()
+    };
+    let out = clean(text.as_bytes(), &strip, &pkg()).unwrap();
+    assert_eq!(out.report.exit_code, EXIT_OK);
+    assert_eq!(String::from_utf8(out.output.unwrap()).unwrap(), "caption\n");
 }
 
 #[test]
-fn a_generative_wrapper_does_not_trigger_the_refusal() {
+fn a_publisher_wrapper_without_a_capture_action_is_stripped_by_default() {
+    let wrapper = encode_vs(b"jumb c2pa credit: Reuters");
+    let text = format!("caption{wrapper}\n");
+    let out = clean(text.as_bytes(), &Options::default(), &pkg()).unwrap();
+    assert_eq!(out.report.exit_code, EXIT_OK);
+    assert_eq!(out.report.capture.status, "none");
+    assert_eq!(String::from_utf8(out.output.unwrap()).unwrap(), "caption\n");
+}
+
+#[test]
+fn a_generative_wrapper_is_stripped_by_default() {
     let wrapper = encode_vs(b"jumb c2pa claim_generator: ComfyUI");
     let text = format!("caption{wrapper}\n");
-    let out = clean(text.as_bytes(), "repo-files", &ack_opts(), &pkg()).unwrap();
+    let out = clean(text.as_bytes(), &Options::default(), &pkg()).unwrap();
     assert_eq!(out.report.exit_code, EXIT_OK);
-}
-
-// --- Declined attribution flows from the plan, not a constant --------------
-
-#[cfg(feature = "audio")]
-#[test]
-fn a_declined_strip_is_attributed_to_the_planned_transform() {
-    let mp4 = build_mp4_with_ilst();
-    let p = pkg();
-    let out = clean(&mp4, "audio-metadata", &ack_opts(), &p).unwrap();
-    assert_eq!(out.report.exit_code, EXIT_UNSUPPORTED);
-    let declined = out
-        .report
-        .actions
-        .iter()
-        .find(|a| a.outcome.contains("declined"))
-        .expect("a declined action is recorded");
-    // The id, name, and target come from the policy transform that targets the
-    // declined class, so a new declinable class reports against its own transform.
-    let mc05 = p.transform("MC05").unwrap();
-    assert_eq!(declined.transform, mc05.id);
-    assert_eq!(declined.name, mc05.name);
-    assert_eq!(declined.target, mc05.target);
-    assert!(declined.outcome.contains("ilst"));
+    assert_eq!(String::from_utf8(out.output.unwrap()).unwrap(), "caption\n");
 }
 
 #[test]
 fn inspect_on_a_malformed_container_is_still_read_only_and_reports() {
     let png = malformed_png_with_c2pa_after_corruption();
-    let r = inspect(&png, "image-metadata", &pkg()).unwrap();
+    let r = inspect(&png, &Options::default(), &pkg()).unwrap();
     assert!(r
         .scan_states
         .iter()

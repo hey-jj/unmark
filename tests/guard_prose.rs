@@ -71,12 +71,18 @@ fn every_guard_and_judge_string_passes_the_mechanical_classes() {
     let mut found = Vec::new();
     for m in &pkg.mark_classes {
         found.extend(scan(&m.id, "guard", &m.guard));
-        if let Some(j) = &m.judge {
-            found.extend(scan(&m.id, "judge", j));
+        if let Some(s) = &m.survives {
+            found.extend(scan(&m.id, "survives", s));
         }
     }
     for t in &pkg.transforms {
         found.extend(scan(&t.id, "guard", &t.guard));
+        if let Some(e) = &t.cited_effect {
+            found.extend(scan(&t.id, "cited_effect", e));
+        }
+    }
+    for h in &pkg.held {
+        found.extend(scan(&h.id, "reason", &h.reason));
     }
     for g in &pkg.guards {
         found.extend(scan(&g.id, "guard", &g.guard));

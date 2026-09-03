@@ -1,36 +1,12 @@
-//! The report schema, the honesty tiers, and the exit mapping. The report
-//! carries three parts every time: what was removed and proven gone, what was
-//! degraded without proof, and what was not addressed. It never emits a clean
-//! verdict and never renders an empty detection list as human authorship.
+//! The report schema and the exit mapping. Every report carries three parts:
+//! what was stripped and proven gone, what was kept and why, and what
+//! survived with its evidence. It never emits a clean verdict, never renders
+//! an empty detection list as human authorship, and never says "weakened".
 
 use crate::scan::{Honesty, Location, ScanState};
 
-/// The honesty tier of a finding.
-#[derive(Clone, Copy, PartialEq, Eq, Debug, serde::Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Tier {
-    /// A confirmable mark the profile strips. Gates until removed and re-proven.
-    Removable,
-    /// A blind mark class that cannot be confirmed either way. Gates until
-    /// acknowledged.
-    Residual,
-    /// Instrumentation. Never gates.
-    Note,
-}
-
-impl Tier {
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Tier::Removable => "removable",
-            Tier::Residual => "residual",
-            Tier::Note => "note",
-        }
-    }
-}
-
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct Finding {
-    pub tier: Tier,
     pub class: String,
     pub label: String,
     pub honesty: Honesty,
@@ -41,13 +17,21 @@ pub struct Finding {
     pub evidence: Vec<String>,
 }
 
+/// One transform in the run and what became of it.
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct Action {
     pub transform: String,
     pub name: String,
     pub target: String,
-    /// `removed`, `no-op`, or `declined: <reason>`.
+    /// The cited strength the transform ran at, for a degrade transform.
+    pub strength: Option<String>,
+    /// `applied`, `kept by flag`, `kept: certified capture`, `not applicable`,
+    /// `refused: <reason>`, or `held`.
     pub outcome: String,
+    /// What the run established: `removed and proven gone`, `applied,
+    /// survives`, `no mark of this class was present`, or the cited effect.
+    pub result: String,
+    pub citation: Option<String>,
 }
 
 /// One scan-state row per class, carried as its own field so a reader never
@@ -60,19 +44,46 @@ pub struct ScanRow {
     pub state: ScanState,
 }
 
-/// The measured fidelity of a degrade plan against its budget: the signal
-/// cost on the output grid and the geometry cost, and whether both passed.
+/// The capture reading of the asset.
 #[derive(Clone, Debug, serde::Serialize)]
-pub struct Fidelity {
-    pub budget: String,
+pub struct Capture {
+    /// `certified`, `uncertain`, `generative`, or `none`.
+    pub status: String,
+    /// The quoted claim for a certified capture.
+    pub claim: Option<String>,
+    /// The named hint for an uncertain asset.
+    pub hint: Option<String>,
+    pub signature_status: String,
+    /// True when the certified-capture rule kept the asset unchanged.
+    pub kept: bool,
+    /// The sentence the report prints for this reading.
+    pub line: String,
+}
+
+/// An item preserved by the run and the reason.
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct Kept {
+    pub item: String,
+    pub reason: String,
+}
+
+/// A mark the run cannot remove, with its evidence.
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct Survivor {
+    pub mark: String,
+    pub evidence: String,
+    pub citation: Option<String>,
+}
+
+/// The sanity measurement of a written output against its grid-matched
+/// reference: the one refusal in the run.
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct Sanity {
     pub psnr_db: Option<f64>,
     pub ssim: Option<f64>,
-    pub lsd_db: Option<f64>,
-    pub resample_ratio: f64,
-    pub crop_area: f64,
-    pub time_stretch: f64,
+    pub psnr_floor_db: f64,
+    pub ssim_floor: f64,
     pub passed: bool,
-    /// The refusal reason when the budget was missed.
     pub refusal: Option<String>,
 }
 
@@ -82,28 +93,20 @@ pub struct Report {
     pub tool_version: String,
     pub policy_version: String,
     pub policy_digest: String,
-    /// The codec identity behind the output. A metadata rewrite re-encodes
-    /// nothing, so it names the container-rewrite path.
     pub encoder_fingerprint: String,
     pub verb: String,
-    pub profile: String,
     pub format: String,
-    /// The container the output is written in. A metadata rewrite keeps the
-    /// input container; a re-encode names the container it emitted.
+    /// The container the output is written in.
     pub output_format: String,
-    /// The fidelity measurement of a degrade plan, absent on a metadata plan.
-    pub fidelity: Option<Fidelity>,
+    pub capture: Capture,
     pub scan_states: Vec<ScanRow>,
     pub findings: Vec<Finding>,
     pub actions: Vec<Action>,
     /// The three parts, always all three.
-    pub removed_and_proven: Vec<String>,
-    pub degraded_without_proof: Vec<String>,
-    pub not_addressed: Vec<String>,
-    pub residual_acknowledgment_required: bool,
-    pub residual_acknowledged: bool,
-    /// A warning from the camera-origin heuristic, when it fired.
-    pub camera_origin_warning: Option<String>,
+    pub stripped_and_proven_gone: Vec<String>,
+    pub kept: Vec<Kept>,
+    pub survived: Vec<Survivor>,
+    pub sanity: Option<Sanity>,
     pub exit_code: i32,
 }
 
@@ -111,9 +114,9 @@ pub struct Report {
 pub const EXIT_OK: i32 = 0;
 pub const EXIT_USAGE: i32 = 2;
 pub const EXIT_MARK_REMAINS: i32 = 10;
-pub const EXIT_RESIDUAL: i32 = 20;
 pub const EXIT_INSTRUMENTATION: i32 = 30;
 pub const EXIT_UNSUPPORTED: i32 = 40;
+pub const EXIT_SANITY: i32 = 50;
 
 /// Render the report as a human-readable text form. The three parts are always
 /// printed, and the closing line never says the asset is clean.
@@ -123,44 +126,12 @@ pub fn render_text(r: &Report) -> String {
     let _ = writeln!(o, "unmark {} | policy {}", r.tool_version, r.policy_version);
     let _ = writeln!(
         o,
-        "verb: {} | profile: {} | format: {} | output: {}",
-        r.verb, r.profile, r.format, r.output_format
+        "verb: {} | format: {} | output: {}",
+        r.verb, r.format, r.output_format
     );
     let _ = writeln!(o, "digest: {}", r.policy_digest);
-    if let Some(f) = &r.fidelity {
-        let mut parts = Vec::new();
-        if let Some(p) = f.psnr_db {
-            parts.push(format!("PSNR {p:.2} dB"));
-        }
-        if let Some(s) = f.ssim {
-            parts.push(format!("SSIM {s:.4}"));
-        }
-        if let Some(l) = f.lsd_db {
-            parts.push(format!("LSD {l:.3} dB"));
-        }
-        parts.push(format!("resample ratio {:.3}", f.resample_ratio));
-        parts.push(format!("crop area {:.3}", f.crop_area));
-        let _ = writeln!(
-            o,
-            "fidelity ({}): {} | {}",
-            f.budget,
-            parts.join(", "),
-            if f.passed {
-                "within budget".to_string()
-            } else {
-                format!(
-                    "refused: {}",
-                    f.refusal.as_deref().unwrap_or("budget missed")
-                )
-            }
-        );
-    }
+    let _ = writeln!(o, "capture: {}", r.capture.line);
     let _ = writeln!(o);
-
-    if let Some(w) = &r.camera_origin_warning {
-        let _ = writeln!(o, "camera-origin warning: {w}");
-        let _ = writeln!(o);
-    }
 
     let _ = writeln!(o, "scan states:");
     for s in &r.scan_states {
@@ -175,38 +146,71 @@ pub fn render_text(r: &Report) -> String {
     if !r.actions.is_empty() {
         let _ = writeln!(o, "actions:");
         for a in &r.actions {
-            let _ = writeln!(o, "  {} {}: {}", a.transform, a.name, a.outcome);
+            let strength = a
+                .strength
+                .as_ref()
+                .map(|s| format!(" [{s}]"))
+                .unwrap_or_default();
+            let _ = writeln!(
+                o,
+                "  {} {}{}: {} ({})",
+                a.transform, a.name, strength, a.outcome, a.result
+            );
         }
         let _ = writeln!(o);
     }
 
-    let _ = writeln!(o, "removed and proven gone:");
-    write_list(&mut o, &r.removed_and_proven);
-    let _ = writeln!(o, "degraded without proof:");
-    write_list(&mut o, &r.degraded_without_proof);
-    let _ = writeln!(o, "not addressed:");
-    write_list(&mut o, &r.not_addressed);
+    let _ = writeln!(o, "stripped and proven gone:");
+    if r.stripped_and_proven_gone.is_empty() {
+        let _ = writeln!(o, "  none");
+    }
+    for i in &r.stripped_and_proven_gone {
+        let _ = writeln!(o, "  {i}");
+    }
+    let _ = writeln!(o, "kept:");
+    if r.kept.is_empty() {
+        let _ = writeln!(o, "  none");
+    }
+    for k in &r.kept {
+        let _ = writeln!(o, "  {}: {}", k.item, k.reason);
+    }
+    let _ = writeln!(o, "survived:");
+    if r.survived.is_empty() {
+        let _ = writeln!(o, "  none");
+    }
+    for s in &r.survived {
+        let cite = s
+            .citation
+            .as_ref()
+            .map(|c| format!(" ({c})"))
+            .unwrap_or_default();
+        let _ = writeln!(o, "  {}: {}{cite}", s.mark, s.evidence);
+    }
     let _ = writeln!(o);
-
-    if r.residual_acknowledgment_required && !r.residual_acknowledged {
+    if let Some(s) = &r.sanity {
         let _ = writeln!(
             o,
-            "a residual acknowledgment is required before this run can report success"
+            "sanity: PSNR {} dB, SSIM {} against floors {:.1} dB and {:.2}: {}",
+            s.psnr_db
+                .map(|v| format!("{v:.2}"))
+                .unwrap_or_else(|| "n/a".to_string()),
+            s.ssim
+                .map(|v| format!("{v:.4}"))
+                .unwrap_or_else(|| "n/a".to_string()),
+            s.psnr_floor_db,
+            s.ssim_floor,
+            if s.passed {
+                "passed".to_string()
+            } else {
+                format!(
+                    "refused: {}",
+                    s.refusal.as_deref().unwrap_or("floor missed")
+                )
+            }
         );
     }
     let _ = writeln!(o, "exit: {}", r.exit_code);
     o
-}
-
-fn write_list(o: &mut String, items: &[String]) {
-    use std::fmt::Write;
-    if items.is_empty() {
-        let _ = writeln!(o, "  none");
-    } else {
-        for i in items {
-            let _ = writeln!(o, "  {i}");
-        }
-    }
 }
 
 /// JSON-escape a string as a complete quoted literal.

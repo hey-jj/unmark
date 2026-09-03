@@ -37,6 +37,7 @@ pub struct PngOpts {
     pub exif: bool,
     pub xmp: bool,
     pub c2pa: bool,
+    pub c2pa_payload: Option<Vec<u8>>,
     pub idat: Vec<u8>,
 }
 
@@ -47,16 +48,55 @@ impl Default for PngOpts {
             exif: false,
             xmp: false,
             c2pa: false,
-            idat: vec![1, 2, 3, 4, 5, 6, 7, 8],
+            c2pa_payload: None,
+            idat: stored_idat(PNG_SIDE),
         }
     }
+}
+
+/// The built PNG is a decodable 16 by 16 RGB gradient, so the default run's
+/// pixel path can decode it.
+pub const PNG_SIDE: usize = 16;
+
+fn adler32(data: &[u8]) -> u32 {
+    let (mut a, mut b) = (1u32, 0u32);
+    for &d in data {
+        a = (a + d as u32) % 65521;
+        b = (b + a) % 65521;
+    }
+    (b << 16) | a
+}
+
+/// A zlib stream with one stored block carrying the filtered scanlines of a
+/// side-by-side RGB gradient.
+pub fn stored_idat(side: usize) -> Vec<u8> {
+    let mut raw = Vec::with_capacity(side * (1 + side * 3));
+    for y in 0..side {
+        raw.push(0);
+        for x in 0..side {
+            raw.push((x * 255 / (side - 1)) as u8);
+            raw.push((y * 255 / (side - 1)) as u8);
+            raw.push(((x + y) * 255 / (2 * side - 2)) as u8);
+        }
+    }
+    let mut out = vec![0x78, 0x01, 0x01];
+    let len = raw.len() as u16;
+    out.extend_from_slice(&len.to_le_bytes());
+    out.extend_from_slice(&(!len).to_le_bytes());
+    out.extend_from_slice(&raw);
+    out.extend_from_slice(&adler32(&raw).to_be_bytes());
+    out
 }
 
 pub fn build_png(o: &PngOpts) -> Vec<u8> {
     let mut out = Vec::new();
     out.extend_from_slice(&[0x89, b'P', b'N', b'G', b'\r', b'\n', 0x1a, b'\n']);
-    // IHDR: 1x1 RGB.
-    let ihdr = [0, 0, 0, 1, 0, 0, 0, 1, 8, 2, 0, 0, 0];
+    // IHDR: PNG_SIDE by PNG_SIDE RGB.
+    let side = PNG_SIDE as u32;
+    let mut ihdr = Vec::new();
+    ihdr.extend_from_slice(&side.to_be_bytes());
+    ihdr.extend_from_slice(&side.to_be_bytes());
+    ihdr.extend_from_slice(&[8, 2, 0, 0, 0]);
     out.extend_from_slice(&png_chunk(b"IHDR", &ihdr));
     if o.text {
         let mut d = Vec::new();
@@ -81,7 +121,9 @@ pub fn build_png(o: &PngOpts) -> Vec<u8> {
         out.extend_from_slice(&png_chunk(b"iTXt", &d));
     }
     if o.c2pa {
-        out.extend_from_slice(&png_chunk(b"caBX", b"jumb\0\0\0\0c2pa manifest store"));
+        let default = b"jumb\0\0\0\0c2pa manifest store".to_vec();
+        let payload = o.c2pa_payload.as_ref().unwrap_or(&default);
+        out.extend_from_slice(&png_chunk(b"caBX", payload));
     }
     out.extend_from_slice(&png_chunk(b"IDAT", &o.idat));
     out.extend_from_slice(&png_chunk(b"IEND", &[]));
@@ -105,6 +147,19 @@ pub struct JpegOpts {
     pub c2pa_payload: Option<Vec<u8>>,
 }
 
+/// A decodable JPEG body from the crate's own encoder: everything after the
+/// SOI marker.
+fn jpeg_body() -> Vec<u8> {
+    let img = unmark::codec::Image {
+        width: 16,
+        height: 16,
+        channels: 3,
+        data: (0..16 * 16 * 3).map(|i| (i * 7 % 256) as u8).collect(),
+    };
+    let bytes = unmark::codec::jpeg::encode(&img, 92, "4:4:4").unwrap();
+    bytes[2..].to_vec()
+}
+
 pub fn build_jpeg(o: &JpegOpts) -> Vec<u8> {
     let mut out = vec![0xFF, 0xD8];
     if o.exif {
@@ -125,10 +180,8 @@ pub fn build_jpeg(o: &JpegOpts) -> Vec<u8> {
         let payload = o.c2pa_payload.as_ref().unwrap_or(&default);
         out.extend_from_slice(&jpeg_app(0xEB, payload));
     }
-    // A tiny entropy-coded scan and end of image.
-    out.extend_from_slice(&[0xFF, 0xDA, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x3F, 0x00]);
-    out.extend_from_slice(&[0x12, 0x34, 0x56, 0x78]);
-    out.extend_from_slice(&[0xFF, 0xD9]);
+    // The real frame, scan, and end of image.
+    out.extend_from_slice(&jpeg_body());
     out
 }
 

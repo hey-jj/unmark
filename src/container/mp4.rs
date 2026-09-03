@@ -1,10 +1,8 @@
-//! ISOBMFF rewriter. It removes a top-level C2PA `uuid` box and corrects the
-//! `stco` and `co64` sample-offset tables by the removed byte count, so the
-//! media in `mdat` still resolves. The `mdat` bytes themselves are never
-//! touched. Stripping an `ilst` atom from MP4 is held for a later milestone,
-//! because a safe rewrite there needs the same offset accounting across nested
-//! container sizes and is not yet built. That case declines rather than
-//! producing a file whose sample table points at the wrong bytes.
+//! ISOBMFF rewriter. It removes a top-level C2PA `uuid` box and the `ilst`
+//! metadata atom wherever it sits in the box tree, corrects every enclosing
+//! box size on the path to a removed atom, and corrects the `stco` and `co64`
+//! sample-offset tables by the bytes removed before each chunk, so the media
+//! in `mdat` still resolves. The `mdat` bytes themselves are never touched.
 
 use super::{DropSpec, RewriteError};
 use crate::detect::c2pa;
@@ -52,35 +50,46 @@ fn top_boxes(bytes: &[u8]) -> (Vec<TopBox>, bool) {
     (out, complete)
 }
 
-/// True when the file carries an `ilst` atom anywhere in its box tree.
-fn has_ilst(bytes: &[u8], start: usize, end: usize, depth: usize) -> bool {
+/// Every `ilst` atom in the box tree, as (start, total) ranges, with the
+/// chain of enclosing boxes (start offsets) whose sizes shrink when it goes.
+fn find_ilst(
+    bytes: &[u8],
+    start: usize,
+    end: usize,
+    depth: usize,
+    chain: &mut Vec<usize>,
+    out: &mut Vec<(usize, usize, Vec<usize>)>,
+) {
     if depth > 8 {
-        return false;
+        return;
     }
     let mut p = start;
     while p + 8 <= end {
         let size32 = crate::detect::be_u32(bytes, p).unwrap_or(0) as usize;
         let kind = [bytes[p + 4], bytes[p + 5], bytes[p + 6], bytes[p + 7]];
+        // A 64-bit or to-end size at this depth is not a layout this rewriter
+        // edits; the box is skipped whole.
         let total = if size32 == 0 { end - p } else { size32 };
         if total < 8 || p + total > end {
             break;
         }
         if &kind == b"ilst" {
-            return true;
-        }
-        let is_container = matches!(
+            out.push((p, total, chain.clone()));
+        } else if matches!(
             &kind,
             b"moov" | b"udta" | b"trak" | b"mdia" | b"minf" | b"stbl"
-        );
-        if is_container && has_ilst(bytes, p + 8, p + total, depth + 1) {
-            return true;
-        }
-        if &kind == b"meta" && has_ilst(bytes, p + 12, p + total, depth + 1) {
-            return true;
+        ) && size32 > 1
+        {
+            chain.push(p);
+            find_ilst(bytes, p + 8, p + total, depth + 1, chain, out);
+            chain.pop();
+        } else if &kind == b"meta" && size32 > 1 {
+            chain.push(p);
+            find_ilst(bytes, p + 12, p + total, depth + 1, chain, out);
+            chain.pop();
         }
         p += total;
     }
-    false
 }
 
 pub fn rewrite(bytes: &[u8], spec: &DropSpec) -> Result<Vec<u8>, RewriteError> {
@@ -92,39 +101,46 @@ pub fn rewrite(bytes: &[u8], spec: &DropSpec) -> Result<Vec<u8>, RewriteError> {
             "the ISOBMFF box stream did not parse to the end of the file".to_string(),
         ));
     }
-    // Held for a later milestone: safe ilst removal from MP4.
-    if spec.ilst && has_ilst(bytes, 0, bytes.len(), 0) {
-        return Err(RewriteError::Declined {
-            class: "ilst".to_string(),
-            reason:
-                "stripping an ilst tag from an ISO base media file is not supported in this build"
-                    .to_string(),
-        });
-    }
-    if !spec.c2pa {
-        return Ok(bytes.to_vec());
-    }
-
-    // Collect the top-level C2PA uuid boxes to remove.
-    let removed: Vec<(usize, usize)> = boxes
-        .iter()
-        .filter(|b| {
-            &b.kind == b"uuid"
+    // Collect the ranges to remove: top-level C2PA uuid boxes and ilst atoms.
+    let mut removed: Vec<(usize, usize)> = Vec::new();
+    let mut chains: Vec<Vec<usize>> = Vec::new();
+    if spec.c2pa {
+        for b in &boxes {
+            if &b.kind == b"uuid"
                 && c2pa::looks_like_c2pa(bytes.get(b.payload..b.start + b.total).unwrap_or(&[]))
-        })
-        .map(|b| (b.start, b.total))
-        .collect();
+            {
+                removed.push((b.start, b.total));
+                chains.push(Vec::new());
+            }
+        }
+    }
+    if spec.ilst {
+        let mut found = Vec::new();
+        find_ilst(bytes, 0, bytes.len(), 0, &mut Vec::new(), &mut found);
+        for (start, total, chain) in found {
+            removed.push((start, total));
+            chains.push(chain);
+        }
+    }
     if removed.is_empty() {
         return Ok(bytes.to_vec());
     }
 
-    // Correct sample-offset tables in a mutable copy before excising the boxes,
-    // so table positions stay valid while the values are edited in place.
+    // Correct sample-offset tables and enclosing box sizes in a mutable copy
+    // before excising the ranges, so positions stay valid while the values
+    // are edited in place.
     let mut work = bytes.to_vec();
     let mut tables = Vec::new();
     collect_offset_tables(bytes, 0, bytes.len(), &mut tables, 0);
     for t in &tables {
         correct_table(&mut work, t, &removed);
+    }
+    for ((_, total), chain) in removed.iter().zip(&chains) {
+        for &parent in chain {
+            let size = u32::from_be_bytes(work[parent..parent + 4].try_into().unwrap());
+            let shrunk = size.saturating_sub(*total as u32);
+            work[parent..parent + 4].copy_from_slice(&shrunk.to_be_bytes());
+        }
     }
 
     // Excise the removed ranges from the corrected copy, high offset first.

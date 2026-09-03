@@ -1,26 +1,28 @@
-//! unmark removes the confirmable marks a generative tool left on an asset the
-//! user made, and reports honestly about the marks it cannot confirm.
+//! unmark strips every mark it can find by default and keeps provenance only
+//! where a well-formed C2PA claim identifies a camera or sensor capture with
+//! no later generative action. Capture claims are read, not
+//! signature-verified. Every policy flag turns a strip off. The report lists
+//! what was stripped and proven gone, what was kept and why, and what
+//! survived.
 //!
 //! The pure core is small and named. `detect::inspect(bytes)` is a pure
-//! function of the input. `plan` resolves detections and a profile into an
-//! ordered transform list. `transform::apply(bytes, format, plan)` rewrites the
-//! container without decoding a pixel or a sample. The binary does the I/O.
+//! function of the input. `plan_run` resolves a container and the opt-outs
+//! into an ordered transform list. `clean` applies it, re-inspects the
+//! output, and measures the sanity floor. The binary does the I/O.
 //!
 //! The tool never emits a clean verdict, and it never renders an empty
 //! detection list as human authorship. A finding of no marks is a statement
 //! about this build's reach over an enumerated set of containers, never about
-//! the asset's origin. Missing credentials never prove an asset was
-//! uncredentialed, because copies and registry records persist.
+//! the asset's origin.
 
 pub mod asset;
 pub mod budget;
-#[cfg(feature = "image")]
-pub mod calibrate;
+pub mod capture;
 pub mod codec;
 pub mod container;
 pub mod detect;
 pub mod dsp;
-pub mod guard;
+pub mod mark;
 pub mod policy;
 pub mod report;
 pub mod scan;
@@ -28,33 +30,36 @@ pub mod skill;
 pub mod transform;
 
 use asset::Format;
+use capture::{CaptureReading, CaptureStatus, SIGNATURE_STATUS};
 use policy::PolicyPackage;
-use report::{Action, Finding, Report, ScanRow, Tier};
-use scan::{Detections, Honesty, ScanState};
+use report::{Action, Capture, Finding, Kept, Report, ScanRow, Survivor};
+use scan::{Detection, Detections, Honesty, ScanState};
 
-pub const SCHEMA_VERSION: &str = "1.0.0";
+pub const SCHEMA_VERSION: &str = "2.0.0";
 pub const TOOL_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// The codec and resampler crates behind every encode, with their versions.
-/// A metadata rewrite re-encodes nothing and reports the same string, so a
-/// report and the calibration record name one fingerprint. The versions are
-/// pinned here and checked against Cargo.lock by the test suite, so a codec
-/// bump changes the fingerprint and fails CI until recalibration.
+/// The codec and resampler crates behind every encode, with their versions,
+/// and the in-crate encoder's behavior version. A metadata rewrite re-encodes
+/// nothing and reports the same string.
 pub fn encoder_fingerprint() -> String {
     let parts: Vec<String> = CODEC_CRATES
         .iter()
         .map(|(name, version)| format!("{name} {version}"))
         .collect();
     format!(
-        "unmark {TOOL_VERSION}; container-rewrite/no-reencode; {}; jpeg-encoder in-crate {} baseline 4:4:4; resample in-crate lanczos3 and kaiser-sinc scalar; trig in-crate libm-free",
+        "unmark {TOOL_VERSION}; container-rewrite/no-reencode; {}; jpeg-encoder in-crate {} baseline 4:4:4; resample in-crate lanczos3 scalar; trig in-crate libm-free",
         parts.join("; "),
-        codec::jpeg::ENCODER_VERSION
+        JPEG_ENCODER_VERSION
     )
 }
 
-/// The external codec crates and the versions this build was calibrated
-/// against. Feature-independent on purpose: the fingerprint must read the
-/// same in a default build and an all-features build.
+#[cfg(feature = "image")]
+const JPEG_ENCODER_VERSION: &str = codec::jpeg::ENCODER_VERSION;
+#[cfg(not(feature = "image"))]
+const JPEG_ENCODER_VERSION: &str = "v1";
+
+/// The external codec crates and their versions, feature-independent so the
+/// fingerprint reads the same in every build.
 pub const CODEC_CRATES: &[(&str, &str)] = &[
     ("png", "0.18.1"),
     ("jpeg-decoder", "0.3.2"),
@@ -63,7 +68,7 @@ pub const CODEC_CRATES: &[(&str, &str)] = &[
     ("flacenc", "0.5.1"),
 ];
 
-/// The mutating and read-only verbs.
+/// The verbs.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Verb {
     Inspect,
@@ -83,18 +88,15 @@ impl Verb {
     }
 }
 
-/// Per-run options set from CLI flags.
+/// The opt-outs. Every one turns a strip off.
 #[derive(Clone, Debug, Default)]
 pub struct Options {
-    /// G1: the ownership assertion, required on clean.
-    pub i_generated_this: bool,
-    /// The residual acknowledgment that lets a clean run reach exit 0.
-    pub acknowledge_residual: bool,
-    /// G2 override: strip a manifest carrying a capture or publisher signal.
-    pub force_provenance_strip: bool,
-    /// Opt-in transforms drawn from the profile's optional set, for example
-    /// MC06.
-    pub opt_in: Vec<String>,
+    /// Transform ids or mark classes to preserve.
+    pub keep: Vec<String>,
+    /// Disable every pixel and audio transform; metadata strips still run.
+    pub no_degrade: bool,
+    /// Strip a certified capture too.
+    pub strip_capture: bool,
 }
 
 /// Errors mapped to the exit contract.
@@ -102,10 +104,9 @@ pub struct Options {
 pub enum UnmarkError {
     Usage(String),
     Unsupported(String),
-    /// The container's structure would not parse safely. Presence of every
-    /// class past the break is unknown. Maps to exit 40 and writes nothing.
-    Malformed(String),
-    Instrumentation(String),
+    /// A required inspection or decode failed; presence past the break is
+    /// unknown. Maps to exit 30 and writes nothing.
+    Inspection(String),
 }
 
 impl std::fmt::Display for UnmarkError {
@@ -113,8 +114,7 @@ impl std::fmt::Display for UnmarkError {
         match self {
             UnmarkError::Usage(m) => write!(f, "usage error: {m}"),
             UnmarkError::Unsupported(m) => write!(f, "unsupported input: {m}"),
-            UnmarkError::Malformed(m) => write!(f, "malformed: {m}"),
-            UnmarkError::Instrumentation(m) => write!(f, "instrumentation error: {m}"),
+            UnmarkError::Inspection(m) => write!(f, "inspection failed: {m}"),
         }
     }
 }
@@ -122,158 +122,188 @@ impl std::fmt::Display for UnmarkError {
 impl std::error::Error for UnmarkError {}
 
 /// The output of a clean run: the report, plus the cleaned bytes when and only
-/// when the run reached exit 0.
+/// when the run may write.
 #[derive(Clone, Debug)]
 pub struct CleanOutcome {
     pub report: Report,
     pub output: Option<Vec<u8>>,
 }
 
-/// Resolve a profile name against the package, enforcing v1 availability and
-/// the feature gate.
-fn resolve_profile<'a>(
-    pkg: &'a PolicyPackage,
-    name: &str,
-) -> Result<&'a policy::Profile, UnmarkError> {
-    let p = pkg
-        .profile(name)
-        .ok_or_else(|| UnmarkError::Usage(format!("unknown profile {name}")))?;
-    if p.milestone != 1 {
-        // The image degrade profiles run once the pixel transforms are built.
-        // The audio degrade profiles stay gated until audio calibrates.
-        if p.media != "image" || !cfg!(feature = "image") {
+/// The policy's container name for a sniffed format.
+fn container_name(format: Format) -> &'static str {
+    format.as_str()
+}
+
+/// The keep names a `--keep` value may use: a transform id, a mark class, or
+/// a transform name.
+fn keep_matches(pkg: &PolicyPackage, keep: &str, id: &str) -> bool {
+    let k = keep.to_ascii_lowercase();
+    if k == id.to_ascii_lowercase() {
+        return true;
+    }
+    if let Some(t) = pkg.transform(id) {
+        if k == t.name {
+            return true;
+        }
+    }
+    transform::targeted_classes(id)
+        .iter()
+        .any(|c| c.eq_ignore_ascii_case(&k))
+}
+
+/// Validate every `--keep` value against the catalog: a value that names no
+/// transform, class, or name is a usage error rather than a silent no-op.
+fn validate_keeps(pkg: &PolicyPackage, opts: &Options) -> Result<(), UnmarkError> {
+    for k in &opts.keep {
+        let known = pkg.transforms.iter().any(|t| keep_matches(pkg, k, &t.id))
+            || pkg
+                .mark_classes
+                .iter()
+                .any(|m| m.id.eq_ignore_ascii_case(k));
+        if !known {
             return Err(UnmarkError::Usage(format!(
-                "profile {name} is not available in this build. The audio degrade profiles stay gated until the audio ceilings calibrate"
+                "--keep {k} names no transform, transform name, or mark class"
             )));
         }
     }
-    if p.feature.as_deref() == Some("audio") && !cfg!(feature = "audio") {
-        return Err(UnmarkError::Usage(format!(
-            "profile {name} needs the audio feature; install with --features audio"
-        )));
-    }
-    Ok(p)
+    Ok(())
 }
 
-/// The ordered transform ids a profile applies, including any opted-in optional
-/// transforms, in canonical order.
-fn resolved_transforms(
-    pkg: &PolicyPackage,
-    profile: &policy::Profile,
-    opts: &Options,
-) -> Vec<String> {
-    let mut ids: Vec<String> = profile.transforms.clone();
-    for o in &opts.opt_in {
-        if profile.optional_transforms.contains(o) && !ids.contains(o) {
-            ids.push(o.clone());
+/// The plan for a container under the opt-outs: the ordered transform ids
+/// that run, and the items kept by flag with the flag named.
+pub fn plan_run(pkg: &PolicyPackage, format: Format, opts: &Options) -> (Vec<String>, Vec<Kept>) {
+    let mut run = Vec::new();
+    let mut kept = Vec::new();
+    for id in pkg.default_run(container_name(format)) {
+        let t = pkg
+            .transform(&id)
+            .expect("default run names catalog entries");
+        if opts.no_degrade && t.is_degrade() {
+            kept.push(Kept {
+                item: format!("{} {}", t.id, t.name),
+                reason: "kept by flag --no-degrade".to_string(),
+            });
+            continue;
         }
+        if let Some(k) = opts.keep.iter().find(|k| keep_matches(pkg, k, &id)) {
+            kept.push(Kept {
+                item: format!("{} {}", t.id, t.name),
+                reason: format!("kept by flag --keep {k}"),
+            });
+            continue;
+        }
+        run.push(id);
     }
-    // Canonical order by the transform catalog order field.
-    ids.sort_by_key(|id| pkg.transform(id).map(|t| t.order).unwrap_or(i64::MAX));
-    ids
+    (run, kept)
 }
 
-/// The confirmable mark classes a transform set strips.
-fn targeted_classes(transforms: &[String]) -> Vec<&'static str> {
+/// Classes the run strips.
+fn targeted(run: &[String]) -> Vec<&'static str> {
     let mut out = Vec::new();
-    for t in transforms {
-        match t.as_str() {
-            "MC01" => out.push("c2pa"),
-            "MC02" => {
-                out.push("xmp");
-                out.push("iptc");
+    for id in run {
+        for c in transform::targeted_classes(id) {
+            if !out.contains(c) {
+                out.push(*c);
             }
-            "MC03" => out.push("exif"),
-            "MC04" => out.push("png_text"),
-            "MC05" => {
-                out.push("id3");
-                out.push("ilst");
-            }
-            "MC06" => out.push("vorbis"),
-            "MC07" => out.push("invisibles"),
-            "MC09" => {
-                out.push("riff_ancillary");
-                out.push("id3");
-            }
-            _ => {}
         }
     }
     out
 }
 
-/// The planned transform that targets a class. A refusal or a decline is
-/// attributed through this lookup rather than to a hardcoded id, so a new
-/// class in a later milestone reports against its own catalog entry.
-fn transform_for_class<'a>(
-    pkg: &'a PolicyPackage,
-    transforms: &[String],
-    class: &str,
-) -> Option<&'a policy::Transform> {
-    transforms
-        .iter()
-        .find(|id| targeted_classes(std::slice::from_ref(id)).contains(&class))
-        .and_then(|id| pkg.transform(id))
+/// The dwtDct detection over a decoded image, as a detection row.
+#[cfg(feature = "image")]
+fn dwtdct_detection(img: Option<&codec::Image>) -> (Detection, Vec<mark::dwtdct::Decision>) {
+    let label = "dwtDct pixel mark";
+    let Some(img) = img else {
+        return (
+            Detection::with_state("dwtdct", label, Honesty::Confirmable, ScanState::Malformed),
+            Vec::new(),
+        );
+    };
+    let decisions = mark::dwtdct::detect(img);
+    let mut det = if decisions.iter().any(|d| d.present) {
+        Detection::present("dwtdct", label, Honesty::Confirmable)
+    } else {
+        Detection::with_state(
+            "dwtdct",
+            label,
+            Honesty::Confirmable,
+            ScanState::ConfirmedAbsent,
+        )
+    };
+    for d in &decisions {
+        det.evidence.push(format!(
+            "payload {} agreement {:.3} against threshold {:.2} over {} blocks: {}",
+            d.payload,
+            d.agreement,
+            d.threshold,
+            d.blocks,
+            if d.present { "present" } else { "absent" }
+        ));
+    }
+    (det, decisions)
 }
 
-/// Evidence that the asset is generative, read from the asset itself. This is
-/// what keys the residual tier on `inspect`, which makes no ownership demand.
-fn generative_evidence(bytes: &[u8], det: &Detections) -> Vec<String> {
-    let mut ev = Vec::new();
-    let gens: Vec<String> = include_str!("../policy/signatures/generator-strings.txt")
-        .lines()
-        .map(str::trim)
-        .filter(|l| !l.is_empty() && !l.starts_with('#'))
-        .map(str::to_ascii_lowercase)
-        .collect();
-    if let Some(pt) = det.get("png_text") {
-        if pt.state == ScanState::ConfirmedPresent {
-            ev.push("a PNG text chunk carries generation data".to_string());
-        }
+/// Decode an image for the pixel path and the dwtDct read. None when the
+/// build or the container cannot decode it.
+#[cfg(feature = "image")]
+fn decode_image(bytes: &[u8], format: Format) -> Option<codec::Image> {
+    if format.media() != asset::Media::Image {
+        return None;
     }
-    if let Some(ex) = det.get("exif") {
-        for e in &ex.evidence {
-            let low = e.to_ascii_lowercase();
-            if gens.iter().any(|g| low.contains(g)) {
-                ev.push(format!("EXIF names a generative tool ({e})"));
-            }
-        }
-    }
-    if let Some(x) = det.get("xmp") {
-        for e in &x.evidence {
-            let low = e.to_ascii_lowercase();
-            if gens.iter().any(|g| low.contains(g)) {
-                ev.push(format!("XMP CreatorTool names a generative tool ({e})"));
-            }
-        }
-    }
-    if let Some(c) = det.get("c2pa") {
-        if c.state == ScanState::ConfirmedPresent {
-            for loc in &c.locations {
-                let region = bytes
-                    .get(loc.offset..loc.offset + loc.length)
-                    .unwrap_or(&[]);
-                let low: Vec<u8> = region.iter().map(u8::to_ascii_lowercase).collect();
-                if gens
-                    .iter()
-                    .any(|g| detect::c2pa::contains(&low, g.as_bytes()))
-                {
-                    ev.push("a C2PA manifest names a generative tool".to_string());
-                    break;
-                }
-            }
-        }
-    }
-    ev
+    codec::decode_image(bytes, format).ok()
 }
 
-/// Build the scan-state rows and the tiered findings shared by every verb.
-fn build_findings(
-    pkg: &PolicyPackage,
-    det: &Detections,
-    targeted: &[&str],
-    force_residual: bool,
-    generative: bool,
-) -> (Vec<ScanRow>, Vec<Finding>) {
+/// The full read of an asset: the container detections plus the dwtDct
+/// decision for an image.
+fn full_inspect(bytes: &[u8]) -> Detections {
+    let mut det = detect::inspect(bytes);
+    #[cfg(feature = "image")]
+    if det.format.media() == asset::Media::Image {
+        let img = decode_image(bytes, det.format);
+        let (row, _) = dwtdct_detection(img.as_ref());
+        det.items.push(row);
+    }
+    det
+}
+
+fn capture_line(reading: &CaptureReading) -> String {
+    match reading.status {
+        CaptureStatus::Certified => format!(
+            "Certified capture kept. Claim: `{}`. Signature status: {SIGNATURE_STATUS}.",
+            reading.claim.as_deref().unwrap_or("")
+        ),
+        CaptureStatus::Generative => format!(
+            "Capture claim followed by a generative action: `{}`. Stripped by default. Signature status: {SIGNATURE_STATUS}.",
+            reading.claim.as_deref().unwrap_or("")
+        ),
+        CaptureStatus::Uncertain => format!(
+            "Capture uncertain. Hint: `{}`. Stripped by default. Use `--keep exif` to preserve EXIF.",
+            reading.hint.as_deref().unwrap_or("")
+        ),
+        CaptureStatus::None => "No capture claim.".to_string(),
+    }
+}
+
+fn capture_report(reading: &CaptureReading, kept: bool) -> Capture {
+    let mut c = Capture {
+        status: reading.status.as_str().to_string(),
+        claim: reading.claim.clone(),
+        hint: reading.hint.clone(),
+        signature_status: SIGNATURE_STATUS.to_string(),
+        kept,
+        line: capture_line(reading),
+    };
+    if reading.status == CaptureStatus::Certified && !kept {
+        c.line = format!(
+            "Certified capture stripped under --strip-capture. Claim: `{}`. Signature status: {SIGNATURE_STATUS}.",
+            reading.claim.as_deref().unwrap_or("")
+        );
+    }
+    c
+}
+
+fn rows_and_findings(pkg: &PolicyPackage, det: &Detections) -> (Vec<ScanRow>, Vec<Finding>) {
     let mut rows = Vec::new();
     let mut findings = Vec::new();
     for d in &det.items {
@@ -287,90 +317,53 @@ fn build_findings(
             .mark_class(&d.class)
             .map(|m| m.guard.clone())
             .unwrap_or_default();
-        match d.honesty {
-            Honesty::Confirmable => match d.state {
-                ScanState::ConfirmedPresent => {
-                    let tier = if targeted.contains(&d.class.as_str()) {
-                        Tier::Removable
-                    } else {
-                        Tier::Note
-                    };
-                    findings.push(finding(tier, d, note));
-                }
-                ScanState::Malformed => {
-                    findings.push(finding(Tier::Note, d, note));
-                }
-                _ => {}
-            },
-            Honesty::Blind => {
-                // The residual tier fires when the run carries positive evidence
-                // of generative origin, which is the ownership assertion on
-                // clean or asset-intrinsic evidence on inspect.
-                let tier = if force_residual || generative {
-                    Tier::Residual
-                } else {
-                    Tier::Note
-                };
-                findings.push(finding(tier, d, note));
+        let reportable = match d.honesty {
+            Honesty::Confirmable => {
+                matches!(d.state, ScanState::ConfirmedPresent | ScanState::Malformed)
             }
-            Honesty::Unaddressed => {
-                findings.push(finding(Tier::Note, d, note));
-            }
+            Honesty::Blind | Honesty::Unaddressed => true,
+        };
+        if reportable {
+            findings.push(Finding {
+                class: d.class.clone(),
+                label: d.label.clone(),
+                honesty: d.honesty,
+                scan_state: d.state,
+                note,
+                locations: d.locations.clone(),
+                evidence: d.evidence.clone(),
+            });
         }
     }
     (rows, findings)
 }
 
-fn finding(tier: Tier, d: &scan::Detection, note: String) -> Finding {
-    Finding {
-        tier,
-        class: d.class.clone(),
-        label: d.label.clone(),
-        honesty: d.honesty,
-        scan_state: d.state,
-        note,
-        locations: d.locations.clone(),
-        evidence: d.evidence.clone(),
-    }
-}
-
-/// The three summary parts. `removed` is the set of classes proven gone.
-fn three_parts(det: &Detections, removed: &[String]) -> (Vec<String>, Vec<String>, Vec<String>) {
-    three_parts_for(det, removed, false)
-}
-
-/// The three parts. When a degrade plan ran, the blind classes it weakened
-/// move to "degraded without proof": the build still cannot see them, so
-/// nothing is proven, and the report says so rather than listing them as
-/// untouched.
-fn three_parts_for(
-    det: &Detections,
-    removed: &[String],
-    degraded: bool,
-) -> (Vec<String>, Vec<String>, Vec<String>) {
-    let removed_and_proven = removed.to_vec();
-    let mut degraded_without_proof: Vec<String> = Vec::new();
-    let mut not_addressed = Vec::new();
-    for d in &det.items {
-        match d.honesty {
-            Honesty::Blind if degraded => degraded_without_proof.push(format!(
-                "{} (keyed mark, weakened by the plan and not visible to this offline build)",
-                d.label
-            )),
-            Honesty::Blind => not_addressed.push(format!(
-                "{} (keyed mark, not visible to this offline build)",
-                d.label
-            )),
-            Honesty::Unaddressed if d.state == ScanState::NotAttempted => {
-                not_addressed.push(d.label.clone())
-            }
-            _ => {}
+/// The survivors: every blind class for the medium, with its cited evidence,
+/// and the note of what the run did against it.
+fn survivors(pkg: &PolicyPackage, det: &Detections, run: &[String]) -> Vec<Survivor> {
+    let mut out = Vec::new();
+    for d in det.items.iter().filter(|d| d.honesty == Honesty::Blind) {
+        let m = pkg.mark_class(&d.class);
+        let mut evidence = m
+            .and_then(|m| m.survives.clone())
+            .unwrap_or_else(|| "this build cannot see the mark".to_string());
+        if d.class == "audioseal" {
+            evidence = if run.iter().any(|t| t == "AU06") {
+                format!("1500 Hz highpass applied; {evidence}")
+            } else {
+                format!("the 1500 Hz highpass did not run; {evidence}")
+            };
         }
+        out.push(Survivor {
+            mark: d.label.clone(),
+            evidence,
+            citation: m.and_then(|m| m.citation.clone()),
+        });
     }
-    (removed_and_proven, degraded_without_proof, not_addressed)
+    out
 }
 
-fn base_report(pkg: &PolicyPackage, verb: Verb, profile: &str, format: Format) -> Report {
+fn base_report(pkg: &PolicyPackage, verb: Verb, format: Format, capture: Capture) -> Report {
     Report {
         schema_version: SCHEMA_VERSION.to_string(),
         tool_version: TOOL_VERSION.to_string(),
@@ -378,524 +371,480 @@ fn base_report(pkg: &PolicyPackage, verb: Verb, profile: &str, format: Format) -
         policy_digest: pkg.digest.clone(),
         encoder_fingerprint: encoder_fingerprint(),
         verb: verb.as_str().to_string(),
-        profile: profile.to_string(),
         format: format.as_str().to_string(),
         output_format: format.as_str().to_string(),
-        fidelity: None,
+        capture,
         scan_states: Vec::new(),
         findings: Vec::new(),
         actions: Vec::new(),
-        removed_and_proven: Vec::new(),
-        degraded_without_proof: Vec::new(),
-        not_addressed: Vec::new(),
-        residual_acknowledgment_required: false,
-        residual_acknowledged: false,
-        camera_origin_warning: None,
+        stripped_and_proven_gone: Vec::new(),
+        kept: Vec::new(),
+        survived: Vec::new(),
+        sanity: None,
         exit_code: report::EXIT_OK,
     }
 }
 
-/// The read-only survey. It keys the residual tier only on asset-intrinsic
-/// evidence and makes no ownership demand.
-pub fn inspect(
-    bytes: &[u8],
-    profile_name: &str,
-    pkg: &PolicyPackage,
-) -> Result<Report, UnmarkError> {
-    let profile = resolve_profile(pkg, profile_name)?;
-    let det = detect::inspect(bytes);
-    let transforms = resolved_transforms(pkg, profile, &Options::default());
-    let targeted = targeted_classes(&transforms);
-    let generative = !generative_evidence(bytes, &det).is_empty();
-    let (rows, findings) = build_findings(pkg, &det, &targeted, false, generative);
-    let (rp, dg, na) = three_parts(&det, &[]);
-    let mut r = base_report(pkg, Verb::Inspect, profile_name, det.format);
-    r.camera_origin_warning = guard::scan_g3(bytes, det.format);
-    r.scan_states = rows;
-    r.findings = findings;
-    r.removed_and_proven = rp;
-    r.degraded_without_proof = dg;
-    r.not_addressed = na;
-    Ok(r)
+fn action_for(pkg: &PolicyPackage, id: &str, outcome: &str, result: &str) -> Action {
+    let t = pkg.transform(id);
+    Action {
+        transform: id.to_string(),
+        name: t.map(|t| t.name.clone()).unwrap_or_default(),
+        target: t.map(|t| t.target.clone()).unwrap_or_default(),
+        strength: t.and_then(|t| t.strength.clone()),
+        outcome: outcome.to_string(),
+        result: result.to_string(),
+        citation: t.and_then(|t| t.citation.clone()),
+    }
 }
 
-/// The dry-run proposal. It shows the ordered transforms clean would apply and
-/// touches nothing.
-pub fn plan(
+/// The read-only survey: the detections, the capture reading, the plan the
+/// default run would take, and the survivors.
+pub fn inspect(bytes: &[u8], opts: &Options, pkg: &PolicyPackage) -> Result<Report, UnmarkError> {
+    validate_keeps(pkg, opts)?;
+    survey(bytes, opts, pkg, Verb::Inspect)
+}
+
+/// The dry-run proposal: the ordered transforms clean would apply and what
+/// each would do. Touches nothing.
+pub fn plan(bytes: &[u8], opts: &Options, pkg: &PolicyPackage) -> Result<Report, UnmarkError> {
+    validate_keeps(pkg, opts)?;
+    survey(bytes, opts, pkg, Verb::Plan)
+}
+
+fn survey(
     bytes: &[u8],
-    profile_name: &str,
     opts: &Options,
     pkg: &PolicyPackage,
+    verb: Verb,
 ) -> Result<Report, UnmarkError> {
-    let profile = resolve_profile(pkg, profile_name)?;
-    let det = detect::inspect(bytes);
-    let transforms = resolved_transforms(pkg, profile, opts);
-    let targeted = targeted_classes(&transforms);
-    let generative = !generative_evidence(bytes, &det).is_empty();
-    let (rows, findings) = build_findings(pkg, &det, &targeted, false, generative);
-    let (rp, dg, na) = three_parts(&det, &[]);
-    let mut r = base_report(pkg, Verb::Plan, profile_name, det.format);
-    r.camera_origin_warning = guard::scan_g3(bytes, det.format);
+    let det = full_inspect(bytes);
+    let format = det.format;
+    let reading = capture::read_capture(bytes, &det, format);
+    let capture_kept = reading.status == CaptureStatus::Certified && !opts.strip_capture;
+    let (run, kept) = if capture_kept {
+        (Vec::new(), Vec::new())
+    } else {
+        plan_run(pkg, format, opts)
+    };
+    let mut r = base_report(pkg, verb, format, capture_report(&reading, capture_kept));
+    let (rows, findings) = rows_and_findings(pkg, &det);
     r.scan_states = rows;
     r.findings = findings;
-    r.removed_and_proven = rp;
-    r.degraded_without_proof = dg;
-    r.not_addressed = na;
-    // The proposed actions, none applied. A pixel plan decodes the image
-    // once so the plan can say what PX01 will do and which container comes
-    // out.
-    let prediction = predict_pixel_plan(bytes, det.format, profile, &transforms);
-    for id in &transforms {
-        if let Some(t) = pkg.transform(id) {
-            let outcome = match (&prediction, id.as_str()) {
-                (Some(p), "PX01") if p.skip_note.is_some() => {
-                    format!("skipped: {}", p.skip_note.as_deref().unwrap_or_default())
-                }
-                _ => "proposed".to_string(),
+    r.kept = kept;
+    if capture_kept {
+        r.kept.push(Kept {
+            item: "the whole asset".to_string(),
+            reason: "certified capture; use --strip-capture to override".to_string(),
+        });
+        for id in pkg.default_run(container_name(format)) {
+            r.actions.push(action_for(
+                pkg,
+                &id,
+                "kept: certified capture",
+                "not applied",
+            ));
+        }
+    } else {
+        for id in &run {
+            let classes = transform::targeted_classes(id);
+            let present = classes
+                .iter()
+                .any(|c| det.get(c).map(|d| d.state) == Some(ScanState::ConfirmedPresent));
+            let result = if classes.is_empty() {
+                pkg.transform(id)
+                    .and_then(|t| t.cited_effect.clone())
+                    .unwrap_or_else(|| "runs by default".to_string())
+            } else if present {
+                "a mark of this class is present and will be removed".to_string()
+            } else {
+                "no mark of this class was present".to_string()
             };
-            r.actions.push(Action {
-                transform: t.id.clone(),
-                name: t.name.clone(),
-                target: t.target.clone(),
-                outcome,
-            });
+            r.actions.push(action_for(pkg, id, "proposed", &result));
+        }
+        for k in &r.kept {
+            if let Some(id) = k.item.split(' ').next() {
+                r.actions
+                    .push(action_for(pkg, id, &k.reason, "not applied"));
+            }
+        }
+        #[cfg(feature = "image")]
+        if format.media() == asset::Media::Image && run.iter().any(|t| t == "PX01") {
+            r.output_format = Format::Jpeg.as_str().to_string();
         }
     }
-    if let Some(p) = prediction {
-        r.output_format = p.output_format.as_str().to_string();
+    r.survived = survivors(pkg, &det, &run);
+    if format == Format::Unknown {
+        r.exit_code = report::EXIT_UNSUPPORTED;
     }
     Ok(r)
 }
 
-/// The mutating verb. It applies the plan, re-inspects the output to prove the
-/// confirmable marks are gone, checks the fidelity budget, and requires the
-/// residual acknowledgment before it reports success.
+/// The mutating verb: apply the default run under the opt-outs, re-inspect
+/// the output to prove the confirmable marks gone, and measure the sanity
+/// floor. Writes nothing itself; the caller writes `output` when it is Some.
 pub fn clean(
     bytes: &[u8],
-    profile_name: &str,
     opts: &Options,
     pkg: &PolicyPackage,
 ) -> Result<CleanOutcome, UnmarkError> {
-    let profile = resolve_profile(pkg, profile_name)?;
-    if !opts.i_generated_this {
-        return Err(UnmarkError::Usage(
-            "clean requires --i-generated-this. unmark cleans an asset the user made, not one taken from someone else".to_string(),
-        ));
-    }
-    let det = detect::inspect(bytes);
-    if det.format == Format::Unknown {
+    validate_keeps(pkg, opts)?;
+    let det = full_inspect(bytes);
+    let format = det.format;
+    if format == Format::Unknown {
         return Err(UnmarkError::Unsupported(
             "this build does not recognize the container".to_string(),
         ));
     }
+    if !format.is_supported_container() {
+        return Err(UnmarkError::Unsupported(format!(
+            "{} is sniffed but not in the supported set",
+            format.as_str()
+        )));
+    }
+    let reading = capture::read_capture(bytes, &det, format);
+    let capture_kept = reading.status == CaptureStatus::Certified && !opts.strip_capture;
+    let mut r = base_report(
+        pkg,
+        Verb::Clean,
+        format,
+        capture_report(&reading, capture_kept),
+    );
+    let (rows, findings) = rows_and_findings(pkg, &det);
+    r.scan_states = rows;
+    r.findings = findings;
 
-    let transforms = resolved_transforms(pkg, profile, opts);
-    let targeted = targeted_classes(&transforms);
-    let mut r = base_report(pkg, Verb::Clean, profile_name, det.format);
-    r.camera_origin_warning = guard::scan_g3(bytes, det.format);
-
-    // A targeted class whose scan state is malformed has unknown presence, and
-    // a clean can never report success over it. Fail closed before any rewrite
-    // and write nothing. This holds across every container, including the ones
-    // whose rewriter copies bytes verbatim and would otherwise "succeed".
-    let mut unknown: Vec<String> = targeted
-        .iter()
-        .filter(|c| det.get(c).map(|d| d.state) == Some(ScanState::Malformed))
-        .map(|c| c.to_string())
-        .collect();
-    unknown.sort();
-    unknown.dedup();
-    if !unknown.is_empty() {
-        let (rows, findings) = build_findings(pkg, &det, &targeted, true, true);
-        r.scan_states = rows;
-        r.findings = findings;
-        let (rp, dg, na) = three_parts(&det, &[]);
-        r.removed_and_proven = rp;
-        r.degraded_without_proof = dg;
-        r.not_addressed = na;
-        r.residual_acknowledgment_required = true;
-        r.exit_code = report::EXIT_UNSUPPORTED;
-        for class in &unknown {
-            let label = det
-                .get(class)
-                .map(|d| d.label.clone())
-                .unwrap_or_else(|| class.clone());
-            let outcome = format!(
-                "refused: {label} scan state is malformed and presence is unknown. Nothing written"
-            );
-            let action = match transform_for_class(pkg, &transforms, class) {
-                Some(t) => Action {
-                    transform: t.id.clone(),
-                    name: t.name.clone(),
-                    target: t.target.clone(),
-                    outcome,
-                },
-                None => Action {
-                    transform: String::new(),
-                    name: format!("strip {class}"),
-                    target: label,
-                    outcome,
-                },
-            };
-            r.actions.push(action);
+    // The certified-capture no-op: the input bytes come back unchanged.
+    if capture_kept {
+        r.kept.push(Kept {
+            item: "the whole asset".to_string(),
+            reason: "certified capture; use --strip-capture to override".to_string(),
+        });
+        for id in pkg.default_run(container_name(format)) {
+            r.actions.push(action_for(
+                pkg,
+                &id,
+                "kept: certified capture",
+                "not applied",
+            ));
         }
+        r.survived = survivors(pkg, &det, &[]);
+        return Ok(CleanOutcome {
+            report: r,
+            output: Some(bytes.to_vec()),
+        });
+    }
+
+    let (run, kept) = plan_run(pkg, format, opts);
+    r.kept = kept;
+    let targeted = targeted(&run);
+
+    // A targeted class whose scan state is malformed has unknown presence;
+    // the required inspection failed. Nothing is written.
+    let unknown: Vec<&str> = targeted
+        .iter()
+        .copied()
+        .filter(|c| det.get(c).map(|d| d.state) == Some(ScanState::Malformed))
+        .collect();
+    if !unknown.is_empty() {
+        return Err(UnmarkError::Inspection(format!(
+            "the scan state of {} is malformed, so presence is unknown and nothing is written",
+            unknown.join(", ")
+        )));
+    }
+
+    // Metadata strips.
+    let applied = match transform::apply(bytes, format, &run) {
+        Ok(a) => a,
+        Err(container::RewriteError::Unsupported(m)) => return Err(UnmarkError::Unsupported(m)),
+        Err(container::RewriteError::Malformed(m)) => return Err(UnmarkError::Inspection(m)),
+        Err(container::RewriteError::Declined { class, reason }) => {
+            return Err(UnmarkError::Inspection(format!(
+                "declined stripping {class}: {reason}"
+            )))
+        }
+    };
+    let mut out_bytes = applied.bytes;
+    let mut actions: Vec<Action> = Vec::new();
+    let mut dwtdct_before: Option<bool> = None;
+    let mut dwtdct_after: Option<bool> = None;
+
+    // The pixel path.
+    #[cfg(feature = "image")]
+    if format.media() == asset::Media::Image {
+        let pixel_ids: Vec<String> = run
+            .iter()
+            .filter(|id| pkg.transform(id).is_some_and(|t| t.kind == "pixel"))
+            .cloned()
+            .collect();
+        if let Some(d) = det.get("dwtdct") {
+            dwtdct_before = match d.state {
+                ScanState::ConfirmedPresent => Some(true),
+                ScanState::ConfirmedAbsent => Some(false),
+                _ => None,
+            };
+        }
+        // A kept C2PA chunk on WebP cannot ride through the re-encode, so the
+        // pixel path stands down and says why.
+        let uncarried = format == Format::WebP
+            && !pixel_ids.is_empty()
+            && container::webp_metadata(&out_bytes).uncarried_c2pa;
+        if uncarried {
+            for id in &pixel_ids {
+                actions.push(action_for(
+                    pkg,
+                    id,
+                    "not applied",
+                    "a kept C2PA chunk cannot be carried through the WebP re-encode, so the pixel path stands down",
+                ));
+            }
+        }
+        if !pixel_ids.is_empty() && !uncarried {
+            let img = codec::decode_image(&out_bytes, format)
+                .map_err(|e| UnmarkError::Inspection(format!("the image would not decode: {e}")))?;
+            let p = transform::pixel::PixelParams::from_policy(pkg, &pixel_ids)
+                .map_err(|e| UnmarkError::Inspection(format!("pixel plan: {e}")))?;
+            let outcome = transform::pixel::apply(&img, format, &p)
+                .map_err(|e| UnmarkError::Inspection(e.to_string()))?;
+            // Sanity floor: the encode against its grid-matched reference.
+            let (reference, output) = if outcome.reference.channels != outcome.output.channels {
+                (outcome.reference.with_alpha(), outcome.output.with_alpha())
+            } else {
+                (outcome.reference.clone(), outcome.output.clone())
+            };
+            let psnr = budget::psnr(&reference.data, &output.data);
+            let ssim = budget::ssim(
+                &reference.data,
+                &output.data,
+                reference.width,
+                reference.height,
+                reference.channels,
+            );
+            let passed = psnr.is_none_or(|p| p >= pkg.sanity.psnr_floor_db)
+                && ssim.is_none_or(|s| s >= pkg.sanity.ssim_floor);
+            r.sanity = Some(report::Sanity {
+                psnr_db: psnr,
+                ssim,
+                psnr_floor_db: pkg.sanity.psnr_floor_db,
+                ssim_floor: pkg.sanity.ssim_floor,
+                passed,
+                refusal: if passed {
+                    None
+                } else {
+                    Some(format!(
+                        "the encode scores PSNR {} dB and SSIM {} against the floors {:.1} dB and {:.2}, which only a broken encode misses",
+                        psnr.map(|v| format!("{v:.2}")).unwrap_or_else(|| "n/a".to_string()),
+                        ssim.map(|v| format!("{v:.4}")).unwrap_or_else(|| "n/a".to_string()),
+                        pkg.sanity.psnr_floor_db,
+                        pkg.sanity.ssim_floor
+                    ))
+                },
+            });
+            let (row_after, _) = dwtdct_detection(Some(&outcome.output));
+            dwtdct_after = Some(row_after.state == ScanState::ConfirmedPresent);
+            r.output_format = outcome.emitted.format.as_str().to_string();
+            // Whatever metadata survived the strips (the kept items) rides
+            // into the fresh container.
+            let mut fresh = outcome.emitted.bytes.clone();
+            match outcome.emitted.format {
+                Format::Png | Format::Jpeg => {
+                    fresh = container::carry_ancillary(&out_bytes, &fresh, outcome.emitted.format);
+                }
+                Format::WebP => {
+                    let m = container::webp_metadata(&out_bytes);
+                    if m.any_carried() {
+                        fresh = codec::webp::encode_lossless_with(
+                            &outcome.output,
+                            m.exif,
+                            m.xmp,
+                            m.icc,
+                        )
+                        .map_err(|e| UnmarkError::Inspection(e.to_string()))?;
+                    }
+                }
+                _ => {}
+            }
+            for id in &pixel_ids {
+                match id.as_str() {
+                    "PX02" => {
+                        let result = match (dwtdct_before, dwtdct_after) {
+                            (Some(true), Some(false)) => {
+                                "removed and proven gone: the dwtDct payload decoded before and fails the presence rule after".to_string()
+                            }
+                            (Some(true), Some(true)) => {
+                                "the dwtDct payload still decodes after the resize".to_string()
+                            }
+                            _ => "applied; no dwtDct payload decoded before or after".to_string(),
+                        };
+                        actions.push(action_for(pkg, id, "applied", &result));
+                    }
+                    "PX01" => {
+                        let pin = outcome
+                            .emitted
+                            .pin
+                            .clone()
+                            .unwrap_or_else(|| "lossless write".to_string());
+                        actions.push(action_for(
+                            pkg,
+                            id,
+                            "applied",
+                            &format!(
+                                "same-container path, {pin}; no removal claimed for the encode"
+                            ),
+                        ));
+                    }
+                    other => actions.push(action_for(pkg, other, "applied", "applied")),
+                }
+            }
+            if !passed {
+                r.actions = actions;
+                r.actions.extend(metadata_actions(pkg, &run, &det, None));
+                r.survived = survivors(pkg, &det, &run);
+                r.exit_code = report::EXIT_SANITY;
+                return Ok(CleanOutcome {
+                    report: r,
+                    output: None,
+                });
+            }
+            out_bytes = fresh;
+        }
+    }
+
+    // The audio path.
+    #[cfg(feature = "audio")]
+    if matches!(format, Format::RiffWav | Format::Flac) && run.iter().any(|t| t == "AU06") {
+        let audio = codec::decode_audio(&out_bytes, format)
+            .map_err(|e| UnmarkError::Inspection(format!("the audio would not decode: {e}")))?;
+        let p = transform::audio::AudioParams::from_policy(pkg, &run)
+            .map_err(|e| UnmarkError::Inspection(format!("audio plan: {e}")))?;
+        let processed = transform::audio::apply(&audio, &p);
+        let written = codec::encode_audio(&processed, format, audio.bits)
+            .map_err(|e| UnmarkError::Inspection(format!("the audio would not encode: {e}")))?;
+        // The written stream must decode back to the same length: the only
+        // sanity an audio write needs, since the highpass changes the
+        // spectrum by design.
+        let back = codec::decode_audio(&written, format).map_err(|e| {
+            UnmarkError::Inspection(format!("the written audio would not decode: {e}"))
+        })?;
+        if back.frames() != audio.frames() || back.channels.len() != audio.channels.len() {
+            return Err(UnmarkError::Inspection(
+                "the written audio changed length or channel count".to_string(),
+            ));
+        }
+        let effect = pkg
+            .transform("AU06")
+            .and_then(|t| t.cited_effect.clone())
+            .unwrap_or_default();
+        actions.push(action_for(
+            pkg,
+            "AU06",
+            "applied",
+            &format!("applied, survives: {effect}"),
+        ));
+        out_bytes = written;
+    }
+
+    // Re-inspect the output and prove the targeted confirmable marks gone.
+    let det_after = full_inspect(&out_bytes);
+    let mut remaining = Vec::new();
+    for class in &targeted {
+        if *class == "dwtdct" {
+            continue;
+        }
+        let before = det.get(class).map(|d| d.state) == Some(ScanState::ConfirmedPresent);
+        if !before {
+            continue;
+        }
+        let label = det
+            .get(class)
+            .map(|d| d.label.clone())
+            .unwrap_or_else(|| class.to_string());
+        let after = det_after.get(class).map(|d| d.state) == Some(ScanState::ConfirmedPresent);
+        if after {
+            remaining.push(label);
+        } else {
+            r.stripped_and_proven_gone.push(label);
+        }
+    }
+    if dwtdct_before == Some(true) {
+        match dwtdct_after {
+            Some(false) => r
+                .stripped_and_proven_gone
+                .push("dwtDct pixel mark".to_string()),
+            _ => remaining.push("dwtDct pixel mark".to_string()),
+        }
+    }
+
+    r.actions = actions;
+    r.actions
+        .extend(metadata_actions(pkg, &run, &det, Some(&det_after)));
+    for k in &r.kept {
+        if let Some(id) = k.item.split(' ').next() {
+            r.actions
+                .push(action_for(pkg, id, &k.reason, "not applied"));
+        }
+    }
+    // The output's scan states are the file the user now has.
+    let (rows, findings) = rows_and_findings(pkg, &det_after);
+    r.scan_states = rows;
+    r.findings = findings;
+    r.survived = survivors(pkg, &det, &run);
+    if !remaining.is_empty() {
+        r.exit_code = report::EXIT_MARK_REMAINS;
+        r.stripped_and_proven_gone.clear();
         return Ok(CleanOutcome {
             report: r,
             output: None,
         });
     }
+    Ok(CleanOutcome {
+        report: r,
+        output: Some(out_bytes),
+    })
+}
 
-    // G2: the third-party-provenance refusal. It governs every C2PA removal.
-    let strips_c2pa = transforms.iter().any(|t| t == "MC01");
-    if strips_c2pa && !opts.force_provenance_strip {
-        if let Some(sig) = guard::scan_g2(bytes, &det) {
-            let (rows, findings) = build_findings(pkg, &det, &targeted, true, true);
-            r.scan_states = rows;
-            r.findings = findings;
-            let (rp, dg, na) = three_parts(&det, &[]);
-            r.removed_and_proven = rp;
-            r.degraded_without_proof = dg;
-            r.not_addressed = na;
-            r.residual_acknowledgment_required = true;
-            r.exit_code = report::EXIT_UNSUPPORTED;
-            r.actions.push(Action {
-                transform: "MC01".to_string(),
-                name: "strip-c2pa-manifest".to_string(),
-                target: "C2PA manifest".to_string(),
-                outcome: format!(
-                    "refused: {} signal present ({}); pass --force-provenance-strip only for your own asset",
-                    sig.kind, sig.detail
-                ),
-            });
-            return Ok(CleanOutcome {
-                report: r,
-                output: None,
-            });
-        }
-    }
-
-    // Apply the plan.
-    let applied = match transform::apply(bytes, det.format, &transforms) {
-        Ok(a) => a,
-        Err(container::RewriteError::Unsupported(m)) => return Err(UnmarkError::Unsupported(m)),
-        // A malformed container is bad input, not a tooling fault. Fail closed at
-        // exit 40 and write nothing rather than rewriting a truncated prefix.
-        Err(container::RewriteError::Malformed(m)) => return Err(UnmarkError::Malformed(m)),
-        Err(container::RewriteError::Declined { class, reason }) => {
-            // A declined removable strip fails the run closed, attributed to
-            // whichever planned transform targets the declined class.
-            let (rows, findings) = build_findings(pkg, &det, &targeted, true, true);
-            r.scan_states = rows;
-            r.findings = findings;
-            let (rp, dg, na) = three_parts(&det, &[]);
-            r.removed_and_proven = rp;
-            r.degraded_without_proof = dg;
-            r.not_addressed = na;
-            r.residual_acknowledgment_required = true;
-            r.exit_code = report::EXIT_UNSUPPORTED;
-            let action = match transform_for_class(pkg, &transforms, &class) {
-                Some(t) => Action {
-                    transform: t.id.clone(),
-                    name: t.name.clone(),
-                    target: t.target.clone(),
-                    outcome: format!("declined stripping {class}: {reason}"),
-                },
-                None => Action {
-                    transform: String::new(),
-                    name: format!("strip {class}"),
-                    target: class.clone(),
-                    outcome: format!("declined: {reason}"),
-                },
-            };
-            r.actions.push(action);
-            return Ok(CleanOutcome {
-                report: r,
-                output: None,
-            });
-        }
-    };
-
-    // The pixel degrade path: decode, run the plan, measure against the
-    // budget, and refuse to write when it misses.
-    let mut applied = applied;
-    let mut degrade_actions: Vec<(String, String)> = Vec::new();
-    let degraded = profile.media == "image" && profile.tier != "metadata";
-    if degraded {
-        let d = degrade_image(&applied.bytes, det.format, profile, &transforms, pkg)?;
-        r.output_format = d.output_format.as_str().to_string();
-        r.fidelity = Some(d.fidelity.clone());
-        degrade_actions = d.actions;
-        if !d.fidelity.passed {
-            let (rows, findings) = build_findings(pkg, &det, &targeted, true, true);
-            r.scan_states = rows;
-            r.findings = findings;
-            let (rp, dg, na) = three_parts_for(&det, &[], true);
-            r.removed_and_proven = rp;
-            r.degraded_without_proof = dg;
-            r.not_addressed = na;
-            r.residual_acknowledgment_required = true;
-            r.exit_code = report::EXIT_INSTRUMENTATION;
-            for (id, outcome) in &degrade_actions {
-                if let Some(t) = pkg.transform(id) {
-                    r.actions.push(Action {
-                        transform: t.id.clone(),
-                        name: t.name.clone(),
-                        target: t.target.clone(),
-                        outcome: outcome.clone(),
-                    });
-                }
-            }
-            return Ok(CleanOutcome {
-                report: r,
-                output: None,
-            });
-        }
-        applied = transform::Applied { bytes: d.bytes };
-    }
-
-    // Re-inspect the output and prove the targeted confirmable marks are gone.
-    let det_after = detect::inspect(&applied.bytes);
-    let mut removed = Vec::new();
-    let mut still_present = Vec::new();
-    for class in &targeted {
-        let before = det.get(class).map(|d| d.state) == Some(ScanState::ConfirmedPresent);
-        if !before {
+/// Actions for the metadata and text transforms in the run, with each class
+/// judged present before and gone after.
+fn metadata_actions(
+    pkg: &PolicyPackage,
+    run: &[String],
+    before: &Detections,
+    after: Option<&Detections>,
+) -> Vec<Action> {
+    let mut out = Vec::new();
+    for id in run {
+        let Some(t) = pkg.transform(id) else { continue };
+        if t.is_degrade() {
             continue;
         }
-        let after = det_after.get(class).map(|d| d.state) == Some(ScanState::ConfirmedPresent);
-        let label = det
-            .get(class)
-            .map(|d| d.label.clone())
-            .unwrap_or_else(|| class.to_string());
-        if after {
-            still_present.push(label);
+        let classes = transform::targeted_classes(id);
+        let present: Vec<&str> = classes
+            .iter()
+            .copied()
+            .filter(|c| before.get(c).map(|d| d.state) == Some(ScanState::ConfirmedPresent))
+            .collect();
+        let result = if classes.is_empty() {
+            "applied".to_string()
+        } else if present.is_empty() {
+            "no mark of this class was present".to_string()
         } else {
-            removed.push(label);
-        }
-    }
-
-    // Record the actions taken.
-    for id in &transforms {
-        if let Some(t) = pkg.transform(id) {
-            let outcome = degrade_actions
-                .iter()
-                .find(|(i, _)| i == id)
-                .map(|(_, o)| o.clone())
-                .unwrap_or_else(|| "applied".to_string());
-            r.actions.push(Action {
-                transform: t.id.clone(),
-                name: t.name.clone(),
-                target: t.target.clone(),
-                outcome,
-            });
-        }
-    }
-
-    let (rows, findings) = build_findings(pkg, &det_after, &targeted, true, true);
-    r.scan_states = rows;
-    r.findings = findings;
-    let (rp, dg, na) = three_parts_for(&det_after, &removed, degraded);
-    r.removed_and_proven = rp;
-    r.degraded_without_proof = dg;
-    r.not_addressed = na;
-    r.residual_acknowledgment_required = true;
-    r.residual_acknowledged = opts.acknowledge_residual;
-
-    // The metadata-tier byte-identity budget: the encoded signal stream must be
-    // unchanged. A deviation is a bug and fails closed.
-    let mut exit = report::EXIT_OK;
-    if profile.budget == "exact" {
-        let before_sig = container::signal_stream(bytes, det.format);
-        let after_sig = container::signal_stream(&applied.bytes, det_after.format);
-        if budget::check_byte_identity(&before_sig, &after_sig).is_err() {
-            exit = worst(exit, report::EXIT_INSTRUMENTATION);
-        }
-    }
-    if !still_present.is_empty() {
-        exit = worst(exit, report::EXIT_MARK_REMAINS);
-    }
-    if r.residual_acknowledgment_required && !r.residual_acknowledged {
-        exit = worst(exit, report::EXIT_RESIDUAL);
-    }
-    r.exit_code = exit;
-
-    let output = if exit == report::EXIT_OK {
-        Some(applied.bytes)
-    } else {
-        None
-    };
-    // Nothing written means nothing was proven removed in a delivered output.
-    // The in-memory re-inspection stays in the scan states, but the removed
-    // list describes the file the user now has, and there is none.
-    if output.is_none() {
-        r.removed_and_proven.clear();
-    }
-    Ok(CleanOutcome { report: r, output })
-}
-
-/// What a pixel plan will do, read from a decode of the input.
-struct PixelPrediction {
-    output_format: Format,
-    skip_note: Option<String>,
-}
-
-#[cfg(feature = "image")]
-fn predict_pixel_plan(
-    bytes: &[u8],
-    format: Format,
-    profile: &policy::Profile,
-    transforms: &[String],
-) -> Option<PixelPrediction> {
-    if profile.media != "image" || profile.tier == "metadata" {
-        return None;
-    }
-    let img = codec::decode_image(bytes, format).ok()?;
-    let reencode = transforms.iter().any(|t| t == "PX01");
-    let (output_format, skip_note) = match format {
-        Format::Jpeg => (Format::Jpeg, None),
-        Format::Png | Format::WebP if reencode && img.has_alpha() => {
-            (format, Some(transform::pixel::SKIP_ALPHA_NOTE.to_string()))
-        }
-        Format::Png | Format::WebP if reencode => (Format::Jpeg, None),
-        other => (other, None),
-    };
-    Some(PixelPrediction {
-        output_format,
-        skip_note,
-    })
-}
-
-#[cfg(not(feature = "image"))]
-fn predict_pixel_plan(
-    _bytes: &[u8],
-    _format: Format,
-    _profile: &policy::Profile,
-    _transforms: &[String],
-) -> Option<PixelPrediction> {
-    None
-}
-
-/// The result of running a pixel plan on the metadata-stripped bytes.
-struct Degraded {
-    bytes: Vec<u8>,
-    output_format: Format,
-    fidelity: report::Fidelity,
-    /// Per-transform outcomes that differ from "applied".
-    actions: Vec<(String, String)>,
-}
-
-#[cfg(feature = "image")]
-fn degrade_image(
-    bytes: &[u8],
-    format: Format,
-    profile: &policy::Profile,
-    transforms: &[String],
-    pkg: &PolicyPackage,
-) -> Result<Degraded, UnmarkError> {
-    use transform::pixel::{self, PixelError, PixelParams};
-    let img = codec::decode_image(bytes, format)
-        .map_err(|e| UnmarkError::Malformed(format!("the image would not decode: {e}")))?;
-    let p = PixelParams::from_policy(pkg, transforms)
-        .map_err(|e| UnmarkError::Instrumentation(format!("pixel plan: {e}")))?;
-    let digest = <sha2::Sha256 as sha2::Digest>::digest(bytes);
-    let mut sha = [0u8; 32];
-    sha.copy_from_slice(&digest);
-    let seed = dsp::asset_seed(pkg.calibration.base_seed, &sha);
-    let outcome = pixel::apply(&img, format, &p, seed).map_err(|e| match e {
-        PixelError::Held(m) => UnmarkError::Instrumentation(format!("held: {m}")),
-        other => UnmarkError::Instrumentation(other.to_string()),
-    })?;
-    let (reference, output) = if outcome.reference.channels != outcome.output.channels {
-        (outcome.reference.with_alpha(), outcome.output.with_alpha())
-    } else {
-        (outcome.reference.clone(), outcome.output.clone())
-    };
-    let psnr = budget::psnr(&reference.data, &output.data);
-    let ssim = budget::ssim(
-        &reference.data,
-        &output.data,
-        reference.width,
-        reference.height,
-        reference.channels,
-    );
-    let (resample_ratio, crop_area) = p.geometry_cost();
-    let cost = budget::Cost {
-        psnr_db: psnr,
-        ssim,
-        lsd_db: None,
-        resample_ratio,
-        crop_area,
-        time_stretch: 1.0,
-    };
-    let cell = if img.has_alpha() {
-        format!("{}-alpha", format.as_str())
-    } else {
-        format.as_str().to_string()
-    };
-    let budget = pkg.budget_for_format(&profile.budget, &cell);
-    let check = budget::check(&budget, &cost);
-    let mut actions = Vec::new();
-    if let Some(note) = &outcome.emitted.note {
-        actions.push(("PX01".to_string(), format!("skipped: {note}")));
-    }
-    if let Err(e) = &check {
-        for id in transforms.iter().filter(|t| t.starts_with("PX")) {
-            if !actions.iter().any(|(i, _)| i == id) {
-                actions.push((
-                    id.clone(),
-                    format!("refused: {}. Nothing written", e.reason),
-                ));
+            match after {
+                Some(a) => {
+                    let gone = present
+                        .iter()
+                        .all(|c| a.get(c).map(|d| d.state) != Some(ScanState::ConfirmedPresent));
+                    if gone {
+                        "removed and proven gone".to_string()
+                    } else {
+                        "a mark of this class remains".to_string()
+                    }
+                }
+                None => "not written".to_string(),
             }
-        }
+        };
+        out.push(action_for(pkg, id, "applied", &result));
     }
-    Ok(Degraded {
-        bytes: outcome.emitted.bytes,
-        output_format: outcome.emitted.format,
-        fidelity: report::Fidelity {
-            budget: profile.budget.clone(),
-            psnr_db: psnr,
-            ssim,
-            lsd_db: None,
-            resample_ratio,
-            crop_area,
-            time_stretch: 1.0,
-            passed: check.is_ok(),
-            refusal: check.err().map(|e| e.reason),
-        },
-        actions,
-    })
-}
-
-#[cfg(not(feature = "image"))]
-fn degrade_image(
-    _bytes: &[u8],
-    _format: Format,
-    _profile: &policy::Profile,
-    _transforms: &[String],
-    _pkg: &PolicyPackage,
-) -> Result<Degraded, UnmarkError> {
-    Err(UnmarkError::Usage(
-        "the image degrade profiles need the image feature".to_string(),
-    ))
-}
-
-/// Combine two exit codes, keeping the more serious. Fail-closed states above
-/// the reporting states.
-fn worst(a: i32, b: i32) -> i32 {
-    fn rank(c: i32) -> i32 {
-        match c {
-            report::EXIT_UNSUPPORTED => 5,
-            report::EXIT_INSTRUMENTATION => 4,
-            report::EXIT_MARK_REMAINS => 3,
-            report::EXIT_RESIDUAL => 2,
-            _ => 0,
-        }
-    }
-    if rank(b) > rank(a) {
-        b
-    } else {
-        a
-    }
+    out
 }
 
 /// The result of a verify run.
@@ -906,8 +855,8 @@ pub enum VerifyOutcome {
 }
 
 /// Re-inspect an output against the report that produced it. It confirms the
-/// policy digest matches and that every class the report proved gone is now
-/// absent.
+/// policy digest matches and that every item the report stripped and proved
+/// gone is now absent.
 pub fn verify(output: &[u8], report_json: &str, pkg: &PolicyPackage) -> VerifyOutcome {
     let parsed: serde_json::Value = match serde_json::from_str(report_json) {
         Ok(v) => v,
@@ -917,11 +866,13 @@ pub fn verify(output: &[u8], report_json: &str, pkg: &PolicyPackage) -> VerifyOu
     if parsed.get("policy_digest").and_then(|v| v.as_str()) != Some(pkg.digest.as_str()) {
         problems.push("policy digest does not match this build".to_string());
     }
-    let det = detect::inspect(output);
-    if let Some(list) = parsed.get("removed_and_proven").and_then(|v| v.as_array()) {
+    let det = full_inspect(output);
+    if let Some(list) = parsed
+        .get("stripped_and_proven_gone")
+        .and_then(|v| v.as_array())
+    {
         for item in list {
             let Some(label) = item.as_str() else { continue };
-            // Match the label back to a class and confirm it is absent.
             if let Some(d) = det.items.iter().find(|d| d.label == label) {
                 if d.state == ScanState::ConfirmedPresent {
                     problems.push(format!("{label} is present again in the output"));

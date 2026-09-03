@@ -1,232 +1,364 @@
-//! The clean verb's exit contract, the guardrails, and the honesty core.
+//! The clean contract under the strip-everything posture: one default run
+//! per container, every opt-out a flag that turns a strip off, the certified
+//! capture rule, the uncertain-EXIF hint, and a report that never emits a
+//! clean verdict and never says "weakened".
 
 mod common;
 use common::*;
-use unmark::report::{EXIT_MARK_REMAINS, EXIT_OK, EXIT_RESIDUAL, EXIT_UNSUPPORTED};
-use unmark::{clean, inspect, policy, Options, UnmarkError};
+use unmark::capture::CaptureStatus;
+use unmark::report::{EXIT_OK, EXIT_USAGE};
+use unmark::scan::ScanState;
+use unmark::{clean, inspect, plan, policy, Options, UnmarkError, VerifyOutcome};
 
 fn pkg() -> policy::PolicyPackage {
     policy::load().expect("policy loads")
 }
 
-fn owner_opts() -> Options {
+fn keep(items: &[&str]) -> Options {
     Options {
-        i_generated_this: true,
+        keep: items.iter().map(|s| s.to_string()).collect(),
         ..Default::default()
     }
 }
 
 #[test]
-fn clean_requires_ownership_assertion() {
+fn the_default_run_strips_every_confirmable_mark_and_proves_it_gone() {
     let png = build_png(&PngOpts {
         text: true,
-        ..Default::default()
-    });
-    let err = clean(&png, "image-metadata", &Options::default(), &pkg()).unwrap_err();
-    assert!(
-        matches!(err, UnmarkError::Usage(_)),
-        "missing ownership must be a usage error"
-    );
-}
-
-#[test]
-fn clean_gates_on_residual_then_passes_on_acknowledgment() {
-    let png = build_png(&PngOpts {
-        text: true,
+        exif: true,
+        xmp: true,
         c2pa: true,
         ..Default::default()
     });
-    // Without acknowledgment the run gates at exit 20.
-    let out = clean(&png, "image-metadata", &owner_opts(), &pkg()).unwrap();
-    assert_eq!(out.report.exit_code, EXIT_RESIDUAL);
-    assert!(
-        out.output.is_none(),
-        "no output while a residual is unacknowledged"
-    );
-    assert!(out.report.residual_acknowledgment_required);
-
-    // With acknowledgment the run reaches exit 0 and writes output.
-    let opts = Options {
-        i_generated_this: true,
-        acknowledge_residual: true,
-        ..Default::default()
-    };
-    let out = clean(&png, "image-metadata", &opts, &pkg()).unwrap();
-    assert_eq!(out.report.exit_code, EXIT_OK);
-    let bytes = out.output.expect("exit 0 writes output");
-    // The confirmable marks are proven gone.
-    let det = inspect(&bytes, "image-metadata", &pkg()).unwrap();
-    assert!(det
-        .scan_states
-        .iter()
-        .find(|s| s.class == "png_text")
-        .map(|s| s.state == unmark::scan::ScanState::ConfirmedAbsent)
-        .unwrap_or(false));
+    let out = clean(&png, &Options::default(), &pkg()).unwrap();
+    assert_eq!(out.report.exit_code, EXIT_OK, "{:?}", out.report.actions);
+    let bytes = out.output.expect("the run writes");
+    let after = unmark::detect::inspect(&bytes);
+    for class in ["png_text", "exif", "xmp", "c2pa"] {
+        assert_eq!(
+            after.get(class).map(|d| d.state),
+            Some(ScanState::ConfirmedAbsent),
+            "{class} remains"
+        );
+    }
+    for label in [
+        "PNG text chunk",
+        "EXIF metadata",
+        "XMP packet",
+        "C2PA manifest",
+    ] {
+        assert!(
+            out.report
+                .stripped_and_proven_gone
+                .iter()
+                .any(|l| l == label),
+            "{label} not listed as stripped: {:?}",
+            out.report.stripped_and_proven_gone
+        );
+    }
+    assert!(out.report.kept.is_empty());
+    assert_eq!(out.report.capture.status, "none");
+    // The one-pixel placeholder is too small for the resize to matter, but
+    // the output stays a PNG.
+    assert_eq!(out.report.output_format, "png");
 }
 
 #[test]
-fn report_never_emits_a_clean_verdict() {
+fn keep_turns_a_strip_off_and_is_reported_as_kept_by_flag() {
     let png = build_png(&PngOpts {
         text: true,
+        exif: true,
         ..Default::default()
     });
-    let opts = Options {
-        i_generated_this: true,
-        acknowledge_residual: true,
+    let out = clean(&png, &keep(&["exif"]), &pkg()).unwrap();
+    assert_eq!(out.report.exit_code, EXIT_OK);
+    let after = unmark::detect::inspect(&out.output.unwrap());
+    assert_eq!(
+        after.get("exif").map(|d| d.state),
+        Some(ScanState::ConfirmedPresent),
+        "--keep exif preserves EXIF"
+    );
+    assert_eq!(
+        after.get("png_text").map(|d| d.state),
+        Some(ScanState::ConfirmedAbsent)
+    );
+    let kept = out
+        .report
+        .kept
+        .iter()
+        .find(|k| k.item.starts_with("MC03"))
+        .expect("MC03 reported kept");
+    assert!(kept.reason.contains("kept by flag --keep exif"));
+    let action = out
+        .report
+        .actions
+        .iter()
+        .find(|a| a.transform == "MC03")
+        .unwrap();
+    assert!(action.outcome.contains("kept by flag"));
+    // A keep by transform id and by transform name work the same way.
+    for k in ["MC03", "strip-exif"] {
+        let out = clean(&png, &keep(&[k]), &pkg()).unwrap();
+        assert!(out.report.kept.iter().any(|k| k.item.starts_with("MC03")));
+    }
+}
+
+#[test]
+fn an_unknown_keep_is_a_usage_error() {
+    let png = build_png(&PngOpts::default());
+    let err = clean(&png, &keep(&["nothing-like-this"]), &pkg()).unwrap_err();
+    assert!(matches!(err, UnmarkError::Usage(_)));
+    let err = inspect(&png, &keep(&["nothing-like-this"]), &pkg()).unwrap_err();
+    assert!(matches!(err, UnmarkError::Usage(_)));
+}
+
+#[test]
+fn certified_capture_is_byte_identical_by_default_and_strips_under_the_flag() {
+    let png = build_png(&PngOpts {
+        text: true,
+        c2pa: true,
+        c2pa_payload: Some(
+            b"jumb c2pa c2pa.created digitalSourceType digitalCapture signer Leica Camera AG"
+                .to_vec(),
+        ),
         ..Default::default()
-    };
-    let out = clean(&png, "image-metadata", &opts, &pkg()).unwrap();
-    let json = serde_json::to_string(&out.report).unwrap();
-    // The three parts are always present and blind classes are named as not
-    // addressed rather than proven absent.
-    assert!(json.contains("removed_and_proven"));
-    assert!(json.contains("degraded_without_proof"));
-    assert!(json.contains("not_addressed"));
-    assert!(!out.report.removed_and_proven.is_empty());
+    });
+    let p = pkg();
+    let reading = unmark::capture::read_capture(
+        &png,
+        &unmark::detect::inspect(&png),
+        unmark::asset::Format::Png,
+    );
+    assert_eq!(reading.status, CaptureStatus::Certified);
+    let out = clean(&png, &Options::default(), &p).unwrap();
+    assert_eq!(out.report.exit_code, EXIT_OK);
+    assert_eq!(
+        out.output.as_deref(),
+        Some(png.as_slice()),
+        "byte-identical"
+    );
+    assert_eq!(out.report.capture.status, "certified");
+    assert!(out.report.capture.kept);
     assert!(out
         .report
-        .not_addressed
+        .capture
+        .line
+        .starts_with("Certified capture kept. Claim: `"));
+    assert!(out
+        .report
+        .capture
+        .line
+        .ends_with("Signature status: not signature-verified."));
+    assert!(out
+        .report
+        .kept
         .iter()
-        .any(|s| s.contains("SynthID-Image")));
-    // No field claims the asset is clean, unmarked, or human-authored.
-    assert!(!json.contains("clean\":true"));
-    assert!(!json.contains("\"unmarked\""));
-    assert!(!json.to_lowercase().contains("human-authored"));
-}
-
-#[test]
-fn g2_refuses_a_publisher_manifest_and_the_override_proceeds() {
-    let jpg = build_jpeg(&JpegOpts {
-        c2pa: true,
-        c2pa_payload: Some(b"JP\0\0jumb c2pa store credit: Reuters".to_vec()),
-        ..Default::default()
-    });
-    // The manifest names a third-party publisher, so the strip is refused.
-    let out = clean(&jpg, "image-metadata", &owner_opts(), &pkg()).unwrap();
-    assert_eq!(out.report.exit_code, EXIT_UNSUPPORTED);
-    assert!(out.output.is_none());
+        .any(|k| k.reason.contains("certified capture")));
     assert!(out
         .report
         .actions
         .iter()
-        .any(|a| a.outcome.contains("refused")));
+        .all(|a| a.outcome == "kept: certified capture"));
 
-    // The explicit override proceeds past the refusal.
-    let opts = Options {
-        i_generated_this: true,
-        acknowledge_residual: true,
-        force_provenance_strip: true,
+    let strip = Options {
+        strip_capture: true,
         ..Default::default()
     };
-    let out = clean(&jpg, "image-metadata", &opts, &pkg()).unwrap();
+    let out = clean(&png, &strip, &p).unwrap();
     assert_eq!(out.report.exit_code, EXIT_OK);
+    assert!(!out.report.capture.kept);
+    assert!(out.report.capture.line.contains("--strip-capture"));
+    let after = unmark::detect::inspect(&out.output.unwrap());
+    assert_eq!(
+        after.get("c2pa").map(|d| d.state),
+        Some(ScanState::ConfirmedAbsent)
+    );
+    assert!(out
+        .report
+        .stripped_and_proven_gone
+        .iter()
+        .any(|l| l == "C2PA manifest"));
 }
 
 #[test]
-fn g2_does_not_fire_on_a_generative_claim_generator() {
-    // A user's own generated output names the software, not a publisher. The
-    // strip proceeds.
-    let jpg = build_jpeg(&JpegOpts {
+fn a_capture_claim_with_a_later_generative_action_is_stripped_by_default() {
+    let png = build_png(&PngOpts {
         c2pa: true,
-        c2pa_payload: Some(b"JP\0\0jumb c2pa store claim_generator: ComfyUI".to_vec()),
+        c2pa_payload: Some(
+            b"jumb c2pa c2pa.created digitalCapture then c2pa.edited softwareAgent Adobe Firefly trainedAlgorithmicMedia"
+                .to_vec(),
+        ),
         ..Default::default()
     });
-    let opts = Options {
-        i_generated_this: true,
-        acknowledge_residual: true,
-        ..Default::default()
-    };
-    let out = clean(&jpg, "image-metadata", &opts, &pkg()).unwrap();
+    let out = clean(&png, &Options::default(), &pkg()).unwrap();
+    assert_eq!(out.report.capture.status, "generative");
+    assert!(!out.report.capture.kept);
+    let after = unmark::detect::inspect(&out.output.unwrap());
     assert_eq!(
-        out.report.exit_code, EXIT_OK,
-        "a generative claim generator must not refuse"
+        after.get("c2pa").map(|d| d.state),
+        Some(ScanState::ConfirmedAbsent)
     );
 }
 
 #[test]
-fn g3_camera_origin_warns() {
+fn a_publisher_manifest_without_a_capture_action_is_stripped_by_default() {
+    let jpg = build_jpeg(&JpegOpts {
+        c2pa: true,
+        c2pa_payload: Some(b"jumb c2pa claim_generator Reuters credit Reuters".to_vec()),
+        ..Default::default()
+    });
+    let out = clean(&jpg, &Options::default(), &pkg()).unwrap();
+    assert_eq!(out.report.capture.status, "none");
+    assert_eq!(out.report.exit_code, EXIT_OK, "{:?}", out.report.actions);
+    let after = unmark::detect::inspect(&out.output.unwrap());
+    assert_eq!(
+        after.get("c2pa").map(|d| d.state),
+        Some(ScanState::ConfirmedAbsent)
+    );
+    // --keep c2pa preserves it.
+    let out = clean(&jpg, &keep(&["c2pa"]), &pkg()).unwrap();
+    let after = unmark::detect::inspect(&out.output.unwrap());
+    assert_eq!(
+        after.get("c2pa").map(|d| d.state),
+        Some(ScanState::ConfirmedPresent)
+    );
+}
+
+#[test]
+fn camera_exif_without_a_claim_is_uncertain_and_stripped_with_the_hint() {
     let jpg = build_jpeg(&JpegOpts {
         exif: true,
         exif_payload: Some(camera_tiff()),
         ..Default::default()
     });
-    let r = inspect(&jpg, "image-metadata", &pkg()).unwrap();
-    assert!(
-        r.camera_origin_warning.is_some(),
-        "a camera EXIF should raise the camera-origin warning"
+    let out = clean(&jpg, &Options::default(), &pkg()).unwrap();
+    assert_eq!(out.report.capture.status, "uncertain");
+    assert!(out
+        .report
+        .capture
+        .line
+        .starts_with("Capture uncertain. Hint: `"));
+    assert!(out
+        .report
+        .capture
+        .line
+        .ends_with("Stripped by default. Use `--keep exif` to preserve EXIF."));
+    let after = unmark::detect::inspect(&out.output.unwrap());
+    assert_eq!(
+        after.get("exif").map(|d| d.state),
+        Some(ScanState::ConfirmedAbsent)
     );
 }
 
 #[test]
-fn inspect_residual_keys_on_asset_intrinsic_evidence() {
-    // A PNG carrying a prompt chunk is asset-intrinsic evidence, so the blind
-    // classes report at the residual tier on inspect.
-    let generative = build_png(&PngOpts {
+fn the_report_never_says_clean_or_weakened_and_names_every_survivor() {
+    let png = build_png(&PngOpts {
         text: true,
         ..Default::default()
     });
-    let r = inspect(&generative, "image-metadata", &pkg()).unwrap();
-    let synthid = r
-        .findings
+    let out = clean(&png, &Options::default(), &pkg()).unwrap();
+    let json = serde_json::to_string(&out.report)
+        .unwrap()
+        .to_ascii_lowercase();
+    let text = unmark::report::render_text(&out.report).to_ascii_lowercase();
+    for banned in [
+        "weakened",
+        "is clean",
+        "clean verdict",
+        "human-authored",
+        "human authored",
+    ] {
+        assert!(!json.contains(banned), "report json says {banned}");
+        assert!(!text.contains(banned), "report text says {banned}");
+    }
+    assert!(
+        !out.report.survived.is_empty(),
+        "blind classes are named as surviving"
+    );
+    for s in &out.report.survived {
+        assert!(!s.evidence.is_empty(), "{} has no evidence", s.mark);
+    }
+    assert!(out
+        .report
+        .survived
         .iter()
-        .find(|f| f.class == "synthid_image")
-        .unwrap();
-    assert_eq!(synthid.tier, unmark::report::Tier::Residual);
+        .any(|s| s.mark == "SynthID-Image" && s.evidence.starts_with("applied, survives")));
+}
 
-    // A plain image with no such evidence reports the same class at note tier,
-    // so inspect does not cry wolf on arbitrary files.
-    let plain = build_png(&PngOpts::default());
-    let r = inspect(&plain, "image-metadata", &pkg()).unwrap();
-    let synthid = r
-        .findings
+#[test]
+fn plan_proposes_the_default_run_and_touches_nothing() {
+    let png = build_png(&PngOpts {
+        text: true,
+        ..Default::default()
+    });
+    let r = plan(&png, &Options::default(), &pkg()).unwrap();
+    assert!(r
+        .actions
         .iter()
-        .find(|f| f.class == "synthid_image")
-        .unwrap();
-    assert_eq!(synthid.tier, unmark::report::Tier::Note);
+        .any(|a| a.transform == "MC04" && a.outcome == "proposed"));
+    assert!(r.actions.iter().any(|a| a.transform == "PX02"));
+    let r = plan(
+        &png,
+        &Options {
+            no_degrade: true,
+            ..Default::default()
+        },
+        &pkg(),
+    )
+    .unwrap();
+    assert!(r
+        .actions
+        .iter()
+        .any(|a| a.transform == "PX02" && a.outcome.contains("--no-degrade")));
 }
 
 #[test]
 fn unknown_container_is_unsupported() {
-    // Invalid UTF-8 bytes (0xC0 is never a valid lead) that match no container
-    // sniff to Unknown.
     let blob = vec![0xC0u8; 40];
-    let err = clean(&blob, "image-metadata", &owner_opts(), &pkg()).unwrap_err();
+    let err = clean(&blob, &Options::default(), &pkg()).unwrap_err();
     assert!(matches!(err, UnmarkError::Unsupported(_)));
 }
 
 #[test]
-fn an_audio_degrade_profile_is_rejected_until_audio_calibrates() {
-    let png = build_png(&PngOpts::default());
-    let err = inspect(&png, "audio-safe", &pkg()).unwrap_err();
-    assert!(
-        matches!(err, UnmarkError::Usage(_)),
-        "audio-safe stays gated until the audio ceilings calibrate"
-    );
-}
-
-#[test]
-fn verify_confirms_a_cleaned_output() {
+fn verify_confirms_a_cleaned_output_and_catches_a_reintroduced_mark() {
     let png = build_png(&PngOpts {
         text: true,
         c2pa: true,
         ..Default::default()
     });
-    let opts = Options {
-        i_generated_this: true,
-        acknowledge_residual: true,
-        ..Default::default()
-    };
-    let out = clean(&png, "image-metadata", &opts, &pkg()).unwrap();
-    let bytes = out.output.unwrap();
+    let p = pkg();
+    let out = clean(&png, &Options::default(), &p).unwrap();
     let report_json = serde_json::to_string(&out.report).unwrap();
+    let bytes = out.output.unwrap();
     assert_eq!(
-        unmark::verify(&bytes, &report_json, &pkg()),
-        unmark::VerifyOutcome::Verified
+        unmark::verify(&bytes, &report_json, &p),
+        VerifyOutcome::Verified
     );
-    // Verifying the original, uncleaned bytes fails.
-    assert!(matches!(
-        unmark::verify(&png, &report_json, &pkg()),
-        unmark::VerifyOutcome::Mismatch(_)
-    ));
-    let _ = EXIT_MARK_REMAINS;
+    match unmark::verify(&png, &report_json, &p) {
+        VerifyOutcome::Mismatch(problems) => {
+            assert!(problems.iter().any(|m| m.contains("present again")))
+        }
+        VerifyOutcome::Verified => panic!("the original still carries the marks"),
+    }
+}
+
+#[test]
+fn the_usage_exit_is_distinct() {
+    assert_eq!(EXIT_USAGE, 2);
+    assert_ne!(
+        unmark::report::EXIT_SANITY,
+        unmark::report::EXIT_INSTRUMENTATION
+    );
+    let codes = [
+        unmark::report::EXIT_OK,
+        EXIT_USAGE,
+        unmark::report::EXIT_MARK_REMAINS,
+        unmark::report::EXIT_INSTRUMENTATION,
+        unmark::report::EXIT_UNSUPPORTED,
+        unmark::report::EXIT_SANITY,
+    ];
+    let mut sorted = codes.to_vec();
+    sorted.sort();
+    sorted.dedup();
+    assert_eq!(sorted.len(), codes.len(), "every exit is distinct");
 }

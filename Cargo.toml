@@ -4,7 +4,7 @@ version = "0.2.0"
 edition = "2021"
 rust-version = "1.85"
 license = "MIT OR Apache-2.0"
-description = "Deterministic degrade-only cleaner that strips confirmable generative marks from images, audio, and repository files you made"
+description = "Strips every generative mark it can find from images, audio, and repository files by default, keeps certified camera captures, and proves removal"
 keywords = ["metadata", "watermark", "c2pa", "provenance", "exif"]
 categories = ["command-line-utilities", "multimedia"]
 readme = "README.md"
@@ -49,20 +49,15 @@ lexopt = "0.3"
 name = "unmark"
 path = "src/bin/unmark.rs"
 
-# The calibration harness and the fixture generator build under
-# --all-targets so they cannot rot, and run only with both media features.
+# The metrics example builds under --all-targets so it cannot rot.
 [[example]]
-name = "calibrate"
-required-features = ["image", "audio"]
-
-[[example]]
-name = "calibration_fixtures"
-required-features = ["image", "audio"]
+name = "metrics"
+required-features = ["image"]
 
 [profile.release]
 lto = true
 
-# The calibration pins recompute resampling, encoding, and spectra over the
-# fixture subset; light optimization keeps that suite short in CI.
+# The efficacy and codec tests resample and encode real images; light
+# optimization keeps the suite short in CI.
 [profile.test]
 opt-level = 1
