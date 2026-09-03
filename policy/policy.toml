@@ -534,8 +534,8 @@ record = "policy/calibration.json"
 # calibrated. Every field below except base_seed and the percentile rules is
 # written by the harness.
 status = "provisional"
-record_sha256 = "ed95df69288a99f7008777b48fa51c5abe0cf32457473bc28a5a214ad22b8655"
-corpus_manifest_sha256 = "cc4a4fa43d5189384ca60b8fff7b4985a000b28a34c7a40c6a56e12c69689f47"
+record_sha256 = "b117d968418d8a0962ee1cb743b2d055979de91fad2c1a3697a2126a7722a1ae"
+corpus_manifest_sha256 = "606d1be8deda21f6cecaeac6ce6d13ca133c313e408e0074d6461b372ba4f834"
 date = "2026-09-02"
 # XORed with the first 8 bytes of sha256(input) to seed PX05 and AU02, so one
 # asset always gets the same noise and two assets never share a pattern.

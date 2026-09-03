@@ -109,6 +109,11 @@ fn main() {
             fixture: true,
             round: "fixture".to_string(),
             tags: vec!["synthetic".to_string()],
+            doc_id: name
+                .trim_end_matches(|c| c != '.')
+                .trim_end_matches('.')
+                .to_string(),
+            fields: Default::default(),
         });
     };
 

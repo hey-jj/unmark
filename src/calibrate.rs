@@ -80,6 +80,31 @@ pub struct ManifestAsset {
     pub round: String,
     #[serde(default)]
     pub tags: Vec<String>,
+    /// The corpus's own identifier for the asset, when it has one.
+    #[serde(default)]
+    pub doc_id: String,
+    /// Every other inventory column, verbatim, selectable by `field=value`.
+    #[serde(default)]
+    pub fields: BTreeMap<String, String>,
+}
+
+impl ManifestAsset {
+    /// A selectable field by name: the typed fields first, then the extra
+    /// inventory columns.
+    pub fn field(&self, name: &str) -> Option<String> {
+        match name {
+            "path" => Some(self.path.clone()),
+            "sha256" => Some(self.sha256.clone()),
+            "format" => Some(self.format.clone()),
+            "generator" => Some(self.generator.clone()),
+            "class" => Some(self.class.clone()),
+            "round" => Some(self.round.clone()),
+            "doc_id" => Some(self.doc_id.clone()),
+            "control" => Some(self.control.to_string()),
+            "post_processed" => Some(self.post_processed.to_string()),
+            other => self.fields.get(other).cloned(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -89,20 +114,67 @@ pub struct Manifest {
 }
 
 /// Manifest-driven selection. An empty include list admits every round or
-/// tag; the exclude lists always apply.
+/// tag; the exclude lists always apply. `include` and `exclude` hold generic
+/// `field=value` rules over any manifest field or inventory column; for a
+/// field named in `include`, an asset must match one of that field's values.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Filters {
     pub include_rounds: Vec<String>,
     pub exclude_rounds: Vec<String>,
     pub include_tags: Vec<String>,
     pub exclude_tags: Vec<String>,
+    #[serde(default)]
+    pub include: Vec<String>,
+    #[serde(default)]
+    pub exclude: Vec<String>,
+}
+
+fn split_rule(rule: &str) -> Result<(&str, &str), String> {
+    rule.split_once('=')
+        .map(|(k, v)| (k.trim(), v.trim()))
+        .filter(|(k, _)| !k.is_empty())
+        .ok_or_else(|| format!("selection rule {rule:?} is not field=value"))
 }
 
 impl Filters {
+    /// Reject a malformed rule before any file is read.
+    pub fn validate(&self) -> Result<(), String> {
+        for r in self.include.iter().chain(&self.exclude) {
+            split_rule(r)?;
+        }
+        Ok(())
+    }
+
     /// The exclusion reason, or None when the asset is admitted.
     pub fn exclusion(&self, a: &ManifestAsset) -> Option<String> {
         if a.post_processed {
             return Some("post_processed".to_string());
+        }
+        // Generic rules. Include rules group by field: the asset must match
+        // one value per included field.
+        let mut included_fields: Vec<&str> = Vec::new();
+        for r in &self.include {
+            let Ok((k, _)) = split_rule(r) else { continue };
+            if !included_fields.contains(&k) {
+                included_fields.push(k);
+            }
+        }
+        for k in included_fields {
+            let value = a.field(k).unwrap_or_default();
+            let matched = self.include.iter().any(|r| {
+                split_rule(r)
+                    .map(|(rk, rv)| rk == k && rv == value)
+                    .unwrap_or(false)
+            });
+            if !matched {
+                return Some(format!("{k} {value:?} not included"));
+            }
+        }
+        for r in &self.exclude {
+            let Ok((k, v)) = split_rule(r) else { continue };
+            if a.field(k).as_deref() == Some(v) {
+                return Some(format!("{k} {v:?} excluded"));
+            }
         }
         if !self.include_rounds.is_empty() && !self.include_rounds.contains(&a.round) {
             return Some(format!("round {} not included", a.round));
@@ -129,6 +201,242 @@ pub fn parse_manifest(text: &str) -> Result<Manifest, String> {
         ));
     }
     Ok(m)
+}
+
+/// Map an inventory's container name onto the cell format names. Unknown
+/// names pass through lowercased and are excluded later as not calibrated.
+pub fn normalize_format(name: &str) -> String {
+    let n = name.trim().to_ascii_lowercase();
+    match n.as_str() {
+        "png" | "screenshot-png" => "png".to_string(),
+        "jpg" | "jpeg" => "jpeg".to_string(),
+        "webp" => "webp".to_string(),
+        "wav" | "riff-wav" => "wav".to_string(),
+        "flac" => "flac".to_string(),
+        _ => n,
+    }
+}
+
+/// A small RFC 4180 reader: quoted fields, doubled quotes, CRLF or LF.
+pub fn parse_csv(text: &str) -> Result<Vec<Vec<String>>, String> {
+    let mut rows = Vec::new();
+    let mut row = Vec::new();
+    let mut field = String::new();
+    let mut quoted = false;
+    let mut chars = text.chars().peekable();
+    while let Some(c) = chars.next() {
+        if quoted {
+            match c {
+                '"' => {
+                    if chars.peek() == Some(&'"') {
+                        field.push('"');
+                        chars.next();
+                    } else {
+                        quoted = false;
+                    }
+                }
+                _ => field.push(c),
+            }
+            continue;
+        }
+        match c {
+            '"' if field.is_empty() => quoted = true,
+            ',' => row.push(std::mem::take(&mut field)),
+            '\r' => {}
+            '\n' => {
+                row.push(std::mem::take(&mut field));
+                rows.push(std::mem::take(&mut row));
+            }
+            _ => field.push(c),
+        }
+    }
+    if quoted {
+        return Err("csv: unterminated quoted field".to_string());
+    }
+    if !field.is_empty() || !row.is_empty() {
+        row.push(field);
+        rows.push(row);
+    }
+    Ok(rows)
+}
+
+/// Read an inventory CSV as a manifest. Required columns: `path`, `sha256`,
+/// and `format`. The cell format comes from `physical_variant` when that
+/// column is present and non-empty, otherwise from `format`, normalized.
+/// `round` maps to the round, `generator_model` to the generator, and
+/// `archetype` to the class. Every column is also kept verbatim in `fields`.
+pub fn parse_manifest_csv(text: &str) -> Result<Manifest, String> {
+    let rows = parse_csv(text)?;
+    let mut it = rows.into_iter();
+    let header = it.next().ok_or("csv: empty inventory")?;
+    let col = |name: &str| header.iter().position(|h| h.trim() == name);
+    let path_i = col("path").ok_or("csv: no path column")?;
+    let sha_i = col("sha256").ok_or("csv: no sha256 column")?;
+    let format_i = col("format").ok_or("csv: no format column")?;
+    let mut assets = Vec::new();
+    for (n, row) in it.enumerate() {
+        if row.iter().all(|f| f.trim().is_empty()) {
+            continue;
+        }
+        if row.len() != header.len() {
+            return Err(format!(
+                "csv: row {} has {} fields, header has {}",
+                n + 2,
+                row.len(),
+                header.len()
+            ));
+        }
+        let get = |name: &str| {
+            col(name)
+                .map(|i| row[i].trim().to_string())
+                .unwrap_or_default()
+        };
+        let mut fields = BTreeMap::new();
+        for (h, v) in header.iter().zip(&row) {
+            fields.insert(h.trim().to_string(), v.trim().to_string());
+        }
+        let variant = get("physical_variant");
+        let raw_format = if variant.is_empty() {
+            row[format_i].trim().to_string()
+        } else {
+            variant
+        };
+        assets.push(ManifestAsset {
+            path: row[path_i].trim().to_string(),
+            sha256: row[sha_i].trim().to_ascii_lowercase(),
+            format: normalize_format(&raw_format),
+            width: None,
+            height: None,
+            duration_s: None,
+            rate: None,
+            channels: None,
+            generator: get("generator_model"),
+            class: get("archetype"),
+            post_processed: matches!(get("post_processed").as_str(), "true" | "1" | "yes"),
+            control: matches!(get("control").as_str(), "true" | "1" | "yes"),
+            fixture: false,
+            round: get("round"),
+            tags: Vec::new(),
+            doc_id: get("doc_id"),
+            fields,
+        });
+    }
+    Ok(Manifest {
+        schema_version: MANIFEST_SCHEMA_VERSION.to_string(),
+        assets,
+    })
+}
+
+/// A loaded manifest with its identity: the file's sha256 and basename.
+pub struct LoadedManifest {
+    pub manifest: Manifest,
+    pub sha256: String,
+    pub name: String,
+}
+
+/// Load a JSON or CSV manifest by extension. The digest is over the file's
+/// bytes as read, so it is the corpus identity whichever form was given.
+pub fn load_manifest(path: &std::path::Path) -> Result<LoadedManifest, String> {
+    let bytes = std::fs::read(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    let text = std::str::from_utf8(&bytes).map_err(|e| format!("manifest utf-8: {e}"))?;
+    let is_csv = path
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("csv"));
+    let manifest = if is_csv {
+        parse_manifest_csv(text)?
+    } else {
+        parse_manifest(text)?
+    };
+    Ok(LoadedManifest {
+        manifest,
+        sha256: sha256_hex(&bytes),
+        name: path
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default(),
+    })
+}
+
+/// The selection a filter set makes over a manifest, before any measurement.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Selection {
+    pub manifest: String,
+    pub manifest_sha256: String,
+    pub filters: Filters,
+    pub listed: usize,
+    pub admitted: usize,
+    pub excluded: usize,
+    /// Admitted counts keyed `format/round`.
+    pub admitted_by_format_round: Vec<(String, usize)>,
+    /// Admitted counts by format alone.
+    pub admitted_by_format: Vec<(String, usize)>,
+    /// Admitted assets whose format is not one the harness calibrates; they
+    /// will be listed as excluded by the run.
+    pub admitted_uncalibrated: Vec<(String, usize)>,
+    pub exclusions: Vec<Exclusion>,
+}
+
+/// Apply the filters and, when `verify` is set, check every admitted file's
+/// sha256 against the manifest, failing on the first mismatch or unreadable
+/// file. Nothing is measured.
+pub fn select(
+    loaded: &LoadedManifest,
+    root: &std::path::Path,
+    filters: &Filters,
+    verify: bool,
+) -> Result<Selection, String> {
+    filters.validate()?;
+    let mut by_fr: BTreeMap<String, usize> = BTreeMap::new();
+    let mut by_f: BTreeMap<String, usize> = BTreeMap::new();
+    let mut uncal: BTreeMap<String, usize> = BTreeMap::new();
+    let mut exclusions = Vec::new();
+    for a in &loaded.manifest.assets {
+        if let Some(reason) = filters.exclusion(a) {
+            exclusions.push(Exclusion {
+                path: a.path.clone(),
+                reason,
+            });
+            continue;
+        }
+        if verify {
+            verify_sha256(root, a)?;
+        }
+        *by_fr
+            .entry(format!("{}/{}", a.format, a.round))
+            .or_default() += 1;
+        *by_f.entry(a.format.clone()).or_default() += 1;
+        if manifest_format(&a.format).is_none() {
+            *uncal.entry(a.format.clone()).or_default() += 1;
+        }
+    }
+    let listed = loaded.manifest.assets.len();
+    Ok(Selection {
+        manifest: loaded.name.clone(),
+        manifest_sha256: loaded.sha256.clone(),
+        filters: filters.clone(),
+        listed,
+        admitted: listed - exclusions.len(),
+        excluded: exclusions.len(),
+        admitted_by_format_round: by_fr.into_iter().collect(),
+        admitted_by_format: by_f.into_iter().collect(),
+        admitted_uncalibrated: uncal.into_iter().collect(),
+        exclusions,
+    })
+}
+
+/// Read an admitted asset and check its hash against the manifest. A
+/// mismatch or an unreadable file is a run error, never a silent exclusion.
+pub fn verify_sha256(root: &std::path::Path, a: &ManifestAsset) -> Result<Vec<u8>, String> {
+    let full = root.join(&a.path);
+    let bytes = std::fs::read(&full).map_err(|e| format!("{}: {e}", full.display()))?;
+    let hash = sha256_hex(&bytes);
+    if hash != a.sha256.to_ascii_lowercase() {
+        return Err(format!(
+            "sha256 mismatch for {}: manifest says {}, file is {hash}",
+            a.path, a.sha256
+        ));
+    }
+    Ok(bytes)
 }
 
 pub fn sha256_hex(bytes: &[u8]) -> String {
@@ -2402,6 +2710,10 @@ pub type Progress = Box<dyn FnMut(&str)>;
 /// Inputs to one calibration run.
 pub struct RunOptions {
     pub manifest_path: std::path::PathBuf,
+    /// The directory asset paths are relative to. Defaults to the manifest's
+    /// directory, which suits a manifest inside the corpus; an inventory kept
+    /// outside the corpus names the corpus root here.
+    pub root: Option<std::path::PathBuf>,
     pub date: String,
     pub filters: Filters,
     pub check_determinism: bool,
@@ -2432,13 +2744,10 @@ fn one_pass(
             results.push(excluded(a, reason));
             continue;
         }
-        let bytes = match std::fs::read(manifest_dir.join(&a.path)) {
-            Ok(b) => b,
-            Err(e) => {
-                results.push(excluded(a, format!("read failed: {e}")));
-                continue;
-            }
-        };
+        // An admitted asset that cannot be read or whose hash disagrees with
+        // the manifest fails the run: the record would otherwise describe a
+        // corpus other than the one the digest names.
+        let bytes = verify_sha256(manifest_dir, a)?;
         results.push(evaluate_asset(&bytes, a, &ctx));
     }
     Ok(results)
@@ -2447,22 +2756,17 @@ fn one_pass(
 /// Run the harness over a manifest. The second pass, when asked for, is a
 /// full recomputation compared byte for byte against the first.
 pub fn run(pkg: &PolicyPackage, mut opts: RunOptions) -> Result<RunOutput, String> {
-    let manifest_bytes = std::fs::read(&opts.manifest_path)
-        .map_err(|e| format!("{}: {e}", opts.manifest_path.display()))?;
-    let manifest_sha = sha256_hex(&manifest_bytes);
-    let manifest = parse_manifest(
-        std::str::from_utf8(&manifest_bytes).map_err(|e| format!("manifest utf-8: {e}"))?,
-    )?;
-    let manifest_dir = opts
-        .manifest_path
-        .parent()
-        .map(|p| p.to_path_buf())
-        .unwrap_or_default();
-    let manifest_name = opts
-        .manifest_path
-        .file_name()
-        .map(|n| n.to_string_lossy().to_string())
-        .unwrap_or_default();
+    opts.filters.validate()?;
+    let loaded = load_manifest(&opts.manifest_path)?;
+    let manifest = loaded.manifest;
+    let manifest_sha = loaded.sha256;
+    let manifest_name = loaded.name;
+    let manifest_dir = opts.root.clone().unwrap_or_else(|| {
+        opts.manifest_path
+            .parent()
+            .map(|p| p.to_path_buf())
+            .unwrap_or_default()
+    });
     let date = opts.date.clone();
     let filters = opts.filters.clone();
 
@@ -2532,6 +2836,56 @@ mod tests {
         assert_eq!(floor_to_step(0.985, 0.005), 0.985);
         assert_eq!(ceil_to_step(0.731, 0.05), 0.75);
         assert_eq!(ceil_to_step(0.75, 0.05), 0.75);
+    }
+
+    #[test]
+    fn the_csv_reader_handles_quotes_and_maps_the_inventory_columns() {
+        let text = "doc_id,path,format,round,wave,generator_model,generator_lane,physical_variant,archetype,sha256\r\n\
+                    d1,documents/a.png,screenshot,2,3,\"vendor/model, v2\",\"\",png,A3,ABCDEF\n\
+                    d2,documents/b.mp3,audio,4,1,local,\"\",mp3,\"R4 \"\"x\"\"\",0011\n";
+        let m = parse_manifest_csv(text).unwrap();
+        assert_eq!(m.assets.len(), 2);
+        let a = &m.assets[0];
+        assert_eq!(a.format, "png");
+        assert_eq!(a.round, "2");
+        assert_eq!(a.generator, "vendor/model, v2");
+        assert_eq!(a.class, "A3");
+        assert_eq!(a.sha256, "abcdef");
+        assert_eq!(a.field("wave").as_deref(), Some("3"));
+        assert_eq!(a.field("format").as_deref(), Some("png"));
+        let b = &m.assets[1];
+        assert_eq!(b.format, "mp3");
+        assert_eq!(b.class, "R4 \"x\"");
+        assert!(
+            manifest_format(&b.format).is_none(),
+            "mp3 is not calibrated"
+        );
+    }
+
+    #[test]
+    fn generic_rules_select_by_any_field() {
+        let text = "doc_id,path,format,round,wave,physical_variant,sha256\n\
+                    d1,a.png,png,1,0,,00\nd2,b.png,png,4,1,,00\nd3,c.jpg,jpeg,2,1,,00\n";
+        let m = parse_manifest_csv(text).unwrap();
+        let f = Filters {
+            exclude: vec!["round=4".to_string()],
+            include: vec![
+                "format=png".to_string(),
+                "format=jpeg".to_string(),
+                "wave=1".to_string(),
+            ],
+            ..Filters::default()
+        };
+        let reasons: Vec<Option<String>> = m.assets.iter().map(|a| f.exclusion(a)).collect();
+        assert!(reasons[0].as_deref().unwrap().contains("wave"));
+        assert!(reasons[1].as_deref().unwrap().contains("round"));
+        assert!(reasons[2].is_none());
+        assert!(Filters {
+            include: vec!["novalue".to_string()],
+            ..Filters::default()
+        }
+        .validate()
+        .is_err());
     }
 
     #[test]

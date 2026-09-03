@@ -4,7 +4,7 @@ Generated from `calibration.json` by the calibration harness. Edits here are ove
 
 - date: 2026-09-02
 - policy version: 0.2.0
-- corpus manifest: manifest.json (sha256 cc4a4fa43d5189384ca60b8fff7b4985a000b28a34c7a40c6a56e12c69689f47)
+- corpus manifest: manifest.json (sha256 606d1be8deda21f6cecaeac6ce6d13ca133c313e408e0074d6461b372ba4f834)
 - assets: 15 listed, 15 scored, 0 excluded
 - encoder fingerprint: unmark 0.1.0; container-rewrite/no-reencode; png 0.18.1; jpeg-decoder 0.3.2; image-webp 0.2.4; claxon 0.4.3; flacenc 0.5.1; jpeg-encoder in-crate baseline 4:4:4; resample in-crate lanczos3 and kaiser-sinc scalar
 - base seed: 0x5eed202609020001

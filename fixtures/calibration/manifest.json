@@ -18,7 +18,9 @@
       "round": "fixture",
       "tags": [
         "synthetic"
-      ]
+      ],
+      "doc_id": "png-small",
+      "fields": {}
     },
     {
       "path": "png-medium-alpha.png",
@@ -37,7 +39,9 @@
       "round": "fixture",
       "tags": [
         "synthetic"
-      ]
+      ],
+      "doc_id": "png-medium-alpha",
+      "fields": {}
     },
     {
       "path": "png-large.png",
@@ -56,7 +60,9 @@
       "round": "fixture",
       "tags": [
         "synthetic"
-      ]
+      ],
+      "doc_id": "png-large",
+      "fields": {}
     },
     {
       "path": "jpeg-small.jpg",
@@ -75,7 +81,9 @@
       "round": "fixture",
       "tags": [
         "synthetic"
-      ]
+      ],
+      "doc_id": "jpeg-small",
+      "fields": {}
     },
     {
       "path": "jpeg-medium.jpg",
@@ -94,7 +102,9 @@
       "round": "fixture",
       "tags": [
         "synthetic"
-      ]
+      ],
+      "doc_id": "jpeg-medium",
+      "fields": {}
     },
     {
       "path": "jpeg-large.jpg",
@@ -113,7 +123,9 @@
       "round": "fixture",
       "tags": [
         "synthetic"
-      ]
+      ],
+      "doc_id": "jpeg-large",
+      "fields": {}
     },
     {
       "path": "webp-small-alpha.webp",
@@ -132,7 +144,9 @@
       "round": "fixture",
       "tags": [
         "synthetic"
-      ]
+      ],
+      "doc_id": "webp-small-alpha",
+      "fields": {}
     },
     {
       "path": "webp-medium.webp",
@@ -151,7 +165,9 @@
       "round": "fixture",
       "tags": [
         "synthetic"
-      ]
+      ],
+      "doc_id": "webp-medium",
+      "fields": {}
     },
     {
       "path": "webp-large.webp",
@@ -170,7 +186,9 @@
       "round": "fixture",
       "tags": [
         "synthetic"
-      ]
+      ],
+      "doc_id": "webp-large",
+      "fields": {}
     },
     {
       "path": "wav-short-stereo.wav",
@@ -189,7 +207,9 @@
       "round": "fixture",
       "tags": [
         "synthetic"
-      ]
+      ],
+      "doc_id": "wav-short-stereo",
+      "fields": {}
     },
     {
       "path": "wav-medium-24bit.wav",
@@ -208,7 +228,9 @@
       "round": "fixture",
       "tags": [
         "synthetic"
-      ]
+      ],
+      "doc_id": "wav-medium-24bit",
+      "fields": {}
     },
     {
       "path": "wav-long.wav",
@@ -227,7 +249,9 @@
       "round": "fixture",
       "tags": [
         "synthetic"
-      ]
+      ],
+      "doc_id": "wav-long",
+      "fields": {}
     },
     {
       "path": "flac-short-stereo.flac",
@@ -246,7 +270,9 @@
       "round": "fixture",
       "tags": [
         "synthetic"
-      ]
+      ],
+      "doc_id": "flac-short-stereo",
+      "fields": {}
     },
     {
       "path": "flac-medium-24bit.flac",
@@ -265,7 +291,9 @@
       "round": "fixture",
       "tags": [
         "synthetic"
-      ]
+      ],
+      "doc_id": "flac-medium-24bit",
+      "fields": {}
     },
     {
       "path": "flac-long.flac",
@@ -284,7 +312,9 @@
       "round": "fixture",
       "tags": [
         "synthetic"
-      ]
+      ],
+      "doc_id": "flac-long",
+      "fields": {}
     }
   ]
 }

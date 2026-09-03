@@ -5,12 +5,14 @@
   "date": "2026-09-02",
   "corpus": {
     "manifest": "manifest.json",
-    "manifest_sha256": "cc4a4fa43d5189384ca60b8fff7b4985a000b28a34c7a40c6a56e12c69689f47",
+    "manifest_sha256": "606d1be8deda21f6cecaeac6ce6d13ca133c313e408e0074d6461b372ba4f834",
     "filters": {
       "include_rounds": [],
       "exclude_rounds": [],
       "include_tags": [],
-      "exclude_tags": []
+      "exclude_tags": [],
+      "include": [],
+      "exclude": []
     },
     "assets_listed": 15,
     "assets_scored": 15,

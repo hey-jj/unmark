@@ -5,9 +5,14 @@
 //!
 //!     cargo run --release --example calibrate --all-features -- \
 //!         --manifest /corpus/manifest.json --out policy --date 2026-09-02 \
-//!         [--policy policy/policy.toml] [--single-pass] \
+//!         [--root DIR] [--policy policy/policy.toml] [--single-pass] \
 //!         [--include-round R]... [--exclude-round R]... \
-//!         [--include-tag T]... [--exclude-tag T]...
+//!         [--include-tag T]... [--exclude-tag T]... \
+//!         [--include FIELD=VALUE]... [--exclude FIELD=VALUE]...
+//!
+//! The manifest is JSON (schema 1.0.0) or an inventory CSV with `path`,
+//! `sha256`, and `format` columns. `--select-only` prints the selection as
+//! JSON after verifying every admitted file's sha256 and measures nothing.
 //!
 //! After a run that changed the policy, rebuild and regenerate the skill
 //! snapshot, since the package digest covers the record transitively:
@@ -20,8 +25,12 @@ use unmark::calibrate::{self, Filters, RunOptions};
 use unmark::policy;
 
 fn usage() -> &'static str {
-    "usage: calibrate --manifest FILE --out DIR --date YYYY-MM-DD [--policy FILE] [--single-pass]\n       \
-     [--include-round R]... [--exclude-round R]... [--include-tag T]... [--exclude-tag T]...\n\
+    "usage: calibrate --manifest FILE --out DIR --date YYYY-MM-DD [--root DIR] [--policy FILE] [--single-pass]\n       \
+     [--include-round R]... [--exclude-round R]... [--include-tag T]... [--exclude-tag T]...\n       \
+     [--include FIELD=VALUE]... [--exclude FIELD=VALUE]...\n       \
+     calibrate --select-only --manifest FILE [--root DIR] [selection flags]\n\
+     The manifest is JSON (schema 1.0.0) or an inventory CSV with path, sha256, and format columns.\n\
+     --select-only prints the selection as JSON after verifying every admitted file's sha256 and measures nothing.\n\
      exit 0 when the record was written and accepted, 1 when written but not accepted, 2 on a usage or run error"
 }
 
@@ -31,7 +40,9 @@ fn main() -> ExitCode {
     let mut out: Option<PathBuf> = None;
     let mut date: Option<String> = None;
     let mut policy_path = PathBuf::from("policy/policy.toml");
+    let mut root: Option<PathBuf> = None;
     let mut single_pass = false;
+    let mut select_only = false;
     let mut filters = Filters::default();
     while let Some(a) = args.next() {
         let mut value = |what: &str| -> Result<String, String> {
@@ -42,14 +53,21 @@ fn main() -> ExitCode {
             "--out" => value("--out").map(|v| out = Some(PathBuf::from(v))),
             "--date" => value("--date").map(|v| date = Some(v)),
             "--policy" => value("--policy").map(|v| policy_path = PathBuf::from(v)),
+            "--root" => value("--root").map(|v| root = Some(PathBuf::from(v))),
             "--single-pass" => {
                 single_pass = true;
+                Ok(())
+            }
+            "--select-only" => {
+                select_only = true;
                 Ok(())
             }
             "--include-round" => value("--include-round").map(|v| filters.include_rounds.push(v)),
             "--exclude-round" => value("--exclude-round").map(|v| filters.exclude_rounds.push(v)),
             "--include-tag" => value("--include-tag").map(|v| filters.include_tags.push(v)),
             "--exclude-tag" => value("--exclude-tag").map(|v| filters.exclude_tags.push(v)),
+            "--include" => value("--include").map(|v| filters.include.push(v)),
+            "--exclude" => value("--exclude").map(|v| filters.exclude.push(v)),
             "--help" | "-h" => {
                 println!("{}", usage());
                 return ExitCode::from(0);
@@ -61,6 +79,41 @@ fn main() -> ExitCode {
             return ExitCode::from(2);
         }
     }
+    if let Err(e) = filters.validate() {
+        eprintln!("calibrate: {e}");
+        return ExitCode::from(2);
+    }
+
+    if select_only {
+        let Some(manifest) = manifest else {
+            eprintln!("calibrate: --manifest is required\n{}", usage());
+            return ExitCode::from(2);
+        };
+        let root_dir = root.unwrap_or_else(|| {
+            manifest
+                .parent()
+                .map(|p| p.to_path_buf())
+                .unwrap_or_default()
+        });
+        let loaded = match calibrate::load_manifest(&manifest) {
+            Ok(l) => l,
+            Err(e) => {
+                eprintln!("calibrate: {e}");
+                return ExitCode::from(2);
+            }
+        };
+        return match calibrate::select(&loaded, &root_dir, &filters, true) {
+            Ok(sel) => {
+                println!("{}", serde_json::to_string_pretty(&sel).unwrap());
+                ExitCode::from(0)
+            }
+            Err(e) => {
+                eprintln!("calibrate: {e}");
+                ExitCode::from(2)
+            }
+        };
+    }
+
     let (Some(manifest), Some(out), Some(date)) = (manifest, out, date) else {
         eprintln!(
             "calibrate: --manifest, --out, and --date are required\n{}",
@@ -82,6 +135,7 @@ fn main() -> ExitCode {
     };
     let opts = RunOptions {
         manifest_path: manifest,
+        root,
         date,
         filters,
         check_determinism: !single_pass,
