@@ -8,10 +8,9 @@
 //! reference; `signal` applies the stages that change pixel values on that
 //! grid. The signal metric compares the decoded output to the reference.
 //!
-//! PX01 on a PNG or WebP input is a held seam: the owner's ruling asks for a
-//! lossy WebP write and no pure Rust lossy WebP encoder exists. The seam
-//! returns `PixelError::Held` with the reason, so a plan that reaches it is
-//! reported as held rather than silently written lossless.
+//! The container the output lands in is decided by an `Emitter`, one seam:
+//! the ruled 0.2.0 behavior is `DefaultEmitter`, and a future lossy WebP
+//! encoder slots in behind the same trait.
 
 use crate::asset::Format;
 use crate::codec::{self, CodecError, Image};
@@ -268,32 +267,106 @@ pub fn signal(img: &Image, p: &PixelParams, seed: u64) -> Image {
     cur
 }
 
-/// Write the container. A JPEG input is always re-encoded, since it has no
-/// lossless write. A PNG or WebP input is written lossless unless the plan
-/// carries PX01, which is the held seam.
-pub fn encode_output(img: &Image, format: Format, p: &PixelParams) -> Result<Vec<u8>, PixelError> {
-    match format {
-        Format::Jpeg => Ok(codec::jpeg::encode(img, p.jpeg_quality, &p.jpeg_chroma)?),
-        Format::Png if p.reencode => Err(PixelError::Held(
-            "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists".to_string(),
-        )),
-        Format::Png => Ok(codec::png::encode(img)?),
-        Format::WebP if p.reencode => Err(PixelError::Held(
-            "PX01 on WebP input: no pure Rust lossy WebP encoder exists".to_string(),
-        )),
-        Format::WebP => Ok(codec::webp::encode_lossless(img)?),
-        other => Err(PixelError::Codec(CodecError::Unsupported(format!(
-            "{} is not a pixel container",
-            other.as_str()
-        )))),
+/// The one-line reason a plan reports when PX01 stands down on an alpha
+/// image. Alpha is never flattened: a background the user did not draw is a
+/// composition change, not a mild encode.
+pub const SKIP_ALPHA_NOTE: &str =
+    "re-encode skipped: the image carries alpha and the build has no lossy encoder that keeps it";
+
+/// What an emitter wrote: the bytes, the container they are in, whether a
+/// lossy encode happened, and the one-line note when PX01 stood down.
+#[derive(Clone, Debug)]
+pub struct Emitted {
+    pub bytes: Vec<u8>,
+    pub format: Format,
+    pub reencoded: bool,
+    pub note: Option<String>,
+}
+
+/// The container choice is one seam. A future lossy WebP encoder slots in
+/// here without touching the plan or the metrics.
+pub trait Emitter {
+    fn emit(&self, img: &Image, input: Format, p: &PixelParams) -> Result<Emitted, PixelError>;
+}
+
+/// The 0.2.0 rule as the owner decided it. A JPEG input is always written as
+/// JPEG, since it has no lossless form. Otherwise, when the plan carries PX01
+/// and the decoded image is opaque, the output is a baseline JPEG at the
+/// pinned quality; when it carries alpha, PX01 is skipped with a note and the
+/// pixels are written losslessly in the input container. A lossy WebP input
+/// follows the same rule after decode, and a lossless WebP is treated as a
+/// PNG.
+pub struct DefaultEmitter;
+
+impl Emitter for DefaultEmitter {
+    fn emit(&self, img: &Image, input: Format, p: &PixelParams) -> Result<Emitted, PixelError> {
+        let jpeg = |img: &Image| -> Result<Emitted, PixelError> {
+            Ok(Emitted {
+                bytes: codec::jpeg::encode(img, p.jpeg_quality, &p.jpeg_chroma)?,
+                format: Format::Jpeg,
+                reencoded: true,
+                note: None,
+            })
+        };
+        let lossless = |img: &Image, note: Option<String>| -> Result<Emitted, PixelError> {
+            let (bytes, format) = match input {
+                Format::Png => (codec::png::encode(img)?, Format::Png),
+                Format::WebP => (codec::webp::encode_lossless(img)?, Format::WebP),
+                other => {
+                    return Err(PixelError::Codec(CodecError::Unsupported(format!(
+                        "{} has no lossless write",
+                        other.as_str()
+                    ))))
+                }
+            };
+            Ok(Emitted {
+                bytes,
+                format,
+                reencoded: false,
+                note,
+            })
+        };
+        match input {
+            Format::Jpeg => jpeg(img),
+            Format::Png | Format::WebP => {
+                if !p.reencode {
+                    lossless(img, None)
+                } else if img.has_alpha() {
+                    lossless(img, Some(SKIP_ALPHA_NOTE.to_string()))
+                } else {
+                    jpeg(img)
+                }
+            }
+            other => Err(PixelError::Codec(CodecError::Unsupported(format!(
+                "{} is not a pixel container",
+                other.as_str()
+            )))),
+        }
     }
 }
 
-/// A full pixel-plan application: the written bytes, the grid-matched
+/// Write the container through the default emitter.
+pub fn encode_output(img: &Image, format: Format, p: &PixelParams) -> Result<Emitted, PixelError> {
+    DefaultEmitter.emit(img, format, p)
+}
+
+/// The file extensions a written container may carry.
+pub fn extensions_for(format: Format) -> &'static [&'static str] {
+    match format {
+        Format::Jpeg => &["jpg", "jpeg"],
+        Format::Png => &["png"],
+        Format::WebP => &["webp"],
+        Format::RiffWav => &["wav"],
+        Format::Flac => &["flac"],
+        _ => &[],
+    }
+}
+
+/// A full pixel-plan application: the written output, the grid-matched
 /// reference, and the decoded output.
 #[derive(Clone, Debug)]
 pub struct PixelOutcome {
-    pub bytes: Vec<u8>,
+    pub emitted: Emitted,
     pub reference: Image,
     pub output: Image,
 }
@@ -306,10 +379,10 @@ pub fn apply(
 ) -> Result<PixelOutcome, PixelError> {
     let reference = geometry(input, p)?;
     let valued = signal(&reference, p, seed);
-    let bytes = encode_output(&valued, format, p)?;
-    let output = codec::decode_image(&bytes, format)?;
+    let emitted = encode_output(&valued, format, p)?;
+    let output = codec::decode_image(&emitted.bytes, emitted.format)?;
     Ok(PixelOutcome {
-        bytes,
+        emitted,
         reference,
         output,
     })
@@ -348,6 +421,41 @@ mod tests {
         let a = img(100, 60, 3);
         let c = crop(&a, 0.9);
         assert_eq!((c.width, c.height), (95, 57));
+    }
+
+    fn params(reencode: bool) -> PixelParams {
+        PixelParams {
+            flip: None,
+            crop_area: None,
+            resample_ratio: None,
+            noise_sigma: None,
+            requantize_bits: None,
+            reencode,
+            jpeg_quality: 92,
+            jpeg_chroma: "4:4:4".to_string(),
+        }
+    }
+
+    #[test]
+    fn the_emitter_writes_jpeg_for_opaque_and_stands_down_on_alpha() {
+        let opaque = img(16, 16, 3);
+        let e = encode_output(&opaque, Format::Png, &params(true)).unwrap();
+        assert_eq!(e.format, Format::Jpeg);
+        assert!(e.reencoded && e.note.is_none());
+        let alpha = img(16, 16, 4);
+        let e = encode_output(&alpha, Format::Png, &params(true)).unwrap();
+        assert_eq!(e.format, Format::Png);
+        assert!(!e.reencoded);
+        assert_eq!(e.note.as_deref(), Some(SKIP_ALPHA_NOTE));
+        let e = encode_output(&alpha, Format::WebP, &params(true)).unwrap();
+        assert_eq!(e.format, Format::WebP);
+        let e = encode_output(&opaque, Format::WebP, &params(true)).unwrap();
+        assert_eq!(e.format, Format::Jpeg);
+        let e = encode_output(&opaque, Format::Png, &params(false)).unwrap();
+        assert_eq!(e.format, Format::Png);
+        let e = encode_output(&opaque, Format::Jpeg, &params(false)).unwrap();
+        assert_eq!(e.format, Format::Jpeg);
+        assert!(e.reencoded);
     }
 
     #[test]

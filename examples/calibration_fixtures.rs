@@ -12,7 +12,7 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use unmark::calibrate::{self, Manifest, ManifestAsset};
 use unmark::codec::{self, Audio, Image};
-use unmark::dsp::Rng;
+use unmark::dsp::{cos, sin, Rng};
 
 fn image(width: usize, height: usize, channels: usize, seed: u64) -> Image {
     // Texture, gradient, and edges together: a diffusion-style busy field.
@@ -22,7 +22,7 @@ fn image(width: usize, height: usize, channels: usize, seed: u64) -> Image {
         for x in 0..width {
             let fx = x as f64 / width as f64;
             let fy = y as f64 / height as f64;
-            let tex = ((x as f64 * 0.37).sin() * (y as f64 * 0.29).cos() * 40.0)
+            let tex = (sin(x as f64 * 0.37) * cos(y as f64 * 0.29) * 40.0)
                 + ((x / 13 + y / 7) % 2) as f64 * 30.0;
             let noise = rng.gaussian() * 4.0;
             let r = 90.0 + 120.0 * fx + tex + noise;
@@ -32,7 +32,7 @@ fn image(width: usize, height: usize, channels: usize, seed: u64) -> Image {
             data.push(g.round().clamp(0.0, 255.0) as u8);
             data.push(b.round().clamp(0.0, 255.0) as u8);
             if channels == 4 {
-                let a = 128.0 + 127.0 * ((x as f64 * 0.05).sin() * (y as f64 * 0.09).cos());
+                let a = 128.0 + 127.0 * (sin(x as f64 * 0.05) * cos(y as f64 * 0.09));
                 data.push(a.round().clamp(0.0, 255.0) as u8);
             }
         }
@@ -56,12 +56,12 @@ fn audio(rate: u32, seconds: f64, channels: usize, bits: u16, seed: u64) -> Audi
         let mut v = Vec::with_capacity(n);
         for i in 0..n {
             let t = i as f64 / rate as f64;
-            let chirp = 1.0 + 0.02 * (t * 0.5).sin();
+            let chirp = 1.0 + 0.02 * sin(t * 0.5);
             let mut s = 0.0;
             for h in 1..=6 {
                 let f = base * h as f64 * chirp;
                 if f < rate as f64 * 0.45 {
-                    s += (2.0 * std::f64::consts::PI * f * t).sin() / h as f64;
+                    s += sin(2.0 * std::f64::consts::PI * f * t) / h as f64;
                 }
             }
             s *= 0.3;
@@ -321,6 +321,7 @@ fn main() {
     let manifest = Manifest {
         schema_version: calibrate::MANIFEST_SCHEMA_VERSION.to_string(),
         source_inventory: None,
+        prepare: None,
         assets,
     };
     let mut json = serde_json::to_string_pretty(&manifest).unwrap();

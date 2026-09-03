@@ -7,6 +7,128 @@
 
 use std::f64::consts::PI;
 
+// --- libm-free elementary functions ----------------------------------------------
+//
+// The transforms produce output bytes, so every transcendental they touch is
+// computed here in sequential f64 with fixed range reduction and a fixed
+// polynomial, never through the platform libm. No fused multiply-add is used:
+// the expressions below are plain products and sums, which Rust never
+// contracts. Accuracy is a few ulps, and the same bits on every platform.
+
+/// pi/2 split so that `k * PIO2_HI` is exact for |k| below 2^27.
+const PIO2_HI: f64 = 1.570_796_310_901_641_8;
+const PIO2_MID: f64 = 1.589_325_477_352_819_6e-8;
+const PIO2_LO: f64 = 6.368_317_163_510_95e-25;
+const TWO_OVER_PI: f64 = std::f64::consts::FRAC_2_PI;
+
+/// Reduce x to (k, r) with x = k * pi/2 + r, |r| at most pi/4.
+fn reduce_half_pi(x: f64) -> (i64, f64) {
+    let k = (x * TWO_OVER_PI).round();
+    let r = ((x - k * PIO2_HI) - k * PIO2_MID) - k * PIO2_LO;
+    (k as i64, r)
+}
+
+/// sin on |r| at most pi/4 by the Taylor series to r^17, Horner form.
+fn sin_poly(r: f64) -> f64 {
+    let r2 = r * r;
+    let p = 2.811_457_254_345_520_6e-15 + r2 * (-1.561_920_696_858_622_5e-16);
+    let p = -7.647_163_731_819_816e-13 + r2 * p;
+    let p = 1.605_904_383_682_161_3e-10 + r2 * p;
+    let p = -2.505_210_838_544_172e-8 + r2 * p;
+    let p = 2.755_731_922_398_589_3e-6 + r2 * p;
+    let p = -1.984_126_984_126_984e-4 + r2 * p;
+    let p = 8.333_333_333_333_333e-3 + r2 * p;
+    let p = -0.166_666_666_666_666_66 + r2 * p;
+    r + r * r2 * p
+}
+
+/// cos on |r| at most pi/4 by the Taylor series to r^18, Horner form.
+fn cos_poly(r: f64) -> f64 {
+    let r2 = r * r;
+    let p = 4.779_477_332_387_385e-14 + r2 * (-1.561_920_696_858_622_5e-16);
+    let p = -1.147_074_559_772_972_5e-11 + r2 * p;
+    let p = 2.087_675_698_786_81e-9 + r2 * p;
+    let p = -2.755_731_922_398_589e-7 + r2 * p;
+    let p = 2.480_158_730_158_73e-5 + r2 * p;
+    let p = -1.388_888_888_888_889e-3 + r2 * p;
+    let p = 0.041_666_666_666_666_664 + r2 * p;
+    let p = -0.5 + r2 * p;
+    1.0 + r2 * p
+}
+
+/// Sine, libm-free. Arguments must stay below 2^27 times pi/2 in magnitude,
+/// which every caller in this crate satisfies by construction.
+pub fn sin(x: f64) -> f64 {
+    let (k, r) = reduce_half_pi(x);
+    match k.rem_euclid(4) {
+        0 => sin_poly(r),
+        1 => cos_poly(r),
+        2 => -sin_poly(r),
+        _ => -cos_poly(r),
+    }
+}
+
+/// Cosine, libm-free, same domain as `sin`.
+pub fn cos(x: f64) -> f64 {
+    let (k, r) = reduce_half_pi(x);
+    match k.rem_euclid(4) {
+        0 => cos_poly(r),
+        1 => -sin_poly(r),
+        2 => -cos_poly(r),
+        _ => sin_poly(r),
+    }
+}
+
+/// Natural logarithm for x above zero, libm-free: x = m * 2^e with m in
+/// [sqrt(1/2), sqrt(2)), then ln m = 2 atanh((m - 1) / (m + 1)) by its
+/// series to the 23rd power.
+pub fn ln(x: f64) -> f64 {
+    debug_assert!(x > 0.0 && x.is_finite());
+    let bits = x.to_bits();
+    let mut e = ((bits >> 52) & 0x7ff) as i64 - 1023;
+    let mut m = f64::from_bits((bits & 0x000f_ffff_ffff_ffff) | (1023u64 << 52));
+    if m > std::f64::consts::SQRT_2 {
+        m *= 0.5;
+        e += 1;
+    }
+    let s = (m - 1.0) / (m + 1.0);
+    let s2 = s * s;
+    let mut term = s;
+    let mut sum = 0.0;
+    let mut n = 1.0;
+    // Fixed 12 terms: s, s^3/3, ... s^23/23.
+    for _ in 0..12 {
+        sum += term / n;
+        term *= s2;
+        n += 2.0;
+    }
+    e as f64 * std::f64::consts::LN_2 + 2.0 * sum
+}
+
+/// Exponential, libm-free: x = k ln 2 + r, e^r by the Taylor series to
+/// r^13, scaled by 2^k through the exponent field.
+pub fn exp(x: f64) -> f64 {
+    debug_assert!(x.abs() < 700.0);
+    // ln 2 split so that k * LN2_HI is exact for |k| below 2^27.
+    const LN2_HI: f64 = 0.6931471675634384;
+    const LN2_LO: f64 = 1.2996506893889889e-08;
+    let k = (x / std::f64::consts::LN_2).round();
+    let r = (x - k * LN2_HI) - k * LN2_LO;
+    let mut term = 1.0;
+    let mut sum = 1.0;
+    for n in 1..=13 {
+        term = term * r / n as f64;
+        sum += term;
+    }
+    let scale = f64::from_bits(((k as i64 + 1023) as u64) << 52);
+    sum * scale
+}
+
+/// 10^x, libm-free.
+pub fn pow10(x: f64) -> f64 {
+    exp(x * std::f64::consts::LN_10)
+}
+
 // --- seeded randomness -------------------------------------------------------
 
 /// xoshiro256** seeded through splitmix64. The generator is pinned by name
@@ -53,7 +175,7 @@ impl Rng {
     pub fn gaussian(&mut self) -> f64 {
         let u1 = 1.0 - self.uniform();
         let u2 = self.uniform();
-        (-2.0 * u1.ln()).sqrt() * (2.0 * PI * u2).cos()
+        (-2.0 * ln(u1)).sqrt() * cos(2.0 * PI * u2)
     }
 
     /// Triangular in (-1, 1): the sum of two uniforms minus one.
@@ -96,7 +218,7 @@ pub fn fft(re: &mut [f64], im: &mut [f64]) {
     let mut len = 2;
     while len <= n {
         let ang = -2.0 * PI / len as f64;
-        let (wr, wi) = (ang.cos(), ang.sin());
+        let (wr, wi) = (cos(ang), sin(ang));
         let half = len / 2;
         let mut start = 0;
         while start < n {
@@ -123,7 +245,7 @@ pub fn fft(re: &mut [f64], im: &mut [f64]) {
 /// The periodic Hann window of length n: 0.5 - 0.5 cos(2 pi k / n).
 pub fn hann_periodic(n: usize) -> Vec<f64> {
     (0..n)
-        .map(|k| 0.5 - 0.5 * (2.0 * PI * k as f64 / n as f64).cos())
+        .map(|k| 0.5 - 0.5 * cos(2.0 * PI * k as f64 / n as f64))
         .collect()
 }
 
@@ -163,7 +285,7 @@ fn sinc(x: f64) -> f64 {
         1.0
     } else {
         let px = PI * x;
-        px.sin() / px
+        sin(px) / px
     }
 }
 
@@ -349,9 +471,9 @@ impl Biquad {
     /// A shelf from the Audio EQ Cookbook forms. `high` selects the high
     /// shelf, otherwise the low shelf. `slope` is the shelf slope parameter S.
     pub fn shelf(rate: f64, freq_hz: f64, gain_db: f64, slope: f64, high: bool) -> Biquad {
-        let a = 10f64.powf(gain_db / 40.0);
+        let a = pow10(gain_db / 40.0);
         let w0 = 2.0 * PI * freq_hz / rate;
-        let (sw, cw) = (w0.sin(), w0.cos());
+        let (sw, cw) = (sin(w0), cos(w0));
         let alpha = sw / 2.0 * ((a + 1.0 / a) * (1.0 / slope - 1.0) + 2.0).sqrt();
         let sq = 2.0 * a.sqrt() * alpha;
         let (b0, b1, b2, a0, a1, a2) = if high {
@@ -401,6 +523,25 @@ impl Biquad {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_elementary_functions_track_the_platform_within_a_few_ulps() {
+        let ulps = |a: f64, b: f64| ((a - b).abs() / b.abs().max(1e-300)) / f64::EPSILON;
+        for i in -20000..20000 {
+            let x = i as f64 * 0.0137;
+            assert!((sin(x) - x.sin()).abs() < 4.0 * f64::EPSILON, "sin {x}");
+            assert!((cos(x) - x.cos()).abs() < 4.0 * f64::EPSILON, "cos {x}");
+        }
+        for i in 1..20000 {
+            let x = i as f64 * 0.37;
+            assert!(ulps(ln(x), x.ln()) < 4.0, "ln {x}");
+            let y = i as f64 * 0.005 - 40.0;
+            assert!(ulps(exp(y), y.exp()) < 8.0, "exp {y}");
+        }
+        assert!(ulps(pow10(1.5 / 40.0), 10f64.powf(1.5 / 40.0)) < 8.0);
+        assert_eq!(sin(0.0), 0.0);
+        assert_eq!(cos(0.0), 1.0);
+    }
 
     #[test]
     fn the_generator_is_seed_determined() {

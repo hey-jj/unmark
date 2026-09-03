@@ -46,8 +46,9 @@ pub fn encoder_fingerprint() -> String {
         .map(|(name, version)| format!("{name} {version}"))
         .collect();
     format!(
-        "unmark {TOOL_VERSION}; container-rewrite/no-reencode; {}; jpeg-encoder in-crate baseline 4:4:4; resample in-crate lanczos3 and kaiser-sinc scalar",
-        parts.join("; ")
+        "unmark {TOOL_VERSION}; container-rewrite/no-reencode; {}; jpeg-encoder in-crate {} baseline 4:4:4; resample in-crate lanczos3 and kaiser-sinc scalar; trig in-crate libm-free",
+        parts.join("; "),
+        codec::jpeg::ENCODER_VERSION
     )
 }
 
@@ -138,9 +139,13 @@ fn resolve_profile<'a>(
         .profile(name)
         .ok_or_else(|| UnmarkError::Usage(format!("unknown profile {name}")))?;
     if p.milestone != 1 {
-        return Err(UnmarkError::Usage(format!(
-            "profile {name} is not available in this build. The pixel and audio degrade transforms it needs ship in 0.2.0"
-        )));
+        // The image degrade profiles run once the pixel transforms are built.
+        // The audio degrade profiles stay gated until audio calibrates.
+        if p.media != "image" || !cfg!(feature = "image") {
+            return Err(UnmarkError::Usage(format!(
+                "profile {name} is not available in this build. The audio degrade profiles stay gated until the audio ceilings calibrate"
+            )));
+        }
     }
     if p.feature.as_deref() == Some("audio") && !cfg!(feature = "audio") {
         return Err(UnmarkError::Usage(format!(
@@ -331,13 +336,27 @@ fn finding(tier: Tier, d: &scan::Detection, note: String) -> Finding {
 
 /// The three summary parts. `removed` is the set of classes proven gone.
 fn three_parts(det: &Detections, removed: &[String]) -> (Vec<String>, Vec<String>, Vec<String>) {
+    three_parts_for(det, removed, false)
+}
+
+/// The three parts. When a degrade plan ran, the blind classes it weakened
+/// move to "degraded without proof": the build still cannot see them, so
+/// nothing is proven, and the report says so rather than listing them as
+/// untouched.
+fn three_parts_for(
+    det: &Detections,
+    removed: &[String],
+    degraded: bool,
+) -> (Vec<String>, Vec<String>, Vec<String>) {
     let removed_and_proven = removed.to_vec();
-    // No degrade transforms ship in this milestone, so nothing is degraded
-    // without proof yet.
-    let degraded_without_proof: Vec<String> = Vec::new();
+    let mut degraded_without_proof: Vec<String> = Vec::new();
     let mut not_addressed = Vec::new();
     for d in &det.items {
         match d.honesty {
+            Honesty::Blind if degraded => degraded_without_proof.push(format!(
+                "{} (keyed mark, weakened by the plan and not visible to this offline build)",
+                d.label
+            )),
             Honesty::Blind => not_addressed.push(format!(
                 "{} (keyed mark, not visible to this offline build)",
                 d.label
@@ -361,6 +380,8 @@ fn base_report(pkg: &PolicyPackage, verb: Verb, profile: &str, format: Format) -
         verb: verb.as_str().to_string(),
         profile: profile.to_string(),
         format: format.as_str().to_string(),
+        output_format: format.as_str().to_string(),
+        fidelity: None,
         scan_states: Vec::new(),
         findings: Vec::new(),
         actions: Vec::new(),
@@ -420,16 +441,28 @@ pub fn plan(
     r.removed_and_proven = rp;
     r.degraded_without_proof = dg;
     r.not_addressed = na;
-    // The proposed actions, none applied.
+    // The proposed actions, none applied. A pixel plan decodes the image
+    // once so the plan can say what PX01 will do and which container comes
+    // out.
+    let prediction = predict_pixel_plan(bytes, det.format, profile, &transforms);
     for id in &transforms {
         if let Some(t) = pkg.transform(id) {
+            let outcome = match (&prediction, id.as_str()) {
+                (Some(p), "PX01") if p.skip_note.is_some() => {
+                    format!("skipped: {}", p.skip_note.as_deref().unwrap_or_default())
+                }
+                _ => "proposed".to_string(),
+            };
             r.actions.push(Action {
                 transform: t.id.clone(),
                 name: t.name.clone(),
                 target: t.target.clone(),
-                outcome: "proposed".to_string(),
+                outcome,
             });
         }
+    }
+    if let Some(p) = prediction {
+        r.output_format = p.output_format.as_str().to_string();
     }
     Ok(r)
 }
@@ -582,6 +615,44 @@ pub fn clean(
         }
     };
 
+    // The pixel degrade path: decode, run the plan, measure against the
+    // budget, and refuse to write when it misses.
+    let mut applied = applied;
+    let mut degrade_actions: Vec<(String, String)> = Vec::new();
+    let degraded = profile.media == "image" && profile.tier != "metadata";
+    if degraded {
+        let d = degrade_image(&applied.bytes, det.format, profile, &transforms, pkg)?;
+        r.output_format = d.output_format.as_str().to_string();
+        r.fidelity = Some(d.fidelity.clone());
+        degrade_actions = d.actions;
+        if !d.fidelity.passed {
+            let (rows, findings) = build_findings(pkg, &det, &targeted, true, true);
+            r.scan_states = rows;
+            r.findings = findings;
+            let (rp, dg, na) = three_parts_for(&det, &[], true);
+            r.removed_and_proven = rp;
+            r.degraded_without_proof = dg;
+            r.not_addressed = na;
+            r.residual_acknowledgment_required = true;
+            r.exit_code = report::EXIT_INSTRUMENTATION;
+            for (id, outcome) in &degrade_actions {
+                if let Some(t) = pkg.transform(id) {
+                    r.actions.push(Action {
+                        transform: t.id.clone(),
+                        name: t.name.clone(),
+                        target: t.target.clone(),
+                        outcome: outcome.clone(),
+                    });
+                }
+            }
+            return Ok(CleanOutcome {
+                report: r,
+                output: None,
+            });
+        }
+        applied = transform::Applied { bytes: d.bytes };
+    }
+
     // Re-inspect the output and prove the targeted confirmable marks are gone.
     let det_after = detect::inspect(&applied.bytes);
     let mut removed = Vec::new();
@@ -606,11 +677,16 @@ pub fn clean(
     // Record the actions taken.
     for id in &transforms {
         if let Some(t) = pkg.transform(id) {
+            let outcome = degrade_actions
+                .iter()
+                .find(|(i, _)| i == id)
+                .map(|(_, o)| o.clone())
+                .unwrap_or_else(|| "applied".to_string());
             r.actions.push(Action {
                 transform: t.id.clone(),
                 name: t.name.clone(),
                 target: t.target.clone(),
-                outcome: "applied".to_string(),
+                outcome,
             });
         }
     }
@@ -618,7 +694,7 @@ pub fn clean(
     let (rows, findings) = build_findings(pkg, &det_after, &targeted, true, true);
     r.scan_states = rows;
     r.findings = findings;
-    let (rp, dg, na) = three_parts(&det_after, &removed);
+    let (rp, dg, na) = three_parts_for(&det_after, &removed, degraded);
     r.removed_and_proven = rp;
     r.degraded_without_proof = dg;
     r.not_addressed = na;
@@ -655,6 +731,152 @@ pub fn clean(
         r.removed_and_proven.clear();
     }
     Ok(CleanOutcome { report: r, output })
+}
+
+/// What a pixel plan will do, read from a decode of the input.
+struct PixelPrediction {
+    output_format: Format,
+    skip_note: Option<String>,
+}
+
+#[cfg(feature = "image")]
+fn predict_pixel_plan(
+    bytes: &[u8],
+    format: Format,
+    profile: &policy::Profile,
+    transforms: &[String],
+) -> Option<PixelPrediction> {
+    if profile.media != "image" || profile.tier == "metadata" {
+        return None;
+    }
+    let img = codec::decode_image(bytes, format).ok()?;
+    let reencode = transforms.iter().any(|t| t == "PX01");
+    let (output_format, skip_note) = match format {
+        Format::Jpeg => (Format::Jpeg, None),
+        Format::Png | Format::WebP if reencode && img.has_alpha() => {
+            (format, Some(transform::pixel::SKIP_ALPHA_NOTE.to_string()))
+        }
+        Format::Png | Format::WebP if reencode => (Format::Jpeg, None),
+        other => (other, None),
+    };
+    Some(PixelPrediction {
+        output_format,
+        skip_note,
+    })
+}
+
+#[cfg(not(feature = "image"))]
+fn predict_pixel_plan(
+    _bytes: &[u8],
+    _format: Format,
+    _profile: &policy::Profile,
+    _transforms: &[String],
+) -> Option<PixelPrediction> {
+    None
+}
+
+/// The result of running a pixel plan on the metadata-stripped bytes.
+struct Degraded {
+    bytes: Vec<u8>,
+    output_format: Format,
+    fidelity: report::Fidelity,
+    /// Per-transform outcomes that differ from "applied".
+    actions: Vec<(String, String)>,
+}
+
+#[cfg(feature = "image")]
+fn degrade_image(
+    bytes: &[u8],
+    format: Format,
+    profile: &policy::Profile,
+    transforms: &[String],
+    pkg: &PolicyPackage,
+) -> Result<Degraded, UnmarkError> {
+    use transform::pixel::{self, PixelError, PixelParams};
+    let img = codec::decode_image(bytes, format)
+        .map_err(|e| UnmarkError::Malformed(format!("the image would not decode: {e}")))?;
+    let p = PixelParams::from_policy(pkg, transforms)
+        .map_err(|e| UnmarkError::Instrumentation(format!("pixel plan: {e}")))?;
+    let digest = <sha2::Sha256 as sha2::Digest>::digest(bytes);
+    let mut sha = [0u8; 32];
+    sha.copy_from_slice(&digest);
+    let seed = dsp::asset_seed(pkg.calibration.base_seed, &sha);
+    let outcome = pixel::apply(&img, format, &p, seed).map_err(|e| match e {
+        PixelError::Held(m) => UnmarkError::Instrumentation(format!("held: {m}")),
+        other => UnmarkError::Instrumentation(other.to_string()),
+    })?;
+    let (reference, output) = if outcome.reference.channels != outcome.output.channels {
+        (outcome.reference.with_alpha(), outcome.output.with_alpha())
+    } else {
+        (outcome.reference.clone(), outcome.output.clone())
+    };
+    let psnr = budget::psnr(&reference.data, &output.data);
+    let ssim = budget::ssim(
+        &reference.data,
+        &output.data,
+        reference.width,
+        reference.height,
+        reference.channels,
+    );
+    let (resample_ratio, crop_area) = p.geometry_cost();
+    let cost = budget::Cost {
+        psnr_db: psnr,
+        ssim,
+        lsd_db: None,
+        resample_ratio,
+        crop_area,
+        time_stretch: 1.0,
+    };
+    let cell = if img.has_alpha() {
+        format!("{}-alpha", format.as_str())
+    } else {
+        format.as_str().to_string()
+    };
+    let budget = pkg.budget_for_format(&profile.budget, &cell);
+    let check = budget::check(&budget, &cost);
+    let mut actions = Vec::new();
+    if let Some(note) = &outcome.emitted.note {
+        actions.push(("PX01".to_string(), format!("skipped: {note}")));
+    }
+    if let Err(e) = &check {
+        for id in transforms.iter().filter(|t| t.starts_with("PX")) {
+            if !actions.iter().any(|(i, _)| i == id) {
+                actions.push((
+                    id.clone(),
+                    format!("refused: {}. Nothing written", e.reason),
+                ));
+            }
+        }
+    }
+    Ok(Degraded {
+        bytes: outcome.emitted.bytes,
+        output_format: outcome.emitted.format,
+        fidelity: report::Fidelity {
+            budget: profile.budget.clone(),
+            psnr_db: psnr,
+            ssim,
+            lsd_db: None,
+            resample_ratio,
+            crop_area,
+            time_stretch: 1.0,
+            passed: check.is_ok(),
+            refusal: check.err().map(|e| e.reason),
+        },
+        actions,
+    })
+}
+
+#[cfg(not(feature = "image"))]
+fn degrade_image(
+    _bytes: &[u8],
+    _format: Format,
+    _profile: &policy::Profile,
+    _transforms: &[String],
+    _pkg: &PolicyPackage,
+) -> Result<Degraded, UnmarkError> {
+    Err(UnmarkError::Usage(
+        "the image degrade profiles need the image feature".to_string(),
+    ))
 }
 
 /// Combine two exit codes, keeping the more serious. Fail-closed states above

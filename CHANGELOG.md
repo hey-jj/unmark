@@ -3,6 +3,43 @@
 All notable changes to this project are documented here. The format follows
 Keep a Changelog, and the project uses semantic versioning.
 
+## [Unreleased]
+
+Milestone 2 work toward 0.2.0. The image degrade profiles `image-safe` and
+`image-aggressive` now run. The audio degrade profiles stay a usage error at
+exit 2 until the audio ceilings calibrate. Every ceiling is provisional until a
+calibration record with qualified cells lands.
+
+### Added
+
+- Pixel transforms PX01 through PX06 and audio transforms AU01, AU02, AU04, and
+  AU05, each with pinned parameters in the policy package. AU03 is reserved and
+  not runnable.
+- Pure-Rust codecs behind the transforms, PNG, JPEG with an in-crate baseline
+  encoder, WebP with a lossless write, WAV, and FLAC, and an encoder fingerprint
+  naming each crate and version.
+- Libm-free sine, cosine, logarithm, and exponential in `dsp`, so every
+  transform produces the same bytes on every platform.
+- The fidelity-ceiling calibration harness, `examples/calibrate.rs` over the
+  `calibrate` module. It carries a cell model over plan, format, and band, a
+  nearest-rank percentile derivation, the acceptance properties, a committed
+  record and owner table, and a CI suite that pins the fixture subset at three
+  decimals.
+- The windowed 8x8 SSIM, the log-spectral distance, and the time-averaged
+  spectrum distance in `budget`.
+- Manifest-driven corpus selection with eligibility classes, a prepare pass,
+  lossless container derivations, synthetic clips, documented-marks splits, and
+  a report-only ladder over post-processed assets.
+- `output_format` and `fidelity` in the report. `clean` exits 2 when the
+  `--out` extension contradicts the container the plan emits.
+
+### Changed
+
+- PX01 on a PNG or WebP input emits a baseline JPEG when the image is opaque
+  and stands down with a one-line note when it carries alpha. Alpha is never
+  flattened.
+- The global single-window SSIM is replaced by the windowed form.
+
 ## [0.1.0] - 2026-08-21
 
 First release, the metadata tier. Only the `image-metadata`, `audio-metadata`, and

@@ -2,7 +2,7 @@
   "schema_version": "1.1.0",
   "tool_version": "0.1.0",
   "policy_version": "0.2.0",
-  "date": "2026-09-02",
+  "date": "2026-09-03",
   "corpus": {
     "manifest": "manifest.json",
     "manifest_sha256": "816e735fc268d4cd83f53c982140a08a064cb20d5d3366e03b06ad13f1cb2529",
@@ -26,14 +26,16 @@
     "exclusion_counts": [],
     "exclusions": []
   },
-  "encoder_fingerprint": "unmark 0.1.0; container-rewrite/no-reencode; png 0.18.1; jpeg-decoder 0.3.2; image-webp 0.2.4; claxon 0.4.3; flacenc 0.5.1; jpeg-encoder in-crate baseline 4:4:4; resample in-crate lanczos3 and kaiser-sinc scalar",
+  "encoder_fingerprint": "unmark 0.1.0; container-rewrite/no-reencode; png 0.18.1; jpeg-decoder 0.3.2; image-webp 0.2.4; claxon 0.4.3; flacenc 0.5.1; jpeg-encoder in-crate v1 baseline 4:4:4; resample in-crate lanczos3 and kaiser-sinc scalar; trig in-crate libm-free",
   "base_seed": "0x5eed202609020001",
   "percentile_image": 5,
   "percentile_audio": 95,
   "n_min": 40,
+  "class_min": 10,
   "psnr_step_db": 0.5,
   "ssim_step": 0.005,
   "lsd_step_db": 0.05,
+  "separation_rule": "the next tier fails when either metric's median misses the number; the gate refuses on either",
   "metrics": [
     {
       "key": "au05_metric",
@@ -258,19 +260,46 @@
         "small",
         "medium"
       ],
-      "count": 0,
-      "held": 2,
+      "count": 1,
+      "held": 0,
       "errors": 0,
-      "distinct_bases": 0,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
-      "status": "held",
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "unqualified",
       "qualified": false,
+      "image": {
+        "psnr_percentile_db": 35.302,
+        "psnr_median_db": 35.302,
+        "psnr_min_db": 35.302,
+        "ssim_percentile": 0.955,
+        "ssim_median": 0.955,
+        "ssim_min": 0.955,
+        "psnr_percentile_doc_id": "png-small",
+        "ssim_percentile_doc_id": "png-small",
+        "psnr_floor_db": 35.0,
+        "ssim_floor": 0.955
+      },
       "next_tier": {
         "plan": "image-aggressive",
-        "count": 0
+        "count": 1,
+        "psnr_median_db": 30.562,
+        "ssim_median": 0.807
       }
     },
     {
@@ -279,19 +308,46 @@
       "band": "large",
       "derived": "none",
       "merged_from": [],
-      "count": 0,
-      "held": 1,
+      "count": 1,
+      "held": 0,
       "errors": 0,
-      "distinct_bases": 0,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
-      "status": "held",
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "unqualified",
       "qualified": false,
+      "image": {
+        "psnr_percentile_db": 35.287,
+        "psnr_median_db": 35.287,
+        "psnr_min_db": 35.287,
+        "ssim_percentile": 0.977,
+        "ssim_median": 0.977,
+        "ssim_min": 0.977,
+        "psnr_percentile_doc_id": "png-large",
+        "ssim_percentile_doc_id": "png-large",
+        "psnr_floor_db": 35.0,
+        "ssim_floor": 0.975
+      },
       "next_tier": {
         "plan": "image-aggressive",
-        "count": 0
+        "count": 1,
+        "psnr_median_db": 30.738,
+        "ssim_median": 0.893
       }
     },
     {
@@ -303,19 +359,46 @@
         "small",
         "medium"
       ],
-      "count": 0,
-      "held": 2,
+      "count": 1,
+      "held": 0,
       "errors": 0,
-      "distinct_bases": 0,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
-      "status": "held",
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "unqualified",
       "qualified": false,
+      "image": {
+        "psnr_percentile_db": 30.562,
+        "psnr_median_db": 30.562,
+        "psnr_min_db": 30.562,
+        "ssim_percentile": 0.807,
+        "ssim_median": 0.807,
+        "ssim_min": 0.807,
+        "psnr_percentile_doc_id": "png-small",
+        "ssim_percentile_doc_id": "png-small",
+        "psnr_floor_db": 30.5,
+        "ssim_floor": 0.805
+      },
       "next_tier": {
         "plan": "image-two-opt-in",
-        "count": 0
+        "count": 1,
+        "psnr_median_db": 30.017,
+        "ssim_median": 0.781
       }
     },
     {
@@ -324,19 +407,46 @@
       "band": "large",
       "derived": "none",
       "merged_from": [],
-      "count": 0,
-      "held": 1,
+      "count": 1,
+      "held": 0,
       "errors": 0,
-      "distinct_bases": 0,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
-      "status": "held",
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "unqualified",
       "qualified": false,
+      "image": {
+        "psnr_percentile_db": 30.738,
+        "psnr_median_db": 30.738,
+        "psnr_min_db": 30.738,
+        "ssim_percentile": 0.893,
+        "ssim_median": 0.893,
+        "ssim_min": 0.893,
+        "psnr_percentile_doc_id": "png-large",
+        "ssim_percentile_doc_id": "png-large",
+        "psnr_floor_db": 30.5,
+        "ssim_floor": 0.89
+      },
       "next_tier": {
         "plan": "image-two-opt-in",
-        "count": 0
+        "count": 1,
+        "psnr_median_db": 30.179,
+        "ssim_median": 0.878
       }
     },
     {
@@ -348,16 +458,41 @@
         "small",
         "medium"
       ],
-      "count": 0,
-      "held": 2,
+      "count": 1,
+      "held": 0,
       "errors": 0,
-      "distinct_bases": 0,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
-      "qualified": false
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 35.432,
+        "psnr_median_db": 35.432,
+        "psnr_min_db": 35.432,
+        "ssim_percentile": 0.956,
+        "ssim_median": 0.956,
+        "ssim_min": 0.956,
+        "psnr_percentile_doc_id": "png-small",
+        "ssim_percentile_doc_id": "png-small",
+        "psnr_floor_db": 35.0,
+        "ssim_floor": 0.955
+      }
     },
     {
       "plan": "image-aggressive+PX03",
@@ -365,16 +500,41 @@
       "band": "large",
       "derived": "none",
       "merged_from": [],
-      "count": 0,
-      "held": 1,
+      "count": 1,
+      "held": 0,
       "errors": 0,
-      "distinct_bases": 0,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
-      "qualified": false
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 35.364,
+        "psnr_median_db": 35.364,
+        "psnr_min_db": 35.364,
+        "ssim_percentile": 0.978,
+        "ssim_median": 0.978,
+        "ssim_min": 0.978,
+        "psnr_percentile_doc_id": "png-large",
+        "ssim_percentile_doc_id": "png-large",
+        "psnr_floor_db": 35.0,
+        "ssim_floor": 0.975
+      }
     },
     {
       "plan": "image-aggressive+PX04",
@@ -385,16 +545,41 @@
         "small",
         "medium"
       ],
-      "count": 0,
-      "held": 2,
+      "count": 1,
+      "held": 0,
       "errors": 0,
-      "distinct_bases": 0,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
-      "qualified": false
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 34.494,
+        "psnr_median_db": 34.494,
+        "psnr_min_db": 34.494,
+        "ssim_percentile": 0.937,
+        "ssim_median": 0.937,
+        "ssim_min": 0.937,
+        "psnr_percentile_doc_id": "png-small",
+        "ssim_percentile_doc_id": "png-small",
+        "psnr_floor_db": 34.0,
+        "ssim_floor": 0.935
+      }
     },
     {
       "plan": "image-aggressive+PX04",
@@ -402,16 +587,41 @@
       "band": "large",
       "derived": "none",
       "merged_from": [],
-      "count": 0,
-      "held": 1,
+      "count": 1,
+      "held": 0,
       "errors": 0,
-      "distinct_bases": 0,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
-      "qualified": false
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 34.51,
+        "psnr_median_db": 34.51,
+        "psnr_min_db": 34.51,
+        "ssim_percentile": 0.968,
+        "ssim_median": 0.968,
+        "ssim_min": 0.968,
+        "psnr_percentile_doc_id": "png-large",
+        "ssim_percentile_doc_id": "png-large",
+        "psnr_floor_db": 34.5,
+        "ssim_floor": 0.965
+      }
     },
     {
       "plan": "image-aggressive+PX05",
@@ -422,16 +632,41 @@
         "small",
         "medium"
       ],
-      "count": 0,
-      "held": 2,
+      "count": 1,
+      "held": 0,
       "errors": 0,
-      "distinct_bases": 0,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
-      "qualified": false
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 30.562,
+        "psnr_median_db": 30.562,
+        "psnr_min_db": 30.562,
+        "ssim_percentile": 0.807,
+        "ssim_median": 0.807,
+        "ssim_min": 0.807,
+        "psnr_percentile_doc_id": "png-small",
+        "ssim_percentile_doc_id": "png-small",
+        "psnr_floor_db": 30.5,
+        "ssim_floor": 0.805
+      }
     },
     {
       "plan": "image-aggressive+PX05",
@@ -439,16 +674,41 @@
       "band": "large",
       "derived": "none",
       "merged_from": [],
-      "count": 0,
-      "held": 1,
+      "count": 1,
+      "held": 0,
       "errors": 0,
-      "distinct_bases": 0,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
-      "qualified": false
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 30.738,
+        "psnr_median_db": 30.738,
+        "psnr_min_db": 30.738,
+        "ssim_percentile": 0.893,
+        "ssim_median": 0.893,
+        "ssim_min": 0.893,
+        "psnr_percentile_doc_id": "png-large",
+        "ssim_percentile_doc_id": "png-large",
+        "psnr_floor_db": 30.5,
+        "ssim_floor": 0.89
+      }
     },
     {
       "plan": "image-aggressive+PX06",
@@ -459,16 +719,41 @@
         "small",
         "medium"
       ],
-      "count": 0,
-      "held": 2,
+      "count": 1,
+      "held": 0,
       "errors": 0,
-      "distinct_bases": 0,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
-      "qualified": false
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 35.302,
+        "psnr_median_db": 35.302,
+        "psnr_min_db": 35.302,
+        "ssim_percentile": 0.955,
+        "ssim_median": 0.955,
+        "ssim_min": 0.955,
+        "psnr_percentile_doc_id": "png-small",
+        "ssim_percentile_doc_id": "png-small",
+        "psnr_floor_db": 35.0,
+        "ssim_floor": 0.955
+      }
     },
     {
       "plan": "image-aggressive+PX06",
@@ -476,16 +761,41 @@
       "band": "large",
       "derived": "none",
       "merged_from": [],
-      "count": 0,
-      "held": 1,
+      "count": 1,
+      "held": 0,
       "errors": 0,
-      "distinct_bases": 0,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
-      "qualified": false
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 35.298,
+        "psnr_median_db": 35.298,
+        "psnr_min_db": 35.298,
+        "ssim_percentile": 0.977,
+        "ssim_median": 0.977,
+        "ssim_min": 0.977,
+        "psnr_percentile_doc_id": "png-large",
+        "ssim_percentile_doc_id": "png-large",
+        "psnr_floor_db": 35.0,
+        "ssim_floor": 0.975
+      }
     },
     {
       "plan": "image-two-opt-in",
@@ -496,16 +806,41 @@
         "small",
         "medium"
       ],
-      "count": 0,
-      "held": 2,
+      "count": 1,
+      "held": 0,
       "errors": 0,
-      "distinct_bases": 0,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
-      "qualified": false
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 30.017,
+        "psnr_median_db": 30.017,
+        "psnr_min_db": 30.017,
+        "ssim_percentile": 0.781,
+        "ssim_median": 0.781,
+        "ssim_min": 0.781,
+        "psnr_percentile_doc_id": "png-small",
+        "ssim_percentile_doc_id": "png-small",
+        "psnr_floor_db": 30.0,
+        "ssim_floor": 0.78
+      }
     },
     {
       "plan": "image-two-opt-in",
@@ -513,16 +848,41 @@
       "band": "large",
       "derived": "none",
       "merged_from": [],
-      "count": 0,
-      "held": 1,
+      "count": 1,
+      "held": 0,
       "errors": 0,
-      "distinct_bases": 0,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
-      "qualified": false
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 30.179,
+        "psnr_median_db": 30.179,
+        "psnr_min_db": 30.179,
+        "ssim_percentile": 0.878,
+        "ssim_median": 0.878,
+        "ssim_min": 0.878,
+        "psnr_percentile_doc_id": "png-large",
+        "ssim_percentile_doc_id": "png-large",
+        "psnr_floor_db": 30.0,
+        "ssim_floor": 0.875
+      }
     },
     {
       "plan": "PX01",
@@ -533,16 +893,41 @@
         "small",
         "medium"
       ],
-      "count": 0,
-      "held": 2,
+      "count": 1,
+      "held": 0,
       "errors": 0,
-      "distinct_bases": 0,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
-      "qualified": false
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 34.395,
+        "psnr_median_db": 34.395,
+        "psnr_min_db": 34.395,
+        "ssim_percentile": 0.938,
+        "ssim_median": 0.938,
+        "ssim_min": 0.938,
+        "psnr_percentile_doc_id": "png-small",
+        "ssim_percentile_doc_id": "png-small",
+        "psnr_floor_db": 34.0,
+        "ssim_floor": 0.935
+      }
     },
     {
       "plan": "PX01",
@@ -550,16 +935,41 @@
       "band": "large",
       "derived": "none",
       "merged_from": [],
-      "count": 0,
-      "held": 1,
+      "count": 1,
+      "held": 0,
       "errors": 0,
-      "distinct_bases": 0,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
-      "qualified": false
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 34.431,
+        "psnr_median_db": 34.431,
+        "psnr_min_db": 34.431,
+        "ssim_percentile": 0.964,
+        "ssim_median": 0.964,
+        "ssim_min": 0.964,
+        "psnr_percentile_doc_id": "png-large",
+        "ssim_percentile_doc_id": "png-large",
+        "psnr_floor_db": 34.0,
+        "ssim_floor": 0.96
+      }
     },
     {
       "plan": "PX02",
@@ -570,14 +980,27 @@
         "small",
         "medium"
       ],
-      "count": 2,
+      "count": 1,
       "held": 0,
       "errors": 0,
-      "distinct_bases": 2,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -587,8 +1010,8 @@
         "ssim_percentile": 1.0,
         "ssim_median": 1.0,
         "ssim_min": 1.0,
-        "psnr_percentile_doc_id": "png-medium-alpha",
-        "ssim_percentile_doc_id": "png-medium-alpha",
+        "psnr_percentile_doc_id": "png-small",
+        "ssim_percentile_doc_id": "png-small",
         "psnr_floor_db": 120.0,
         "ssim_floor": 1.0
       }
@@ -607,6 +1030,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -631,14 +1067,27 @@
         "small",
         "medium"
       ],
-      "count": 2,
+      "count": 1,
       "held": 0,
       "errors": 0,
-      "distinct_bases": 2,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -648,8 +1097,8 @@
         "ssim_percentile": 1.0,
         "ssim_median": 1.0,
         "ssim_min": 1.0,
-        "psnr_percentile_doc_id": "png-medium-alpha",
-        "ssim_percentile_doc_id": "png-medium-alpha",
+        "psnr_percentile_doc_id": "png-small",
+        "ssim_percentile_doc_id": "png-small",
         "psnr_floor_db": 120.0,
         "ssim_floor": 1.0
       }
@@ -668,6 +1117,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -692,14 +1154,27 @@
         "small",
         "medium"
       ],
-      "count": 2,
+      "count": 1,
       "held": 0,
       "errors": 0,
-      "distinct_bases": 2,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -729,6 +1204,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -753,14 +1241,27 @@
         "small",
         "medium"
       ],
-      "count": 2,
+      "count": 1,
       "held": 0,
       "errors": 0,
-      "distinct_bases": 2,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -790,6 +1291,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -814,14 +1328,27 @@
         "small",
         "medium"
       ],
-      "count": 2,
+      "count": 1,
       "held": 0,
       "errors": 0,
-      "distinct_bases": 2,
+      "distinct_bases": 1,
       "near_duplicates_collapsed": 0,
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -831,8 +1358,8 @@
         "ssim_percentile": 1.0,
         "ssim_median": 1.0,
         "ssim_min": 1.0,
-        "psnr_percentile_doc_id": "png-medium-alpha",
-        "ssim_percentile_doc_id": "png-medium-alpha",
+        "psnr_percentile_doc_id": "png-small",
+        "ssim_percentile_doc_id": "png-small",
         "psnr_floor_db": 120.0,
         "ssim_floor": 1.0
       }
@@ -851,6 +1378,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -862,6 +1402,603 @@
         "ssim_min": 1.0,
         "psnr_percentile_doc_id": "png-large",
         "ssim_percentile_doc_id": "png-large",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "image-safe",
+      "format": "png-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "unqualified",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_doc_id": "png-medium-alpha",
+        "ssim_percentile_doc_id": "png-medium-alpha",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      },
+      "next_tier": {
+        "plan": "image-aggressive",
+        "count": 1,
+        "psnr_median_db": 33.83,
+        "ssim_median": 0.892
+      }
+    },
+    {
+      "plan": "image-aggressive",
+      "format": "png-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "unqualified",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 33.83,
+        "psnr_median_db": 33.83,
+        "psnr_min_db": 33.83,
+        "ssim_percentile": 0.892,
+        "ssim_median": 0.892,
+        "ssim_min": 0.892,
+        "psnr_percentile_doc_id": "png-medium-alpha",
+        "ssim_percentile_doc_id": "png-medium-alpha",
+        "psnr_floor_db": 33.5,
+        "ssim_floor": 0.89
+      },
+      "next_tier": {
+        "plan": "image-two-opt-in",
+        "count": 1,
+        "psnr_median_db": 33.166,
+        "ssim_median": 0.877
+      }
+    },
+    {
+      "plan": "image-aggressive+PX03",
+      "format": "png-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_doc_id": "png-medium-alpha",
+        "ssim_percentile_doc_id": "png-medium-alpha",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "image-aggressive+PX04",
+      "format": "png-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 41.762,
+        "psnr_median_db": 41.762,
+        "psnr_min_db": 41.762,
+        "ssim_percentile": 0.981,
+        "ssim_median": 0.981,
+        "ssim_min": 0.981,
+        "psnr_percentile_doc_id": "png-medium-alpha",
+        "ssim_percentile_doc_id": "png-medium-alpha",
+        "psnr_floor_db": 41.5,
+        "ssim_floor": 0.98
+      }
+    },
+    {
+      "plan": "image-aggressive+PX05",
+      "format": "png-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 33.83,
+        "psnr_median_db": 33.83,
+        "psnr_min_db": 33.83,
+        "ssim_percentile": 0.892,
+        "ssim_median": 0.892,
+        "ssim_min": 0.892,
+        "psnr_percentile_doc_id": "png-medium-alpha",
+        "ssim_percentile_doc_id": "png-medium-alpha",
+        "psnr_floor_db": 33.5,
+        "ssim_floor": 0.89
+      }
+    },
+    {
+      "plan": "image-aggressive+PX06",
+      "format": "png-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_doc_id": "png-medium-alpha",
+        "ssim_percentile_doc_id": "png-medium-alpha",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "image-two-opt-in",
+      "format": "png-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 33.166,
+        "psnr_median_db": 33.166,
+        "psnr_min_db": 33.166,
+        "ssim_percentile": 0.877,
+        "ssim_median": 0.877,
+        "ssim_min": 0.877,
+        "psnr_percentile_doc_id": "png-medium-alpha",
+        "ssim_percentile_doc_id": "png-medium-alpha",
+        "psnr_floor_db": 33.0,
+        "ssim_floor": 0.875
+      }
+    },
+    {
+      "plan": "PX01",
+      "format": "png-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_doc_id": "png-medium-alpha",
+        "ssim_percentile_doc_id": "png-medium-alpha",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "PX02",
+      "format": "png-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_doc_id": "png-medium-alpha",
+        "ssim_percentile_doc_id": "png-medium-alpha",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "PX03",
+      "format": "png-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_doc_id": "png-medium-alpha",
+        "ssim_percentile_doc_id": "png-medium-alpha",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "PX04",
+      "format": "png-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 41.752,
+        "psnr_median_db": 41.752,
+        "psnr_min_db": 41.752,
+        "ssim_percentile": 0.98,
+        "ssim_median": 0.98,
+        "ssim_min": 0.98,
+        "psnr_percentile_doc_id": "png-medium-alpha",
+        "ssim_percentile_doc_id": "png-medium-alpha",
+        "psnr_floor_db": 41.5,
+        "ssim_floor": 0.98
+      }
+    },
+    {
+      "plan": "PX05",
+      "format": "png-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 33.848,
+        "psnr_median_db": 33.848,
+        "psnr_min_db": 33.848,
+        "ssim_percentile": 0.89,
+        "ssim_median": 0.89,
+        "ssim_min": 0.89,
+        "psnr_percentile_doc_id": "png-medium-alpha",
+        "ssim_percentile_doc_id": "png-medium-alpha",
+        "psnr_floor_db": 33.5,
+        "ssim_floor": 0.89
+      }
+    },
+    {
+      "plan": "PX06",
+      "format": "png-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_doc_id": "png-medium-alpha",
+        "ssim_percentile_doc_id": "png-medium-alpha",
         "psnr_floor_db": 120.0,
         "ssim_floor": 1.0
       }
@@ -883,6 +2020,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "unqualified",
       "qualified": false,
       "image": {
@@ -918,6 +2068,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "unqualified",
       "qualified": false,
       "image": {
@@ -956,6 +2119,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "unqualified",
       "qualified": false,
       "image": {
@@ -991,6 +2167,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "unqualified",
       "qualified": false,
       "image": {
@@ -1029,6 +2218,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1058,6 +2260,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1090,6 +2305,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1119,6 +2347,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1151,6 +2392,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1180,6 +2434,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1212,6 +2479,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1241,6 +2521,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1273,6 +2566,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1302,6 +2608,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1334,6 +2653,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1363,6 +2695,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1395,6 +2740,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1424,6 +2782,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1456,6 +2827,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1485,6 +2869,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1517,6 +2914,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1546,6 +2956,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1578,6 +3001,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1607,6 +3043,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1639,6 +3088,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1668,6 +3130,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1686,323 +3161,11 @@
     {
       "plan": "image-safe",
       "format": "webp",
-      "band": "small+medium",
+      "band": "medium+large",
       "derived": "none",
       "merged_from": [
-        "small",
-        "medium"
-      ],
-      "count": 0,
-      "held": 2,
-      "errors": 0,
-      "distinct_bases": 0,
-      "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
-      "status": "held",
-      "qualified": false,
-      "next_tier": {
-        "plan": "image-aggressive",
-        "count": 0
-      }
-    },
-    {
-      "plan": "image-safe",
-      "format": "webp",
-      "band": "large",
-      "derived": "none",
-      "merged_from": [],
-      "count": 0,
-      "held": 1,
-      "errors": 0,
-      "distinct_bases": 0,
-      "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
-      "status": "held",
-      "qualified": false,
-      "next_tier": {
-        "plan": "image-aggressive",
-        "count": 0
-      }
-    },
-    {
-      "plan": "image-aggressive",
-      "format": "webp",
-      "band": "small+medium",
-      "derived": "none",
-      "merged_from": [
-        "small",
-        "medium"
-      ],
-      "count": 0,
-      "held": 2,
-      "errors": 0,
-      "distinct_bases": 0,
-      "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
-      "status": "held",
-      "qualified": false,
-      "next_tier": {
-        "plan": "image-two-opt-in",
-        "count": 0
-      }
-    },
-    {
-      "plan": "image-aggressive",
-      "format": "webp",
-      "band": "large",
-      "derived": "none",
-      "merged_from": [],
-      "count": 0,
-      "held": 1,
-      "errors": 0,
-      "distinct_bases": 0,
-      "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
-      "status": "held",
-      "qualified": false,
-      "next_tier": {
-        "plan": "image-two-opt-in",
-        "count": 0
-      }
-    },
-    {
-      "plan": "image-aggressive+PX03",
-      "format": "webp",
-      "band": "small+medium",
-      "derived": "none",
-      "merged_from": [
-        "small",
-        "medium"
-      ],
-      "count": 0,
-      "held": 2,
-      "errors": 0,
-      "distinct_bases": 0,
-      "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
-      "status": "informational",
-      "qualified": false
-    },
-    {
-      "plan": "image-aggressive+PX03",
-      "format": "webp",
-      "band": "large",
-      "derived": "none",
-      "merged_from": [],
-      "count": 0,
-      "held": 1,
-      "errors": 0,
-      "distinct_bases": 0,
-      "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
-      "status": "informational",
-      "qualified": false
-    },
-    {
-      "plan": "image-aggressive+PX04",
-      "format": "webp",
-      "band": "small+medium",
-      "derived": "none",
-      "merged_from": [
-        "small",
-        "medium"
-      ],
-      "count": 0,
-      "held": 2,
-      "errors": 0,
-      "distinct_bases": 0,
-      "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
-      "status": "informational",
-      "qualified": false
-    },
-    {
-      "plan": "image-aggressive+PX04",
-      "format": "webp",
-      "band": "large",
-      "derived": "none",
-      "merged_from": [],
-      "count": 0,
-      "held": 1,
-      "errors": 0,
-      "distinct_bases": 0,
-      "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
-      "status": "informational",
-      "qualified": false
-    },
-    {
-      "plan": "image-aggressive+PX05",
-      "format": "webp",
-      "band": "small+medium",
-      "derived": "none",
-      "merged_from": [
-        "small",
-        "medium"
-      ],
-      "count": 0,
-      "held": 2,
-      "errors": 0,
-      "distinct_bases": 0,
-      "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
-      "status": "informational",
-      "qualified": false
-    },
-    {
-      "plan": "image-aggressive+PX05",
-      "format": "webp",
-      "band": "large",
-      "derived": "none",
-      "merged_from": [],
-      "count": 0,
-      "held": 1,
-      "errors": 0,
-      "distinct_bases": 0,
-      "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
-      "status": "informational",
-      "qualified": false
-    },
-    {
-      "plan": "image-aggressive+PX06",
-      "format": "webp",
-      "band": "small+medium",
-      "derived": "none",
-      "merged_from": [
-        "small",
-        "medium"
-      ],
-      "count": 0,
-      "held": 2,
-      "errors": 0,
-      "distinct_bases": 0,
-      "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
-      "status": "informational",
-      "qualified": false
-    },
-    {
-      "plan": "image-aggressive+PX06",
-      "format": "webp",
-      "band": "large",
-      "derived": "none",
-      "merged_from": [],
-      "count": 0,
-      "held": 1,
-      "errors": 0,
-      "distinct_bases": 0,
-      "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
-      "status": "informational",
-      "qualified": false
-    },
-    {
-      "plan": "image-two-opt-in",
-      "format": "webp",
-      "band": "small+medium",
-      "derived": "none",
-      "merged_from": [
-        "small",
-        "medium"
-      ],
-      "count": 0,
-      "held": 2,
-      "errors": 0,
-      "distinct_bases": 0,
-      "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
-      "status": "informational",
-      "qualified": false
-    },
-    {
-      "plan": "image-two-opt-in",
-      "format": "webp",
-      "band": "large",
-      "derived": "none",
-      "merged_from": [],
-      "count": 0,
-      "held": 1,
-      "errors": 0,
-      "distinct_bases": 0,
-      "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
-      "status": "informational",
-      "qualified": false
-    },
-    {
-      "plan": "PX01",
-      "format": "webp",
-      "band": "small+medium",
-      "derived": "none",
-      "merged_from": [
-        "small",
-        "medium"
-      ],
-      "count": 0,
-      "held": 2,
-      "errors": 0,
-      "distinct_bases": 0,
-      "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
-      "status": "informational",
-      "qualified": false
-    },
-    {
-      "plan": "PX01",
-      "format": "webp",
-      "band": "large",
-      "derived": "none",
-      "merged_from": [],
-      "count": 0,
-      "held": 1,
-      "errors": 0,
-      "distinct_bases": 0,
-      "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
-      "status": "informational",
-      "qualified": false
-    },
-    {
-      "plan": "PX02",
-      "format": "webp",
-      "band": "small+medium",
-      "derived": "none",
-      "merged_from": [
-        "small",
-        "medium"
+        "medium",
+        "large"
       ],
       "count": 2,
       "held": 0,
@@ -2012,168 +3175,492 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
-      "status": "informational",
-      "qualified": false,
-      "image": {
-        "psnr_percentile_db": 120.0,
-        "psnr_median_db": 120.0,
-        "psnr_min_db": 120.0,
-        "ssim_percentile": 1.0,
-        "ssim_median": 1.0,
-        "ssim_min": 1.0,
-        "psnr_percentile_doc_id": "webp-medium",
-        "ssim_percentile_doc_id": "webp-medium",
-        "psnr_floor_db": 120.0,
-        "ssim_floor": 1.0
-      }
-    },
-    {
-      "plan": "PX02",
-      "format": "webp",
-      "band": "large",
-      "derived": "none",
-      "merged_from": [],
-      "count": 1,
-      "held": 0,
-      "errors": 0,
-      "distinct_bases": 1,
-      "near_duplicates_collapsed": 0,
-      "generators": 1,
-      "generator_max_share": 1.0,
-      "generator_cap_ok": false,
-      "status": "informational",
-      "qualified": false,
-      "image": {
-        "psnr_percentile_db": 120.0,
-        "psnr_median_db": 120.0,
-        "psnr_min_db": 120.0,
-        "ssim_percentile": 1.0,
-        "ssim_median": 1.0,
-        "ssim_min": 1.0,
-        "psnr_percentile_doc_id": "webp-large",
-        "ssim_percentile_doc_id": "webp-large",
-        "psnr_floor_db": 120.0,
-        "ssim_floor": 1.0
-      }
-    },
-    {
-      "plan": "PX03",
-      "format": "webp",
-      "band": "small+medium",
-      "derived": "none",
-      "merged_from": [
-        "small",
-        "medium"
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
       ],
-      "count": 2,
-      "held": 0,
-      "errors": 0,
-      "distinct_bases": 2,
-      "near_duplicates_collapsed": 0,
-      "generators": 1,
-      "generator_max_share": 1.0,
-      "generator_cap_ok": false,
-      "status": "informational",
-      "qualified": false,
-      "image": {
-        "psnr_percentile_db": 120.0,
-        "psnr_median_db": 120.0,
-        "psnr_min_db": 120.0,
-        "ssim_percentile": 1.0,
-        "ssim_median": 1.0,
-        "ssim_min": 1.0,
-        "psnr_percentile_doc_id": "webp-medium",
-        "ssim_percentile_doc_id": "webp-medium",
-        "psnr_floor_db": 120.0,
-        "ssim_floor": 1.0
-      }
-    },
-    {
-      "plan": "PX03",
-      "format": "webp",
-      "band": "large",
-      "derived": "none",
-      "merged_from": [],
-      "count": 1,
-      "held": 0,
-      "errors": 0,
-      "distinct_bases": 1,
-      "near_duplicates_collapsed": 0,
-      "generators": 1,
-      "generator_max_share": 1.0,
-      "generator_cap_ok": false,
-      "status": "informational",
-      "qualified": false,
-      "image": {
-        "psnr_percentile_db": 120.0,
-        "psnr_median_db": 120.0,
-        "psnr_min_db": 120.0,
-        "ssim_percentile": 1.0,
-        "ssim_median": 1.0,
-        "ssim_min": 1.0,
-        "psnr_percentile_doc_id": "webp-large",
-        "ssim_percentile_doc_id": "webp-large",
-        "psnr_floor_db": 120.0,
-        "ssim_floor": 1.0
-      }
-    },
-    {
-      "plan": "PX04",
-      "format": "webp",
-      "band": "small+medium",
-      "derived": "none",
-      "merged_from": [
-        "small",
-        "medium"
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
       ],
-      "count": 2,
-      "held": 0,
-      "errors": 0,
-      "distinct_bases": 2,
-      "near_duplicates_collapsed": 0,
-      "generators": 1,
-      "generator_max_share": 1.0,
-      "generator_cap_ok": false,
-      "status": "informational",
+      "pixel_identical_collapsed": 0,
+      "status": "unqualified",
       "qualified": false,
       "image": {
-        "psnr_percentile_db": 40.539,
-        "psnr_median_db": 40.539,
-        "psnr_min_db": 40.539,
+        "psnr_percentile_db": 35.278,
+        "psnr_median_db": 35.278,
+        "psnr_min_db": 35.278,
         "ssim_percentile": 0.972,
         "ssim_median": 0.972,
         "ssim_min": 0.972,
-        "psnr_percentile_doc_id": "webp-medium",
-        "ssim_percentile_doc_id": "webp-small-alpha",
-        "psnr_floor_db": 40.5,
+        "psnr_percentile_doc_id": "webp-large",
+        "ssim_percentile_doc_id": "webp-medium",
+        "psnr_floor_db": 35.0,
+        "ssim_floor": 0.97
+      },
+      "next_tier": {
+        "plan": "image-aggressive",
+        "count": 2,
+        "psnr_median_db": 30.728,
+        "ssim_median": 0.871
+      }
+    },
+    {
+      "plan": "image-aggressive",
+      "format": "webp",
+      "band": "medium+large",
+      "derived": "none",
+      "merged_from": [
+        "medium",
+        "large"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 2,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "unqualified",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 30.728,
+        "psnr_median_db": 30.728,
+        "psnr_min_db": 30.728,
+        "ssim_percentile": 0.871,
+        "ssim_median": 0.871,
+        "ssim_min": 0.871,
+        "psnr_percentile_doc_id": "webp-large",
+        "ssim_percentile_doc_id": "webp-medium",
+        "psnr_floor_db": 30.5,
+        "ssim_floor": 0.87
+      },
+      "next_tier": {
+        "plan": "image-two-opt-in",
+        "count": 2,
+        "psnr_median_db": 30.151,
+        "ssim_median": 0.854
+      }
+    },
+    {
+      "plan": "image-aggressive+PX03",
+      "format": "webp",
+      "band": "medium+large",
+      "derived": "none",
+      "merged_from": [
+        "medium",
+        "large"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 2,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 35.35,
+        "psnr_median_db": 35.35,
+        "psnr_min_db": 35.35,
+        "ssim_percentile": 0.973,
+        "ssim_median": 0.973,
+        "ssim_min": 0.973,
+        "psnr_percentile_doc_id": "webp-large",
+        "ssim_percentile_doc_id": "webp-medium",
+        "psnr_floor_db": 35.0,
         "ssim_floor": 0.97
       }
     },
     {
-      "plan": "PX04",
+      "plan": "image-aggressive+PX04",
       "format": "webp",
-      "band": "large",
+      "band": "medium+large",
       "derived": "none",
-      "merged_from": [],
-      "count": 1,
+      "merged_from": [
+        "medium",
+        "large"
+      ],
+      "count": 2,
       "held": 0,
       "errors": 0,
-      "distinct_bases": 1,
+      "distinct_bases": 2,
       "near_duplicates_collapsed": 0,
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 34.525,
+        "psnr_median_db": 34.525,
+        "psnr_min_db": 34.525,
+        "ssim_percentile": 0.96,
+        "ssim_median": 0.96,
+        "ssim_min": 0.96,
+        "psnr_percentile_doc_id": "webp-large",
+        "ssim_percentile_doc_id": "webp-medium",
+        "psnr_floor_db": 34.5,
+        "ssim_floor": 0.96
+      }
+    },
+    {
+      "plan": "image-aggressive+PX05",
+      "format": "webp",
+      "band": "medium+large",
+      "derived": "none",
+      "merged_from": [
+        "medium",
+        "large"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 2,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 30.728,
+        "psnr_median_db": 30.728,
+        "psnr_min_db": 30.728,
+        "ssim_percentile": 0.871,
+        "ssim_median": 0.871,
+        "ssim_min": 0.871,
+        "psnr_percentile_doc_id": "webp-large",
+        "ssim_percentile_doc_id": "webp-medium",
+        "psnr_floor_db": 30.5,
+        "ssim_floor": 0.87
+      }
+    },
+    {
+      "plan": "image-aggressive+PX06",
+      "format": "webp",
+      "band": "medium+large",
+      "derived": "none",
+      "merged_from": [
+        "medium",
+        "large"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 2,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 35.274,
+        "psnr_median_db": 35.274,
+        "psnr_min_db": 35.274,
+        "ssim_percentile": 0.972,
+        "ssim_median": 0.972,
+        "ssim_min": 0.972,
+        "psnr_percentile_doc_id": "webp-large",
+        "ssim_percentile_doc_id": "webp-medium",
+        "psnr_floor_db": 35.0,
+        "ssim_floor": 0.97
+      }
+    },
+    {
+      "plan": "image-two-opt-in",
+      "format": "webp",
+      "band": "medium+large",
+      "derived": "none",
+      "merged_from": [
+        "medium",
+        "large"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 2,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 30.151,
+        "psnr_median_db": 30.151,
+        "psnr_min_db": 30.151,
+        "ssim_percentile": 0.854,
+        "ssim_median": 0.854,
+        "ssim_min": 0.854,
+        "psnr_percentile_doc_id": "webp-large",
+        "ssim_percentile_doc_id": "webp-medium",
+        "psnr_floor_db": 30.0,
+        "ssim_floor": 0.85
+      }
+    },
+    {
+      "plan": "PX01",
+      "format": "webp",
+      "band": "medium+large",
+      "derived": "none",
+      "merged_from": [
+        "medium",
+        "large"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 2,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 34.363,
+        "psnr_median_db": 34.363,
+        "psnr_min_db": 34.363,
+        "ssim_percentile": 0.957,
+        "ssim_median": 0.957,
+        "ssim_min": 0.957,
+        "psnr_percentile_doc_id": "webp-medium",
+        "ssim_percentile_doc_id": "webp-medium",
+        "psnr_floor_db": 34.0,
+        "ssim_floor": 0.955
+      }
+    },
+    {
+      "plan": "PX02",
+      "format": "webp",
+      "band": "medium+large",
+      "derived": "none",
+      "merged_from": [
+        "medium",
+        "large"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 2,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_doc_id": "webp-large",
+        "ssim_percentile_doc_id": "webp-large",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "PX03",
+      "format": "webp",
+      "band": "medium+large",
+      "derived": "none",
+      "merged_from": [
+        "medium",
+        "large"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 2,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_doc_id": "webp-large",
+        "ssim_percentile_doc_id": "webp-large",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "PX04",
+      "format": "webp",
+      "band": "medium+large",
+      "derived": "none",
+      "merged_from": [
+        "medium",
+        "large"
+      ],
+      "count": 2,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 2,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
         "psnr_percentile_db": 40.529,
         "psnr_median_db": 40.529,
         "psnr_min_db": 40.529,
-        "ssim_percentile": 0.983,
-        "ssim_median": 0.983,
-        "ssim_min": 0.983,
+        "ssim_percentile": 0.98,
+        "ssim_median": 0.98,
+        "ssim_min": 0.98,
         "psnr_percentile_doc_id": "webp-large",
-        "ssim_percentile_doc_id": "webp-large",
+        "ssim_percentile_doc_id": "webp-medium",
         "psnr_floor_db": 40.5,
         "ssim_floor": 0.98
       }
@@ -2181,11 +3668,11 @@
     {
       "plan": "PX05",
       "format": "webp",
-      "band": "small+medium",
+      "band": "medium+large",
       "derived": "none",
       "merged_from": [
-        "small",
-        "medium"
+        "medium",
+        "large"
       ],
       "count": 2,
       "held": 0,
@@ -2195,58 +3682,42 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
-      "status": "informational",
-      "qualified": false,
-      "image": {
-        "psnr_percentile_db": 32.582,
-        "psnr_median_db": 32.582,
-        "psnr_min_db": 32.582,
-        "ssim_percentile": 0.848,
-        "ssim_median": 0.848,
-        "ssim_min": 0.848,
-        "psnr_percentile_doc_id": "webp-medium",
-        "ssim_percentile_doc_id": "webp-small-alpha",
-        "psnr_floor_db": 32.5,
-        "ssim_floor": 0.845
-      }
-    },
-    {
-      "plan": "PX05",
-      "format": "webp",
-      "band": "large",
-      "derived": "none",
-      "merged_from": [],
-      "count": 1,
-      "held": 0,
-      "errors": 0,
-      "distinct_bases": 1,
-      "near_duplicates_collapsed": 0,
-      "generators": 1,
-      "generator_max_share": 1.0,
-      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
         "psnr_percentile_db": 32.55,
         "psnr_median_db": 32.55,
         "psnr_min_db": 32.55,
-        "ssim_percentile": 0.904,
-        "ssim_median": 0.904,
-        "ssim_min": 0.904,
+        "ssim_percentile": 0.889,
+        "ssim_median": 0.889,
+        "ssim_min": 0.889,
         "psnr_percentile_doc_id": "webp-large",
-        "ssim_percentile_doc_id": "webp-large",
+        "ssim_percentile_doc_id": "webp-medium",
         "psnr_floor_db": 32.5,
-        "ssim_floor": 0.9
+        "ssim_floor": 0.885
       }
     },
     {
       "plan": "PX06",
       "format": "webp",
-      "band": "small+medium",
+      "band": "medium+large",
       "derived": "none",
       "merged_from": [
-        "small",
-        "medium"
+        "medium",
+        "large"
       ],
       "count": 2,
       "held": 0,
@@ -2256,35 +3727,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
-      "status": "informational",
-      "qualified": false,
-      "image": {
-        "psnr_percentile_db": 120.0,
-        "psnr_median_db": 120.0,
-        "psnr_min_db": 120.0,
-        "ssim_percentile": 1.0,
-        "ssim_median": 1.0,
-        "ssim_min": 1.0,
-        "psnr_percentile_doc_id": "webp-medium",
-        "ssim_percentile_doc_id": "webp-medium",
-        "psnr_floor_db": 120.0,
-        "ssim_floor": 1.0
-      }
-    },
-    {
-      "plan": "PX06",
-      "format": "webp",
-      "band": "large",
-      "derived": "none",
-      "merged_from": [],
-      "count": 1,
-      "held": 0,
-      "errors": 0,
-      "distinct_bases": 1,
-      "near_duplicates_collapsed": 0,
-      "generators": 1,
-      "generator_max_share": 1.0,
-      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -2296,6 +3751,603 @@
         "ssim_min": 1.0,
         "psnr_percentile_doc_id": "webp-large",
         "ssim_percentile_doc_id": "webp-large",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "image-safe",
+      "format": "webp-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "unqualified",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_doc_id": "webp-small-alpha",
+        "ssim_percentile_doc_id": "webp-small-alpha",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      },
+      "next_tier": {
+        "plan": "image-aggressive",
+        "count": 1,
+        "psnr_median_db": 33.825,
+        "ssim_median": 0.839
+      }
+    },
+    {
+      "plan": "image-aggressive",
+      "format": "webp-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "unqualified",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 33.825,
+        "psnr_median_db": 33.825,
+        "psnr_min_db": 33.825,
+        "ssim_percentile": 0.839,
+        "ssim_median": 0.839,
+        "ssim_min": 0.839,
+        "psnr_percentile_doc_id": "webp-small-alpha",
+        "ssim_percentile_doc_id": "webp-small-alpha",
+        "psnr_floor_db": 33.5,
+        "ssim_floor": 0.835
+      },
+      "next_tier": {
+        "plan": "image-two-opt-in",
+        "count": 1,
+        "psnr_median_db": 33.166,
+        "ssim_median": 0.817
+      }
+    },
+    {
+      "plan": "image-aggressive+PX03",
+      "format": "webp-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_doc_id": "webp-small-alpha",
+        "ssim_percentile_doc_id": "webp-small-alpha",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "image-aggressive+PX04",
+      "format": "webp-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 41.777,
+        "psnr_median_db": 41.777,
+        "psnr_min_db": 41.777,
+        "ssim_percentile": 0.97,
+        "ssim_median": 0.97,
+        "ssim_min": 0.97,
+        "psnr_percentile_doc_id": "webp-small-alpha",
+        "ssim_percentile_doc_id": "webp-small-alpha",
+        "psnr_floor_db": 41.5,
+        "ssim_floor": 0.97
+      }
+    },
+    {
+      "plan": "image-aggressive+PX05",
+      "format": "webp-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 33.825,
+        "psnr_median_db": 33.825,
+        "psnr_min_db": 33.825,
+        "ssim_percentile": 0.839,
+        "ssim_median": 0.839,
+        "ssim_min": 0.839,
+        "psnr_percentile_doc_id": "webp-small-alpha",
+        "ssim_percentile_doc_id": "webp-small-alpha",
+        "psnr_floor_db": 33.5,
+        "ssim_floor": 0.835
+      }
+    },
+    {
+      "plan": "image-aggressive+PX06",
+      "format": "webp-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_doc_id": "webp-small-alpha",
+        "ssim_percentile_doc_id": "webp-small-alpha",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "image-two-opt-in",
+      "format": "webp-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 33.166,
+        "psnr_median_db": 33.166,
+        "psnr_min_db": 33.166,
+        "ssim_percentile": 0.817,
+        "ssim_median": 0.817,
+        "ssim_min": 0.817,
+        "psnr_percentile_doc_id": "webp-small-alpha",
+        "ssim_percentile_doc_id": "webp-small-alpha",
+        "psnr_floor_db": 33.0,
+        "ssim_floor": 0.815
+      }
+    },
+    {
+      "plan": "PX01",
+      "format": "webp-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_doc_id": "webp-small-alpha",
+        "ssim_percentile_doc_id": "webp-small-alpha",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "PX02",
+      "format": "webp-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_doc_id": "webp-small-alpha",
+        "ssim_percentile_doc_id": "webp-small-alpha",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "PX03",
+      "format": "webp-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_doc_id": "webp-small-alpha",
+        "ssim_percentile_doc_id": "webp-small-alpha",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      }
+    },
+    {
+      "plan": "PX04",
+      "format": "webp-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 41.764,
+        "psnr_median_db": 41.764,
+        "psnr_min_db": 41.764,
+        "ssim_percentile": 0.972,
+        "ssim_median": 0.972,
+        "ssim_min": 0.972,
+        "psnr_percentile_doc_id": "webp-small-alpha",
+        "ssim_percentile_doc_id": "webp-small-alpha",
+        "psnr_floor_db": 41.5,
+        "ssim_floor": 0.97
+      }
+    },
+    {
+      "plan": "PX05",
+      "format": "webp-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 33.834,
+        "psnr_median_db": 33.834,
+        "psnr_min_db": 33.834,
+        "ssim_percentile": 0.848,
+        "ssim_median": 0.848,
+        "ssim_min": 0.848,
+        "psnr_percentile_doc_id": "webp-small-alpha",
+        "ssim_percentile_doc_id": "webp-small-alpha",
+        "psnr_floor_db": 33.5,
+        "ssim_floor": 0.845
+      }
+    },
+    {
+      "plan": "PX06",
+      "format": "webp-alpha",
+      "band": "small+medium",
+      "derived": "none",
+      "merged_from": [
+        "small",
+        "medium"
+      ],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_doc_id": "webp-small-alpha",
+        "ssim_percentile_doc_id": "webp-small-alpha",
         "psnr_floor_db": 120.0,
         "ssim_floor": 1.0
       }
@@ -2317,6 +4369,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "unqualified",
       "qualified": false,
       "audio": {
@@ -2346,6 +4411,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "unqualified",
       "qualified": false,
       "audio": {
@@ -2378,6 +4456,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "unqualified",
       "qualified": false,
       "audio": {
@@ -2407,6 +4498,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "unqualified",
       "qualified": false,
       "audio": {
@@ -2439,6 +4543,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -2463,6 +4580,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -2490,6 +4620,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -2514,6 +4657,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -2541,6 +4697,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -2565,6 +4734,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -2592,6 +4774,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -2616,6 +4811,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -2643,6 +4851,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -2667,6 +4888,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -2694,6 +4928,14 @@
       "generators": 0,
       "generator_max_share": 0.0,
       "generator_cap_ok": true,
+      "classes": [],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false
     },
@@ -2711,6 +4953,14 @@
       "generators": 0,
       "generator_max_share": 0.0,
       "generator_cap_ok": true,
+      "classes": [],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false
     },
@@ -2731,6 +4981,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -2755,6 +5018,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -2782,6 +5058,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -2806,6 +5095,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -2833,6 +5135,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "unqualified",
       "qualified": false,
       "audio": {
@@ -2862,6 +5177,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "unqualified",
       "qualified": false,
       "audio": {
@@ -2894,6 +5222,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "unqualified",
       "qualified": false,
       "audio": {
@@ -2923,6 +5264,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "unqualified",
       "qualified": false,
       "audio": {
@@ -2955,6 +5309,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -2979,6 +5346,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -3006,6 +5386,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -3030,6 +5423,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -3057,6 +5463,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -3081,6 +5500,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -3108,6 +5540,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -3132,6 +5577,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -3159,6 +5617,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -3183,6 +5654,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -3210,6 +5694,14 @@
       "generators": 0,
       "generator_max_share": 0.0,
       "generator_cap_ok": true,
+      "classes": [],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false
     },
@@ -3227,6 +5719,14 @@
       "generators": 0,
       "generator_max_share": 0.0,
       "generator_cap_ok": true,
+      "classes": [],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false
     },
@@ -3247,6 +5747,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -3271,6 +5784,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -3298,6 +5824,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -3322,6 +5861,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -3340,19 +5892,46 @@
       "band": "mcu-padded",
       "derived": "none",
       "merged_from": [],
-      "count": 0,
-      "held": 3,
+      "count": 2,
+      "held": 0,
       "errors": 0,
-      "distinct_bases": 0,
+      "distinct_bases": 2,
       "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
+      "image": {
+        "psnr_percentile_db": 35.287,
+        "psnr_median_db": 35.287,
+        "psnr_min_db": 35.287,
+        "ssim_percentile": 0.955,
+        "ssim_median": 0.955,
+        "ssim_min": 0.955,
+        "psnr_percentile_doc_id": "png-large",
+        "ssim_percentile_doc_id": "png-small",
+        "psnr_floor_db": 35.0,
+        "ssim_floor": 0.955
+      },
       "next_tier": {
         "plan": "image-aggressive",
-        "count": 0
+        "count": 2,
+        "psnr_median_db": 30.562,
+        "ssim_median": 0.807
       }
     },
     {
@@ -3361,19 +5940,142 @@
       "band": "mcu-padded",
       "derived": "none",
       "merged_from": [],
-      "count": 0,
-      "held": 3,
+      "count": 2,
+      "held": 0,
       "errors": 0,
-      "distinct_bases": 0,
+      "distinct_bases": 2,
       "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
+      "image": {
+        "psnr_percentile_db": 30.562,
+        "psnr_median_db": 30.562,
+        "psnr_min_db": 30.562,
+        "ssim_percentile": 0.807,
+        "ssim_median": 0.807,
+        "ssim_min": 0.807,
+        "psnr_percentile_doc_id": "png-small",
+        "ssim_percentile_doc_id": "png-small",
+        "psnr_floor_db": 30.5,
+        "ssim_floor": 0.805
+      },
       "next_tier": {
         "plan": "image-two-opt-in",
-        "count": 0
+        "count": 2,
+        "psnr_median_db": 30.017,
+        "ssim_median": 0.781
+      }
+    },
+    {
+      "plan": "image-safe",
+      "format": "png-alpha",
+      "band": "mcu-padded",
+      "derived": "none",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_doc_id": "png-medium-alpha",
+        "ssim_percentile_doc_id": "png-medium-alpha",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      },
+      "next_tier": {
+        "plan": "image-aggressive",
+        "count": 1,
+        "psnr_median_db": 33.83,
+        "ssim_median": 0.892
+      }
+    },
+    {
+      "plan": "image-aggressive",
+      "format": "png-alpha",
+      "band": "mcu-padded",
+      "derived": "none",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 33.83,
+        "psnr_median_db": 33.83,
+        "psnr_min_db": 33.83,
+        "ssim_percentile": 0.892,
+        "ssim_median": 0.892,
+        "ssim_min": 0.892,
+        "psnr_percentile_doc_id": "png-medium-alpha",
+        "ssim_percentile_doc_id": "png-medium-alpha",
+        "psnr_floor_db": 33.5,
+        "ssim_floor": 0.89
+      },
+      "next_tier": {
+        "plan": "image-two-opt-in",
+        "count": 1,
+        "psnr_median_db": 33.166,
+        "ssim_median": 0.877
       }
     },
     {
@@ -3390,6 +6092,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -3425,6 +6140,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -3452,19 +6180,46 @@
       "band": "mcu-padded",
       "derived": "none",
       "merged_from": [],
-      "count": 0,
-      "held": 3,
+      "count": 2,
+      "held": 0,
       "errors": 0,
-      "distinct_bases": 0,
+      "distinct_bases": 2,
       "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
+      "image": {
+        "psnr_percentile_db": 35.278,
+        "psnr_median_db": 35.278,
+        "psnr_min_db": 35.278,
+        "ssim_percentile": 0.972,
+        "ssim_median": 0.972,
+        "ssim_min": 0.972,
+        "psnr_percentile_doc_id": "webp-large",
+        "ssim_percentile_doc_id": "webp-medium",
+        "psnr_floor_db": 35.0,
+        "ssim_floor": 0.97
+      },
       "next_tier": {
         "plan": "image-aggressive",
-        "count": 0
+        "count": 2,
+        "psnr_median_db": 30.728,
+        "ssim_median": 0.871
       }
     },
     {
@@ -3473,19 +6228,142 @@
       "band": "mcu-padded",
       "derived": "none",
       "merged_from": [],
-      "count": 0,
-      "held": 3,
+      "count": 2,
+      "held": 0,
       "errors": 0,
-      "distinct_bases": 0,
+      "distinct_bases": 2,
       "near_duplicates_collapsed": 0,
-      "generators": 0,
-      "generator_max_share": 0.0,
-      "generator_cap_ok": true,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          2
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
+      "image": {
+        "psnr_percentile_db": 30.728,
+        "psnr_median_db": 30.728,
+        "psnr_min_db": 30.728,
+        "ssim_percentile": 0.871,
+        "ssim_median": 0.871,
+        "ssim_min": 0.871,
+        "psnr_percentile_doc_id": "webp-large",
+        "ssim_percentile_doc_id": "webp-medium",
+        "psnr_floor_db": 30.5,
+        "ssim_floor": 0.87
+      },
       "next_tier": {
         "plan": "image-two-opt-in",
-        "count": 0
+        "count": 2,
+        "psnr_median_db": 30.151,
+        "ssim_median": 0.854
+      }
+    },
+    {
+      "plan": "image-safe",
+      "format": "webp-alpha",
+      "band": "mcu-padded",
+      "derived": "none",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 120.0,
+        "psnr_median_db": 120.0,
+        "psnr_min_db": 120.0,
+        "ssim_percentile": 1.0,
+        "ssim_median": 1.0,
+        "ssim_min": 1.0,
+        "psnr_percentile_doc_id": "webp-small-alpha",
+        "ssim_percentile_doc_id": "webp-small-alpha",
+        "psnr_floor_db": 120.0,
+        "ssim_floor": 1.0
+      },
+      "next_tier": {
+        "plan": "image-aggressive",
+        "count": 1,
+        "psnr_median_db": 33.825,
+        "ssim_median": 0.839
+      }
+    },
+    {
+      "plan": "image-aggressive",
+      "format": "webp-alpha",
+      "band": "mcu-padded",
+      "derived": "none",
+      "merged_from": [],
+      "count": 1,
+      "held": 0,
+      "errors": 0,
+      "distinct_bases": 1,
+      "near_duplicates_collapsed": 0,
+      "generators": 1,
+      "generator_max_share": 1.0,
+      "generator_cap_ok": false,
+      "classes": [
+        [
+          "dense texture",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "photographic",
+        "flat-illustration",
+        "dense-texture",
+        "text-ui"
+      ],
+      "pixel_identical_collapsed": 0,
+      "status": "informational",
+      "qualified": false,
+      "image": {
+        "psnr_percentile_db": 33.825,
+        "psnr_median_db": 33.825,
+        "psnr_min_db": 33.825,
+        "ssim_percentile": 0.839,
+        "ssim_median": 0.839,
+        "ssim_min": 0.839,
+        "psnr_percentile_doc_id": "webp-small-alpha",
+        "ssim_percentile_doc_id": "webp-small-alpha",
+        "psnr_floor_db": 33.5,
+        "ssim_floor": 0.835
+      },
+      "next_tier": {
+        "plan": "image-two-opt-in",
+        "count": 1,
+        "psnr_median_db": 33.166,
+        "ssim_median": 0.817
       }
     },
     {
@@ -3502,6 +6380,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -3531,6 +6422,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -3560,6 +6464,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -3589,6 +6506,19 @@
       "generators": 1,
       "generator_max_share": 1.0,
       "generator_cap_ok": false,
+      "classes": [
+        [
+          "tonal synthetic",
+          1
+        ]
+      ],
+      "missing_classes": [
+        "music",
+        "speech",
+        "ambient",
+        "tonal-synthetic"
+      ],
+      "pixel_identical_collapsed": 0,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -3610,7 +6540,15 @@
     {
       "plan": "image-metadata",
       "format": "png",
-      "count": 3,
+      "count": 2,
+      "identical": true,
+      "failures": [],
+      "declined": 0
+    },
+    {
+      "plan": "image-metadata",
+      "format": "png-alpha",
+      "count": 1,
       "identical": true,
       "failures": [],
       "declined": 0
@@ -3626,7 +6564,15 @@
     {
       "plan": "image-metadata",
       "format": "webp",
-      "count": 3,
+      "count": 2,
+      "identical": true,
+      "failures": [],
+      "declined": 0
+    },
+    {
+      "plan": "image-metadata",
+      "format": "webp-alpha",
+      "count": 1,
       "identical": true,
       "failures": [],
       "declined": 0
@@ -3682,7 +6628,7 @@
     {
       "name": "qualified-cells-present",
       "pass": false,
-      "detail": "no cell reached n_min under the generator cap; every number stays provisional"
+      "detail": "no cell reached n_min with every required class at class_min under the generator cap; every number stays provisional"
     },
     {
       "name": "aggressive-never-stricter-than-safe",
@@ -3692,12 +6638,12 @@
     {
       "name": "metadata-byte-identity",
       "pass": true,
-      "detail": "5 identity cells, every decoded stream identical"
+      "detail": "7 identity cells, every decoded stream identical"
     },
     {
       "name": "encoder-fingerprint",
       "pass": true,
-      "detail": "unmark 0.1.0; container-rewrite/no-reencode; png 0.18.1; jpeg-decoder 0.3.2; image-webp 0.2.4; claxon 0.4.3; flacenc 0.5.1; jpeg-encoder in-crate baseline 4:4:4; resample in-crate lanczos3 and kaiser-sinc scalar"
+      "detail": "unmark 0.1.0; container-rewrite/no-reencode; png 0.18.1; jpeg-decoder 0.3.2; image-webp 0.2.4; claxon 0.4.3; flacenc 0.5.1; jpeg-encoder in-crate v1 baseline 4:4:4; resample in-crate lanczos3 and kaiser-sinc scalar; trig in-crate libm-free"
     },
     {
       "name": "determinism",
@@ -3720,6 +6666,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
+      "content_class": "dense texture",
       "plans": [
         {
           "plan": "image-metadata",
@@ -3729,8 +6676,9 @@
         },
         {
           "plan": "PX01",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 34.395,
+          "ssim": 0.938
         },
         {
           "plan": "PX02",
@@ -3764,50 +6712,58 @@
         },
         {
           "plan": "image-safe",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 35.302,
+          "ssim": 0.955
         },
         {
           "plan": "image-aggressive+PX03",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 35.432,
+          "ssim": 0.956
         },
         {
           "plan": "image-aggressive+PX04",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 34.494,
+          "ssim": 0.937
         },
         {
           "plan": "image-aggressive+PX05",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 30.562,
+          "ssim": 0.807
         },
         {
           "plan": "image-aggressive+PX06",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 35.302,
+          "ssim": 0.955
         },
         {
           "plan": "image-aggressive",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 30.562,
+          "ssim": 0.807
         },
         {
           "plan": "image-two-opt-in",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 30.017,
+          "ssim": 0.781
         }
       ]
     },
     {
       "doc_id": "png-medium-alpha",
       "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
-      "container": "png",
+      "container": "png-alpha",
       "band": "medium",
       "derived": "none",
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
+      "content_class": "dense texture",
       "plans": [
         {
           "plan": "image-metadata",
@@ -3817,8 +6773,9 @@
         },
         {
           "plan": "PX01",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 120.0,
+          "ssim": 1.0
         },
         {
           "plan": "PX02",
@@ -3852,38 +6809,45 @@
         },
         {
           "plan": "image-safe",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 120.0,
+          "ssim": 1.0
         },
         {
           "plan": "image-aggressive+PX03",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 120.0,
+          "ssim": 1.0
         },
         {
           "plan": "image-aggressive+PX04",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 41.762,
+          "ssim": 0.981
         },
         {
           "plan": "image-aggressive+PX05",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 33.83,
+          "ssim": 0.892
         },
         {
           "plan": "image-aggressive+PX06",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 120.0,
+          "ssim": 1.0
         },
         {
           "plan": "image-aggressive",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 33.83,
+          "ssim": 0.892
         },
         {
           "plan": "image-two-opt-in",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 33.166,
+          "ssim": 0.877
         }
       ]
     },
@@ -3896,6 +6860,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
+      "content_class": "dense texture",
       "plans": [
         {
           "plan": "image-metadata",
@@ -3905,8 +6870,9 @@
         },
         {
           "plan": "PX01",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 34.431,
+          "ssim": 0.964
         },
         {
           "plan": "PX02",
@@ -3940,38 +6906,45 @@
         },
         {
           "plan": "image-safe",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 35.287,
+          "ssim": 0.977
         },
         {
           "plan": "image-aggressive+PX03",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 35.364,
+          "ssim": 0.978
         },
         {
           "plan": "image-aggressive+PX04",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 34.51,
+          "ssim": 0.968
         },
         {
           "plan": "image-aggressive+PX05",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 30.738,
+          "ssim": 0.893
         },
         {
           "plan": "image-aggressive+PX06",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 35.298,
+          "ssim": 0.977
         },
         {
           "plan": "image-aggressive",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 30.738,
+          "ssim": 0.893
         },
         {
           "plan": "image-two-opt-in",
-          "status": "held",
-          "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 30.179,
+          "ssim": 0.878
         }
       ]
     },
@@ -3984,6 +6957,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
+      "content_class": "dense texture",
       "plans": [
         {
           "plan": "image-metadata",
@@ -4080,6 +7054,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
+      "content_class": "dense texture",
       "plans": [
         {
           "plan": "image-metadata",
@@ -4176,6 +7151,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
+      "content_class": "dense texture",
       "plans": [
         {
           "plan": "image-metadata",
@@ -4266,12 +7242,13 @@
     {
       "doc_id": "webp-small-alpha",
       "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
-      "container": "webp",
+      "container": "webp-alpha",
       "band": "small",
       "derived": "none",
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
+      "content_class": "dense texture",
       "plans": [
         {
           "plan": "image-metadata",
@@ -4281,8 +7258,9 @@
         },
         {
           "plan": "PX01",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 120.0,
+          "ssim": 1.0
         },
         {
           "plan": "PX02",
@@ -4316,38 +7294,45 @@
         },
         {
           "plan": "image-safe",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 120.0,
+          "ssim": 1.0
         },
         {
           "plan": "image-aggressive+PX03",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 120.0,
+          "ssim": 1.0
         },
         {
           "plan": "image-aggressive+PX04",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 41.777,
+          "ssim": 0.97
         },
         {
           "plan": "image-aggressive+PX05",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 33.825,
+          "ssim": 0.839
         },
         {
           "plan": "image-aggressive+PX06",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 120.0,
+          "ssim": 1.0
         },
         {
           "plan": "image-aggressive",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 33.825,
+          "ssim": 0.839
         },
         {
           "plan": "image-two-opt-in",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 33.166,
+          "ssim": 0.817
         }
       ]
     },
@@ -4360,6 +7345,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
+      "content_class": "dense texture",
       "plans": [
         {
           "plan": "image-metadata",
@@ -4369,8 +7355,9 @@
         },
         {
           "plan": "PX01",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 34.363,
+          "ssim": 0.957
         },
         {
           "plan": "PX02",
@@ -4404,38 +7391,45 @@
         },
         {
           "plan": "image-safe",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 35.435,
+          "ssim": 0.972
         },
         {
           "plan": "image-aggressive+PX03",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 35.351,
+          "ssim": 0.973
         },
         {
           "plan": "image-aggressive+PX04",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 34.612,
+          "ssim": 0.96
         },
         {
           "plan": "image-aggressive+PX05",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 30.81,
+          "ssim": 0.871
         },
         {
           "plan": "image-aggressive+PX06",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 35.445,
+          "ssim": 0.972
         },
         {
           "plan": "image-aggressive",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 30.81,
+          "ssim": 0.871
         },
         {
           "plan": "image-two-opt-in",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 30.296,
+          "ssim": 0.854
         }
       ]
     },
@@ -4448,6 +7442,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
+      "content_class": "dense texture",
       "plans": [
         {
           "plan": "image-metadata",
@@ -4457,8 +7452,9 @@
         },
         {
           "plan": "PX01",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 34.439,
+          "ssim": 0.964
         },
         {
           "plan": "PX02",
@@ -4492,38 +7488,45 @@
         },
         {
           "plan": "image-safe",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 35.278,
+          "ssim": 0.978
         },
         {
           "plan": "image-aggressive+PX03",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 35.35,
+          "ssim": 0.978
         },
         {
           "plan": "image-aggressive+PX04",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 34.525,
+          "ssim": 0.968
         },
         {
           "plan": "image-aggressive+PX05",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 30.728,
+          "ssim": 0.892
         },
         {
           "plan": "image-aggressive+PX06",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 35.274,
+          "ssim": 0.977
         },
         {
           "plan": "image-aggressive",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 30.728,
+          "ssim": 0.892
         },
         {
           "plan": "image-two-opt-in",
-          "status": "held",
-          "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+          "status": "image",
+          "psnr_db": 30.151,
+          "ssim": 0.877
         }
       ]
     },
@@ -4536,6 +7539,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
+      "content_class": "tonal synthetic",
       "plans": [
         {
           "plan": "audio-metadata",
@@ -4604,6 +7608,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
+      "content_class": "tonal synthetic",
       "plans": [
         {
           "plan": "audio-metadata",
@@ -4672,6 +7677,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
+      "content_class": "tonal synthetic",
       "plans": [
         {
           "plan": "audio-metadata",
@@ -4740,6 +7746,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
+      "content_class": "tonal synthetic",
       "plans": [
         {
           "plan": "audio-metadata",
@@ -4808,6 +7815,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
+      "content_class": "tonal synthetic",
       "plans": [
         {
           "plan": "audio-metadata",
@@ -4876,6 +7884,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
+      "content_class": "tonal synthetic",
       "plans": [
         {
           "plan": "audio-metadata",
@@ -4949,8 +7958,9 @@
       "doc_id": "png-small",
       "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
       "plan": "PX01",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 34.395,
+      "ssim": 0.938
     },
     {
       "doc_id": "png-small",
@@ -4996,50 +8006,57 @@
       "doc_id": "png-small",
       "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
       "plan": "image-safe",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 35.302,
+      "ssim": 0.955
     },
     {
       "doc_id": "png-small",
       "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
       "plan": "image-aggressive+PX03",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 35.432,
+      "ssim": 0.956
     },
     {
       "doc_id": "png-small",
       "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
       "plan": "image-aggressive+PX04",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 34.494,
+      "ssim": 0.937
     },
     {
       "doc_id": "png-small",
       "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
       "plan": "image-aggressive+PX05",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 30.562,
+      "ssim": 0.807
     },
     {
       "doc_id": "png-small",
       "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
       "plan": "image-aggressive+PX06",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 35.302,
+      "ssim": 0.955
     },
     {
       "doc_id": "png-small",
       "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
       "plan": "image-aggressive",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 30.562,
+      "ssim": 0.807
     },
     {
       "doc_id": "png-small",
       "sha256": "161d95bcf37d42cfaaefefb27c03d745f65612db4e634071037cc2d180975e9f",
       "plan": "image-two-opt-in",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 30.017,
+      "ssim": 0.781
     },
     {
       "doc_id": "png-medium-alpha",
@@ -5053,8 +8070,9 @@
       "doc_id": "png-medium-alpha",
       "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
       "plan": "PX01",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
     },
     {
       "doc_id": "png-medium-alpha",
@@ -5100,50 +8118,57 @@
       "doc_id": "png-medium-alpha",
       "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
       "plan": "image-safe",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
     },
     {
       "doc_id": "png-medium-alpha",
       "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
       "plan": "image-aggressive+PX03",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
     },
     {
       "doc_id": "png-medium-alpha",
       "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
       "plan": "image-aggressive+PX04",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 41.762,
+      "ssim": 0.981
     },
     {
       "doc_id": "png-medium-alpha",
       "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
       "plan": "image-aggressive+PX05",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 33.83,
+      "ssim": 0.892
     },
     {
       "doc_id": "png-medium-alpha",
       "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
       "plan": "image-aggressive+PX06",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
     },
     {
       "doc_id": "png-medium-alpha",
       "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
       "plan": "image-aggressive",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 33.83,
+      "ssim": 0.892
     },
     {
       "doc_id": "png-medium-alpha",
       "sha256": "121b865ef7525d385441319edaca3cd19eaefad8391a35179bddd48d472d9ed9",
       "plan": "image-two-opt-in",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 33.166,
+      "ssim": 0.877
     },
     {
       "doc_id": "png-large",
@@ -5157,8 +8182,9 @@
       "doc_id": "png-large",
       "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
       "plan": "PX01",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 34.431,
+      "ssim": 0.964
     },
     {
       "doc_id": "png-large",
@@ -5204,50 +8230,57 @@
       "doc_id": "png-large",
       "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
       "plan": "image-safe",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 35.287,
+      "ssim": 0.977
     },
     {
       "doc_id": "png-large",
       "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
       "plan": "image-aggressive+PX03",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 35.364,
+      "ssim": 0.978
     },
     {
       "doc_id": "png-large",
       "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
       "plan": "image-aggressive+PX04",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 34.51,
+      "ssim": 0.968
     },
     {
       "doc_id": "png-large",
       "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
       "plan": "image-aggressive+PX05",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 30.738,
+      "ssim": 0.893
     },
     {
       "doc_id": "png-large",
       "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
       "plan": "image-aggressive+PX06",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 35.298,
+      "ssim": 0.977
     },
     {
       "doc_id": "png-large",
       "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
       "plan": "image-aggressive",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 30.738,
+      "ssim": 0.893
     },
     {
       "doc_id": "png-large",
       "sha256": "1427c6defb67f4e034cde0e35b9520e9ecb074541f7214f3f6898eb37d60640c",
       "plan": "image-two-opt-in",
-      "status": "held",
-      "reason": "PX01 on PNG input: the ruling asks for a lossy WebP write and no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 30.179,
+      "ssim": 0.878
     },
     {
       "doc_id": "jpeg-small",
@@ -5597,8 +8630,9 @@
       "doc_id": "webp-small-alpha",
       "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
       "plan": "PX01",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
     },
     {
       "doc_id": "webp-small-alpha",
@@ -5644,50 +8678,57 @@
       "doc_id": "webp-small-alpha",
       "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
       "plan": "image-safe",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
     },
     {
       "doc_id": "webp-small-alpha",
       "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
       "plan": "image-aggressive+PX03",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
     },
     {
       "doc_id": "webp-small-alpha",
       "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
       "plan": "image-aggressive+PX04",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 41.777,
+      "ssim": 0.97
     },
     {
       "doc_id": "webp-small-alpha",
       "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
       "plan": "image-aggressive+PX05",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 33.825,
+      "ssim": 0.839
     },
     {
       "doc_id": "webp-small-alpha",
       "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
       "plan": "image-aggressive+PX06",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 120.0,
+      "ssim": 1.0
     },
     {
       "doc_id": "webp-small-alpha",
       "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
       "plan": "image-aggressive",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 33.825,
+      "ssim": 0.839
     },
     {
       "doc_id": "webp-small-alpha",
       "sha256": "209641d953e194bce74cab4f4f127cc1ad97b7726d71bb0ea4fb002534fa3e47",
       "plan": "image-two-opt-in",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 33.166,
+      "ssim": 0.817
     },
     {
       "doc_id": "webp-medium",
@@ -5701,8 +8742,9 @@
       "doc_id": "webp-medium",
       "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
       "plan": "PX01",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 34.363,
+      "ssim": 0.957
     },
     {
       "doc_id": "webp-medium",
@@ -5748,50 +8790,57 @@
       "doc_id": "webp-medium",
       "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
       "plan": "image-safe",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 35.435,
+      "ssim": 0.972
     },
     {
       "doc_id": "webp-medium",
       "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
       "plan": "image-aggressive+PX03",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 35.351,
+      "ssim": 0.973
     },
     {
       "doc_id": "webp-medium",
       "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
       "plan": "image-aggressive+PX04",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 34.612,
+      "ssim": 0.96
     },
     {
       "doc_id": "webp-medium",
       "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
       "plan": "image-aggressive+PX05",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 30.81,
+      "ssim": 0.871
     },
     {
       "doc_id": "webp-medium",
       "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
       "plan": "image-aggressive+PX06",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 35.445,
+      "ssim": 0.972
     },
     {
       "doc_id": "webp-medium",
       "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
       "plan": "image-aggressive",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 30.81,
+      "ssim": 0.871
     },
     {
       "doc_id": "webp-medium",
       "sha256": "2459c8d1198d9ff68eadfaae28bb34ae4d848676d2ea86444aa5940a64e04fb7",
       "plan": "image-two-opt-in",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 30.296,
+      "ssim": 0.854
     },
     {
       "doc_id": "webp-large",
@@ -5805,8 +8854,9 @@
       "doc_id": "webp-large",
       "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
       "plan": "PX01",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 34.439,
+      "ssim": 0.964
     },
     {
       "doc_id": "webp-large",
@@ -5852,50 +8902,57 @@
       "doc_id": "webp-large",
       "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
       "plan": "image-safe",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 35.278,
+      "ssim": 0.978
     },
     {
       "doc_id": "webp-large",
       "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
       "plan": "image-aggressive+PX03",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 35.35,
+      "ssim": 0.978
     },
     {
       "doc_id": "webp-large",
       "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
       "plan": "image-aggressive+PX04",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 34.525,
+      "ssim": 0.968
     },
     {
       "doc_id": "webp-large",
       "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
       "plan": "image-aggressive+PX05",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 30.728,
+      "ssim": 0.892
     },
     {
       "doc_id": "webp-large",
       "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
       "plan": "image-aggressive+PX06",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 35.274,
+      "ssim": 0.977
     },
     {
       "doc_id": "webp-large",
       "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
       "plan": "image-aggressive",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 30.728,
+      "ssim": 0.892
     },
     {
       "doc_id": "webp-large",
       "sha256": "42beb3cb5d12cf6b08493ed3b72193864b1b4101f384e899b83fd60207a70e95",
       "plan": "image-two-opt-in",
-      "status": "held",
-      "reason": "PX01 on WebP input: no pure Rust lossy WebP encoder exists"
+      "status": "image",
+      "psnr_db": 30.151,
+      "ssim": 0.877
     },
     {
       "doc_id": "wav-short-stereo",

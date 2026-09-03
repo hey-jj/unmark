@@ -298,6 +298,31 @@ fn the_pinned_codec_versions_match_cargo_lock() {
     }
 }
 
+/// The in-crate JPEG encoder's golden pin: one fixture, decoded and encoded
+/// at the pinned quality, hashes to the same bytes on every platform. A
+/// change here means the encoder changed and the record must be redone.
+#[test]
+fn the_in_crate_jpeg_encoder_is_pinned_by_a_golden_hash() {
+    const GOLDEN: &str = "90e4fa267f12a48816e907633fd903e084c1a76f4b8b0bff31f125da4bfd3f38";
+    let bytes = std::fs::read(fixture_dir().join("png-small.png")).unwrap();
+    let img = unmark::codec::png::decode(&bytes).unwrap();
+    let pkg = policy::load().unwrap();
+    let px01 = pkg.transform("PX01").unwrap();
+    let out = unmark::codec::jpeg::encode(
+        &img,
+        px01.param_i64("jpeg_quality").unwrap() as u32,
+        px01.param_str("jpeg_chroma").unwrap(),
+    )
+    .unwrap();
+    let hash = calibrate::sha256_hex(&out);
+    assert_eq!(
+        hash,
+        GOLDEN,
+        "the in-crate JPEG encoder ({}) produced different bytes",
+        unmark::codec::jpeg::ENCODER_VERSION
+    );
+}
+
 #[test]
 fn every_metadata_cell_reports_byte_identity() {
     let r = record();

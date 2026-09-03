@@ -9,8 +9,14 @@ env:
 
 jobs:
   test:
-    name: test (stable)
-    runs-on: ubuntu-latest
+    name: test (stable, ${{ matrix.os }})
+    # Both an x86_64 and an aarch64 host, so the libm-free transforms and the
+    # three-decimal calibration pins are tested for cross-platform identity
+    # rather than assumed.
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable

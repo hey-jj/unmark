@@ -43,7 +43,8 @@ fn usage() -> &'static str {
     "usage:\n  \
      calibrate --manifest FILE --out DIR --date YYYY-MM-DD [--root DIR] [--policy FILE] [--single-pass] [selection]\n  \
      calibrate --prepare OUT.json --manifest FILE [--root DIR] [--annotate CSV]... [--ladder FIELD=VALUE]...\n            \
-     [--derive-dir DIR] [--synth-dir DIR] [--near-duplicate-bits N] [selection]\n  \
+     [--derive-dir DIR] [--synth-dir DIR] [--near-duplicate-bits N]\n            \
+     [--content-class media=class]... [--report-only FIELD=VALUE]... [selection]\n  \
      calibrate --select-only --manifest FILE [--root DIR] [selection]\n\
      selection: [--include-round R]... [--exclude-round R]... [--include-tag T]... [--exclude-tag T]...\n            \
      [--include FIELD=VALUE]... [--exclude FIELD=VALUE]...\n\
@@ -71,6 +72,8 @@ fn main() -> ExitCode {
     let mut derive_dir: Option<PathBuf> = None;
     let mut synth_dir: Option<PathBuf> = None;
     let mut near_duplicate_bits: u32 = unmark::calibrate::NEAR_DUPLICATE_BITS;
+    let mut content_class_rules: Vec<String> = Vec::new();
+    let mut report_only_rules: Vec<String> = Vec::new();
     let mut filters = Filters::default();
     while let Some(a) = args.next() {
         let mut value = |what: &str| -> Result<String, String> {
@@ -87,6 +90,8 @@ fn main() -> ExitCode {
             "--ladder" => value("--ladder").map(|v| ladder_rules.push(v)),
             "--derive-dir" => value("--derive-dir").map(|v| derive_dir = Some(PathBuf::from(v))),
             "--synth-dir" => value("--synth-dir").map(|v| synth_dir = Some(PathBuf::from(v))),
+            "--content-class" => value("--content-class").map(|v| content_class_rules.push(v)),
+            "--report-only" => value("--report-only").map(|v| report_only_rules.push(v)),
             "--near-duplicate-bits" => value("--near-duplicate-bits").and_then(|v| {
                 v.parse()
                     .map(|n| near_duplicate_bits = n)
@@ -162,6 +167,8 @@ fn main() -> ExitCode {
             derive_dir,
             synth_dir,
             near_duplicate_bits,
+            content_class_rules,
+            report_only_rules,
             progress: Some(Box::new(|line: &str| eprintln!("calibrate: {line}"))),
         };
         let prepared = match calibrate::prepare(&pkg, &loaded, opts) {

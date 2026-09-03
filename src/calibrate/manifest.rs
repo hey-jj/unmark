@@ -111,7 +111,14 @@ impl ManifestAsset {
         match name {
             "path" => Some(self.path.clone()),
             "sha256" => Some(self.sha256.clone()),
-            "container" | "format" => Some(self.container.clone()),
+            "container" => Some(self.container.clone()),
+            // The inventory's own format column when it has one, since it
+            // is the logical family and not the container.
+            "format" => self
+                .fields
+                .get("format")
+                .cloned()
+                .or_else(|| Some(self.container.clone())),
             "generator" | "generator_model" => Some(self.generator.clone()),
             "content_class" | "class" => Some(self.content_class.clone()),
             "round" => Some(self.round.clone()),
@@ -213,12 +220,38 @@ pub struct SourceInventory {
     pub sha256: String,
 }
 
+/// How the prepare pass shaped the manifest, carried into the record.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct PrepareInfo {
+    /// The perceptual-hash collapse distance; zero means off.
+    pub near_duplicate_bits: u32,
+    /// `media=class` defaults applied to unclassified rows.
+    pub content_class_rules: Vec<String>,
+    pub ladder_rules: Vec<String>,
+    pub report_only_rules: Vec<String>,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Manifest {
     pub schema_version: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source_inventory: Option<SourceInventory>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prepare: Option<PrepareInfo>,
     pub assets: Vec<ManifestAsset>,
+}
+
+/// The content classes a medium needs before a cell may set a number.
+pub fn required_classes(media: crate::asset::Media) -> &'static [&'static str] {
+    match media {
+        crate::asset::Media::Image => &[
+            "photographic",
+            "flat-illustration",
+            "dense-texture",
+            "text-ui",
+        ],
+        _ => &["music", "speech", "ambient", "tonal-synthetic"],
+    }
 }
 
 /// Manifest-driven selection. An empty include list admits every round or
@@ -346,6 +379,9 @@ pub fn eligibility(a: &ManifestAsset) -> (Eligibility, Option<String>) {
             Eligibility::ReportOnly,
             Some("identity-only container".to_string()),
         );
+    }
+    if let Some(rule) = a.fields.get("report_only") {
+        return (Eligibility::ReportOnly, Some(format!("rule {rule}")));
     }
     if a.post_processed {
         return (Eligibility::Ladder, None);
@@ -558,7 +594,10 @@ pub fn parse_manifest_csv(text: &str) -> Result<Manifest, String> {
             rate: None,
             channels: None,
             generator: get("generator_model"),
-            content_class: get("archetype"),
+            // The archetype is an inventory code, kept in `fields`; the
+            // content class is assigned by the prepare rules or an
+            // annotation, never read from pixels.
+            content_class: String::new(),
             post_processed: matches!(get("post_processed").as_str(), "true" | "1" | "yes"),
             ladder_step: get("ladder_step"),
             control: matches!(get("control").as_str(), "true" | "1" | "yes"),
@@ -580,6 +619,7 @@ pub fn parse_manifest_csv(text: &str) -> Result<Manifest, String> {
     Ok(Manifest {
         schema_version: MANIFEST_SCHEMA_VERSION.to_string(),
         source_inventory: None,
+        prepare: None,
         assets,
     })
 }
@@ -781,13 +821,15 @@ mod tests {
         assert_eq!(a.container, "png");
         assert_eq!(a.round, "2");
         assert_eq!(a.generator, "vendor/model, v2");
-        assert_eq!(a.content_class, "A3");
+        assert_eq!(a.content_class, "");
+        assert_eq!(a.field("archetype").as_deref(), Some("A3"));
         assert_eq!(a.sha256, "abcdef");
         assert_eq!(a.field("wave").as_deref(), Some("3"));
         assert_eq!(a.field("container").as_deref(), Some("png"));
+        assert_eq!(a.field("format").as_deref(), Some("screenshot"));
         let b = &m.assets[1];
         assert_eq!(b.container, "mp3");
-        assert_eq!(b.content_class, "R4 \"x\"");
+        assert_eq!(b.field("archetype").as_deref(), Some("R4 \"x\""));
         assert!(
             manifest_format(&b.container).is_none(),
             "mp3 is not calibrated"

@@ -83,6 +83,8 @@ pub struct Corpus {
     pub manifest_sha256: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source_inventory: Option<SourceInventory>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prepare: Option<super::manifest::PrepareInfo>,
     pub filters: Filters,
     pub assets_listed: usize,
     pub assets_scored: usize,
@@ -125,6 +127,8 @@ pub struct AssetRecord {
     pub documented_marks: Vec<String>,
     pub generator: String,
     #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub content_class: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     pub ladder_step: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub excluded: Option<String>,
@@ -153,9 +157,14 @@ pub struct Record {
     pub percentile_image: u32,
     pub percentile_audio: u32,
     pub n_min: usize,
+    /// Every required content class must reach this count in a cell.
+    pub class_min: usize,
     pub psnr_step_db: f64,
     pub ssim_step: f64,
     pub lsd_step_db: f64,
+    /// How separation is judged: it holds when either metric's next-tier
+    /// median fails the number, since the gate refuses on either.
+    pub separation_rule: String,
     pub metrics: Vec<Param>,
     pub transforms: Vec<TransformPin>,
     /// Floor-setting cells: native and container-derived.
@@ -197,6 +206,12 @@ fn image_fails(psnr_med: Option<f64>, ssim_med: Option<f64>, floor: (f64, f64)) 
     }
 }
 
+/// The separation rule as recorded. The worst-stack score takes each metric
+/// independently, and the next tier fails the number when either metric's
+/// median misses it, because the gate refuses on either.
+pub const SEPARATION_RULE: &str =
+    "the next tier fails when either metric's median misses the number; the gate refuses on either";
+
 /// The reason class a report-only row groups under.
 pub fn reason_class(reason: &str) -> String {
     let r = reason
@@ -210,21 +225,24 @@ pub fn reason_class(reason: &str) -> String {
     r.to_string()
 }
 
-fn formats_for(media: Media) -> Vec<&'static str> {
+/// The cell formats per medium. Alpha images are their own cells.
+pub fn formats_for(media: Media) -> Vec<&'static str> {
     match media {
-        Media::Image => vec!["png", "jpeg", "webp"],
+        Media::Image => vec!["png", "png-alpha", "jpeg", "webp", "webp-alpha"],
         _ => vec!["wav", "flac"],
     }
 }
 
 /// Build the record from per-asset results. `manifest_name` is the manifest
 /// file's basename; the date is an input, never the clock.
+#[allow(clippy::too_many_arguments)]
 pub fn build_record(
     pkg: &PolicyPackage,
     results: &[AssetResult],
     manifest_name: &str,
     manifest_sha256: &str,
     source_inventory: Option<SourceInventory>,
+    prepare: Option<super::manifest::PrepareInfo>,
     filters: &Filters,
     date: &str,
 ) -> Result<Record, String> {
@@ -348,7 +366,7 @@ pub fn build_record(
                 .copied()
                 .filter(|a| a.eligibility == Eligibility::ReportOnly)
                 .collect();
-            let collapsed_in = |band_names: &[String]| -> usize {
+            let collapsed_in = |band_names: &[String], pixel: bool| -> usize {
                 report_only
                     .iter()
                     .filter(|a| {
@@ -356,6 +374,7 @@ pub fn build_record(
                             && a.reason
                                 .as_deref()
                                 .is_some_and(|r| r.starts_with("near-duplicate"))
+                            && (a.near_duplicate_rule == "pixel-sha256") == pixel
                     })
                     .count()
             };
@@ -366,7 +385,8 @@ pub fn build_record(
                         continue;
                     }
                     for (band_names, assets) in band_groups(set, plan, bands, c.n_min) {
-                        let collapsed = collapsed_in(&band_names);
+                        let collapsed = collapsed_in(&band_names, false);
+                        let pixel_collapsed = collapsed_in(&band_names, true);
                         let input = CellInput {
                             plan: plan.clone(),
                             format: format.to_string(),
@@ -374,6 +394,7 @@ pub fn build_record(
                             derived: kind.to_string(),
                             assets,
                             collapsed,
+                            pixel_collapsed,
                         };
                         cells.push(build_cell(&input, pkg, *informational, next.as_deref()));
                     }
@@ -393,6 +414,7 @@ pub fn build_record(
                         derived: derived.to_string(),
                         assets,
                         collapsed: 0,
+                        pixel_collapsed: 0,
                     };
                     strata.push(build_cell(&input, pkg, true, next.as_deref()));
                 };
@@ -417,6 +439,21 @@ pub fn build_record(
                 }
                 for ((class, band, derived), assets) in groups {
                     push_stratum(format!("report:{class}/{band}"), assets, &derived);
+                }
+                // Content-class splits over the floor-setting rows.
+                let mut by_class: BTreeMap<String, Vec<&AssetResult>> = BTreeMap::new();
+                for a in native.iter().chain(container.iter()) {
+                    let key = if a.content_class.is_empty() {
+                        "unclassified".to_string()
+                    } else {
+                        a.content_class.clone()
+                    };
+                    by_class.entry(key).or_default().push(a);
+                }
+                if by_class.len() > 1 {
+                    for (key, assets) in by_class {
+                        push_stratum(format!("class:{key}"), assets, "none");
+                    }
                 }
                 // Documented-marks splits over the floor-setting rows.
                 let mut marks: BTreeMap<String, Vec<&AssetResult>> = BTreeMap::new();
@@ -549,7 +586,7 @@ pub fn build_record(
                 cells.iter().filter(|r| r.qualified).count()
             )
         } else {
-            "no cell reached n_min under the generator cap; every number stays provisional"
+            "no cell reached n_min with every required class at class_min under the generator cap; every number stays provisional"
                 .to_string()
         },
     });
@@ -761,7 +798,7 @@ pub fn build_record(
     };
     let mut monotonic = true;
     let mut detail = Vec::new();
-    for format in ["png", "jpeg", "webp"] {
+    for format in formats_for(Media::Image) {
         let s = img_effective(&derived.image_safe, format);
         let a = img_effective(&derived.image_aggressive, format);
         if a.0 > s.0 || a.1 > s.1 {
@@ -838,6 +875,7 @@ pub fn build_record(
             reason: a.reason.clone(),
             documented_marks: a.documented_marks.clone(),
             generator: a.generator.clone(),
+            content_class: a.content_class.clone(),
             ladder_step: a.ladder_step.clone(),
             excluded: a.excluded.clone(),
             plans: a.plans.clone(),
@@ -890,6 +928,7 @@ pub fn build_record(
             manifest: manifest_name.to_string(),
             manifest_sha256: manifest_sha256.to_string(),
             source_inventory,
+            prepare,
             filters: filters.clone(),
             assets_listed: results.len(),
             assets_scored: scored.len(),
@@ -903,9 +942,11 @@ pub fn build_record(
         percentile_image: c.percentile_image,
         percentile_audio: c.percentile_audio,
         n_min: c.n_min,
+        class_min: c.class_min,
         psnr_step_db: c.psnr_step_db,
         ssim_step: c.ssim_step,
         lsd_step_db: c.lsd_step_db,
+        separation_rule: SEPARATION_RULE.to_string(),
         metrics,
         transforms,
         cells,

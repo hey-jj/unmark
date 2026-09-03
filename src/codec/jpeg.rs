@@ -1,12 +1,22 @@
 //! JPEG. Decoding goes through `jpeg-decoder` with its platform-independent
 //! path, so the same bytes decode to the same pixels on every machine.
-//! Encoding is a ground-up baseline sequential encoder: JFIF header, the
-//! standard Annex K quantization and Huffman tables, quality scaling by the
-//! usual 5000/q and 200-2q rule, a separable f64 DCT, 4:4:4 chroma. Nothing
-//! in it is adaptive, so the output is a pure function of the pixels and the
-//! quality.
+//!
+//! Encoding is a ground-up baseline sequential encoder written for this
+//! crate: JFIF header, the quantization and Huffman tables published in
+//! ITU-T T.81 Annex K, the quality-scaling rule (5000/q below 50, 200-2q
+//! from 50 up), a separable f64 DCT whose cosine table comes from the crate's
+//! own libm-free cosine, and 4:4:4 chroma. It contains no IJG code; the
+//! Annex K tables and the quality formula are specification data. Nothing in
+//! it is adaptive, so the output is a pure function of the pixels and the
+//! quality, and `ENCODER_VERSION` names this exact behavior in the encoder
+//! fingerprint so any change invalidates the calibration record.
 
 use super::{CodecError, Image};
+
+/// The in-crate encoder's behavior version, carried in the encoder
+/// fingerprint. Bump it whenever the emitted bytes for the same pixels and
+/// quality can change.
+pub const ENCODER_VERSION: &str = "v1";
 
 pub fn decode(bytes: &[u8]) -> Result<Image, CodecError> {
     let mut d = jpeg_decoder::Decoder::new(bytes);
@@ -266,7 +276,7 @@ pub fn encode(img: &Image, quality: u32, chroma: &str) -> Result<Vec<u8>, CodecE
     let mut cos = [[0.0f64; 8]; 8];
     for (x, row) in cos.iter_mut().enumerate() {
         for (u, c) in row.iter_mut().enumerate() {
-            *c = (((2 * x + 1) as f64) * u as f64 * std::f64::consts::PI / 16.0).cos();
+            *c = crate::dsp::cos(((2 * x + 1) as f64) * u as f64 * std::f64::consts::PI / 16.0);
         }
     }
     let mut bw = BitWriter {

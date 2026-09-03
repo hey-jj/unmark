@@ -14,12 +14,12 @@ fn opt3(v: Option<f64>) -> String {
 fn image_rows(w: &mut String, r: &Record, rows: &[CellRow]) {
     let _ = writeln!(
         w,
-        "| Plan | Format | Band | Derived | n | Bases | Gen. max share | Held | Status | P{} PSNR | P{} SSIM | Median PSNR | Median SSIM | Cell floor | Next tier median |",
+        "| Plan | Format | Band | Derived | n | Bases | Pixel-identical lost | Gen. max share | Classes | Missing classes | Held | Status | P{} PSNR | P{} SSIM | Median PSNR | Median SSIM | Cell floor | Next tier median |",
         r.percentile_image, r.percentile_image
     );
     let _ = writeln!(
         w,
-        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"
     );
     for c in rows {
         let s = c.image.as_ref();
@@ -37,14 +37,17 @@ fn image_rows(w: &mut String, r: &Record, rows: &[CellRow]) {
             .unwrap_or_else(|| "n/a".to_string());
         let _ = writeln!(
             w,
-            "| {} | {} | {} | {} | {} | {} | {:.2} | {} | {} | {} | {} | {} | {} | {} | {} |",
+            "| {} | {} | {} | {} | {} | {} | {} | {:.2} | {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |",
             c.plan,
             c.format,
             c.band,
             c.derived,
             c.count,
             c.distinct_bases,
+            c.pixel_identical_collapsed,
             c.generator_max_share,
+            classes_text(c),
+            missing_text(c),
             c.held,
             c.status,
             opt3(s.map(|s| s.psnr_percentile_db)),
@@ -61,12 +64,12 @@ fn image_rows(w: &mut String, r: &Record, rows: &[CellRow]) {
 fn audio_rows(w: &mut String, r: &Record, rows: &[CellRow]) {
     let _ = writeln!(
         w,
-        "| Plan | Format | Band | Derived | n | Bases | Gen. max share | Held | Status | P{} LSD | Median LSD | Max LSD | Cell ceiling | Next tier median |",
+        "| Plan | Format | Band | Derived | n | Bases | Pixel-identical lost | Gen. max share | Classes | Missing classes | Held | Status | P{} LSD | Median LSD | Max LSD | Cell ceiling | Next tier median |",
         r.percentile_audio
     );
     let _ = writeln!(
         w,
-        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"
     );
     for c in rows {
         let s = c.audio.as_ref();
@@ -77,14 +80,17 @@ fn audio_rows(w: &mut String, r: &Record, rows: &[CellRow]) {
             .unwrap_or_else(|| "n/a".to_string());
         let _ = writeln!(
             w,
-            "| {} | {} | {} | {} | {} | {} | {:.2} | {} | {} | {} | {} | {} | {} | {} |",
+            "| {} | {} | {} | {} | {} | {} | {} | {:.2} | {} | {} | {} | {} | {} | {} | {} | {} | {} |",
             c.plan,
             c.format,
             c.band,
             c.derived,
             c.count,
             c.distinct_bases,
+            c.pixel_identical_collapsed,
             c.generator_max_share,
+            classes_text(c),
+            missing_text(c),
             c.held,
             c.status,
             opt3(s.map(|s| s.lsd_percentile_db)),
@@ -97,8 +103,31 @@ fn audio_rows(w: &mut String, r: &Record, rows: &[CellRow]) {
     }
 }
 
+fn classes_text(c: &CellRow) -> String {
+    if c.classes.is_empty() {
+        return "none".to_string();
+    }
+    c.classes
+        .iter()
+        .map(|(k, n)| format!("{k} {n}"))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+fn missing_text(c: &CellRow) -> String {
+    if c.missing_classes.is_empty() {
+        "none".to_string()
+    } else {
+        c.missing_classes.join(", ")
+    }
+}
+
 fn is_audio_row(c: &CellRow) -> bool {
     c.format == "wav" || c.format == "flac"
+}
+
+fn is_image_row(c: &CellRow) -> bool {
+    !is_audio_row(c)
 }
 
 fn derived_image(name: &str, d: &DerivedImage) -> String {
@@ -189,8 +218,33 @@ pub fn render_markdown(r: &Record) -> String {
     let _ = writeln!(w, "- base seed: {}", r.base_seed);
     let _ = writeln!(
         w,
-        "- derivation: image floors at the {}th percentile rounded down to {} dB and {}, audio ceiling at the {}th percentile rounded up to {} dB, n_min {}, no generator over half a cell",
-        r.percentile_image, r.psnr_step_db, r.ssim_step, r.percentile_audio, r.lsd_step_db, r.n_min
+        "- derivation: image floors at the {}th percentile rounded down to {} dB and {}, audio ceiling at the {}th percentile rounded up to {} dB, n_min {}, class_min {}, no generator over half a cell",
+        r.percentile_image, r.psnr_step_db, r.ssim_step, r.percentile_audio, r.lsd_step_db, r.n_min, r.class_min
+    );
+    let _ = writeln!(w, "- separation: {}", r.separation_rule);
+    if let Some(p) = &r.corpus.prepare {
+        let _ = writeln!(
+            w,
+            "- prepare: exact decoded-pixel dedupe always on; perceptual-hash collapse {}; content-class defaults {}; ladder rules {}; report-only rules {}",
+            if p.near_duplicate_bits == 0 {
+                "off".to_string()
+            } else {
+                format!("on at {} bits", p.near_duplicate_bits)
+            },
+            if p.content_class_rules.is_empty() { "none".to_string() } else { p.content_class_rules.join(", ") },
+            if p.ladder_rules.is_empty() { "none".to_string() } else { p.ladder_rules.join(", ") },
+            if p.report_only_rules.is_empty() { "none".to_string() } else { p.report_only_rules.join(", ") }
+        );
+    }
+    let pixel_lost: usize = r
+        .cells
+        .iter()
+        .filter(|c| c.plan.ends_with("-safe"))
+        .map(|c| c.pixel_identical_collapsed)
+        .sum();
+    let _ = writeln!(
+        w,
+        "- pixel-identical rows lost across the safe cells: {pixel_lost}"
     );
     let _ = writeln!(
         w,
@@ -229,7 +283,7 @@ pub fn render_markdown(r: &Record) -> String {
     let rows: Vec<CellRow> = r
         .cells
         .iter()
-        .filter(|c| !is_audio_row(c))
+        .filter(|c| is_image_row(c))
         .cloned()
         .collect();
     if rows.is_empty() {
@@ -263,7 +317,7 @@ pub fn render_markdown(r: &Record) -> String {
     let rows: Vec<CellRow> = r
         .strata
         .iter()
-        .filter(|c| !is_audio_row(c))
+        .filter(|c| is_image_row(c))
         .cloned()
         .collect();
     if !rows.is_empty() {
@@ -368,6 +422,11 @@ pub fn render_markdown(r: &Record) -> String {
     let _ = writeln!(w);
 
     let _ = writeln!(w, "## Fixture pins");
+    let _ = writeln!(w);
+    let _ = writeln!(
+        w,
+        "The fixture subset is synthetic broadband, worst case: procedural patterns and tones with a noise bed, so its scores sit below what generated content scores and set no number."
+    );
     let _ = writeln!(w);
     let scored = r
         .fixture

@@ -122,6 +122,7 @@ pub fn run(pkg: &PolicyPackage, mut opts: RunOptions) -> Result<RunOutput, Strin
     let manifest_sha = loaded.sha256;
     let manifest_name = loaded.name;
     let source_inventory = manifest.source_inventory.clone();
+    let prepare_info = manifest.prepare.clone();
     let root = opts.root.clone().unwrap_or_else(|| {
         opts.manifest_path
             .parent()
@@ -138,6 +139,7 @@ pub fn run(pkg: &PolicyPackage, mut opts: RunOptions) -> Result<RunOutput, Strin
         &manifest_name,
         &manifest_sha,
         source_inventory.clone(),
+        prepare_info.clone(),
         &filters,
         &date,
     )?;
@@ -152,6 +154,7 @@ pub fn run(pkg: &PolicyPackage, mut opts: RunOptions) -> Result<RunOutput, Strin
             &manifest_name,
             &manifest_sha,
             source_inventory,
+            prepare_info,
             &filters,
             &date,
         )?;

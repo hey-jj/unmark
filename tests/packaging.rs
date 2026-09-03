@@ -82,9 +82,10 @@ fn the_published_tree_carries_the_skill_the_policy_and_the_suite() {
 #[test]
 fn the_changelog_opens_on_the_crate_version() {
     let version = env!("CARGO_PKG_VERSION");
+    // The first versioned heading; an [Unreleased] section may precede it.
     let first = CHANGELOG
         .lines()
-        .find(|l| l.starts_with("## "))
+        .find(|l| l.starts_with("## [") && l[4..].starts_with(|c: char| c.is_ascii_digit()))
         .expect("the changelog has a release heading");
     assert!(
         first.contains(&format!("[{version}]")),

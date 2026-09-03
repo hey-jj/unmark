@@ -12,6 +12,7 @@ use crate::policy::PolicyPackage;
 use crate::scan::ScanState;
 use crate::transform::pixel::{self, PixelError, PixelParams};
 use serde::{Deserialize, Serialize};
+use sha2::Digest as _;
 use std::collections::BTreeMap;
 
 pub fn round3(x: f64) -> f64 {
@@ -50,6 +51,10 @@ pub struct AssetResult {
     pub reason: Option<String>,
     pub documented_marks: Vec<String>,
     pub generator: String,
+    pub content_class: String,
+    /// `pixel-sha256` or `dhash` when the row is a near-duplicate.
+    #[serde(default)]
+    pub near_duplicate_rule: String,
     pub ladder_step: String,
     /// `mcu-padded` for an image edge not divisible by 16, `short-clip` for
     /// audio under two seconds.
@@ -158,6 +163,16 @@ impl<'a> Context<'a> {
     }
 }
 
+/// The cell format for a container: the container name, with `-alpha` when
+/// the decoded image carries alpha.
+pub fn cell_format(container: &str, alpha: bool) -> String {
+    if alpha {
+        format!("{container}-alpha")
+    } else {
+        container.to_string()
+    }
+}
+
 pub fn image_band(long_edge: usize) -> &'static str {
     if long_edge <= 640 {
         "small"
@@ -211,6 +226,19 @@ pub struct Probe {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub claim_generator: Option<String>,
     pub strata: Vec<String>,
+    /// sha256 over the decoded pixel or sample stream with its geometry, the
+    /// key for the exact dedupe.
+    pub pixel_sha256: String,
+}
+
+/// The exact-dedupe key of an image: dimensions, channels, and pixels.
+pub fn image_pixel_sha256(img: &Image) -> String {
+    let mut h = sha2::Sha256::new();
+    sha2::Digest::update(&mut h, (img.width as u64).to_be_bytes());
+    sha2::Digest::update(&mut h, (img.height as u64).to_be_bytes());
+    sha2::Digest::update(&mut h, [img.channels as u8]);
+    sha2::Digest::update(&mut h, &img.data);
+    format!("{:x}", sha2::Digest::finalize(h))
 }
 
 /// The luma difference hash: the image box-averaged to 9 by 8, each bit
@@ -373,6 +401,7 @@ pub fn probe(bytes: &[u8], a: &ManifestAsset, ctx: &Context<'_>) -> Result<Probe
                 c2pa_observed,
                 claim_generator: claim,
                 strata,
+                pixel_sha256: image_pixel_sha256(&img),
             })
         }
         Media::Audio => probe_audio(bytes, format, ctx, c2pa_observed, claim),
@@ -416,6 +445,16 @@ fn probe_audio(
         c2pa_observed,
         claim_generator: claim,
         strata,
+        pixel_sha256: {
+            let mut h = sha2::Sha256::new();
+            h.update(audio.rate.to_be_bytes());
+            h.update(audio.bits.to_be_bytes());
+            h.update([audio.channels.len() as u8]);
+            for s in audio.quantize(audio.bits) {
+                h.update(s.to_be_bytes());
+            }
+            format!("{:x}", h.finalize())
+        },
     })
 }
 
@@ -444,6 +483,12 @@ fn base_result(a: &ManifestAsset) -> AssetResult {
         reason,
         documented_marks: a.documented_marks.clone(),
         generator: a.generator.clone(),
+        content_class: a.content_class.clone(),
+        near_duplicate_rule: a
+            .fields
+            .get("near_duplicate_rule")
+            .cloned()
+            .unwrap_or_default(),
         ladder_step: a.ladder_step.clone(),
         strata: Vec::new(),
         fixture: a.fixture,
@@ -600,6 +645,10 @@ fn evaluate_image(
     };
     let mut result = base_result(a);
     result.band = image_band(img.long_edge()).to_string();
+    // An alpha image is its own format cell, since its safe plan differs.
+    if img.has_alpha() {
+        result.container = cell_format(&a.container, true);
+    }
     if img.width % 16 != 0 || img.height % 16 != 0 {
         result.strata.push("mcu-padded".to_string());
     }
@@ -642,7 +691,7 @@ fn evaluate_image(
             }
         };
         let valued = pixel::signal(&reference, &p, seed);
-        let out_bytes = match pixel::encode_output(&valued, format, &p) {
+        let emitted = match pixel::encode_output(&valued, format, &p) {
             Ok(b) => b,
             Err(PixelError::Held(r)) => return Score::Held { reason: r },
             Err(e) => {
@@ -651,7 +700,7 @@ fn evaluate_image(
                 }
             }
         };
-        let output = match crate::codec::decode_image(&out_bytes, format) {
+        let output = match crate::codec::decode_image(&emitted.bytes, emitted.format) {
             Ok(o) => o,
             Err(e) => {
                 return Score::Error {

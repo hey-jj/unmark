@@ -343,7 +343,7 @@ guard = "Tilt the spectrum around the pivot with a low shelf and a high shelf of
 
 [[transform]]
 id = "AU05"
-name = "time-stretch"
+name = "speed-change"
 order = 220
 tier = "residual"
 fidelity = "tempo"
@@ -351,7 +351,7 @@ default = false
 milestone = 2
 params = { factor = 1.03, method = "resample" }
 target = "Echo hiding and time-correlated marks"
-guard = "Change the speed by the pinned factor through the same sinc resampler, which shifts tempo and pitch together. The output has no sample grid in common with the input, so its signal cost is the distance between the time-averaged log power spectra in place of the frame-wise distance."
+guard = "A speed change, not a tempo-only stretch. Change the speed by the pinned factor through the same sinc resampler, which shifts tempo and pitch together. The output has no sample grid in common with the input, so its signal cost is the distance between the time-averaged log power spectra in place of the frame-wise distance."
 
 [[transform]]
 id = "AU03"
@@ -534,15 +534,19 @@ record = "policy/calibration.json"
 # calibrated. Every field below except base_seed and the percentile rules is
 # written by the harness.
 status = "provisional"
-record_sha256 = "fc5b8a6fe085fef9634116d8cf8a22379166bf7decde9942fa6ff9b9194fab54"
+record_sha256 = "bb2de1b6b151c856a940e4f9d0df89178b4c5602c2a37e91b1eaa8f4f6df2ef1"
 corpus_manifest_sha256 = "816e735fc268d4cd83f53c982140a08a064cb20d5d3366e03b06ad13f1cb2529"
-date = "2026-09-02"
+date = "2026-09-03"
 # XORed with the first 8 bytes of sha256(input) to seed PX05 and AU02, so one
 # asset always gets the same noise and two assets never share a pattern.
 base_seed = 0x5eed2026_09020001
 percentile_image = 5
 percentile_audio = 95
 n_min = 40
+# every required content class for the medium must reach class_min in a
+# cell before it qualifies; a cell at n_min without that coverage is
+# count-qualified and sets nothing
+class_min = 10
 # rounding steps: floors round down, the ceiling rounds up
 psnr_step_db = 0.5
 ssim_step = 0.005

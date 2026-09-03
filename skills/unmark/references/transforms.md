@@ -3,7 +3,7 @@
 Regenerate with `unmark policy snapshot` after any policy change. Edits here are overwritten.
 
 - policy version: 0.2.0
-- policy digest: sha256:9f42576decac2516aa1f93c28866ed6af4215b30b45e9ba9192cd0ff7a84a7ae
+- policy digest: sha256:da18d3a1dcec2debe6bdb268f912fb6449047afb5362b067a5218273a9475fbe
 
 ## What the tool may say about each mark
 
@@ -196,11 +196,11 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 - parameters: high_gain_db=-1.5, low_gain_db=1.5, pivot_hz=1000.0, slope=1.0
 - Tilt the spectrum around the pivot with a low shelf and a high shelf of opposite gain. The tonal change is audible on careful listening and the log-spectral distance measures it directly.
 
-### AU05 time-stretch (tier residual, fidelity tempo, default false, milestone 2)
+### AU05 speed-change (tier residual, fidelity tempo, default false, milestone 2)
 
 - target: Echo hiding and time-correlated marks
 - parameters: factor=1.03, method=resample
-- Change the speed by the pinned factor through the same sinc resampler, which shifts tempo and pitch together. The output has no sample grid in common with the input, so its signal cost is the distance between the time-averaged log power spectra in place of the frame-wise distance.
+- A speed change, not a tempo-only stretch. Change the speed by the pinned factor through the same sinc resampler, which shifts tempo and pitch together. The output has no sample grid in common with the input, so its signal cost is the distance between the time-averaged log power spectra in place of the frame-wise distance.
 
 ### AU03 lossy-transcode-round-trip (tier residual, fidelity held, default false, milestone 2)
 
@@ -227,7 +227,7 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 ## Fidelity budgets
 
-Calibration status: provisional. Record: policy/calibration.json. Record sha256: fc5b8a6fe085fef9634116d8cf8a22379166bf7decde9942fa6ff9b9194fab54. Corpus manifest sha256: 816e735fc268d4cd83f53c982140a08a064cb20d5d3366e03b06ad13f1cb2529. Date: 2026-09-02.
+Calibration status: provisional. Record: policy/calibration.json. Record sha256: bb2de1b6b151c856a940e4f9d0df89178b4c5602c2a37e91b1eaa8f4f6df2ef1. Corpus manifest sha256: 816e735fc268d4cd83f53c982140a08a064cb20d5d3366e03b06ad13f1cb2529. Date: 2026-09-03.
 
 | Budget | Kind | Signal floor or ceiling | Geometry |
 |---|---|---|---|

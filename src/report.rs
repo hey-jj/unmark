@@ -60,6 +60,22 @@ pub struct ScanRow {
     pub state: ScanState,
 }
 
+/// The measured fidelity of a degrade plan against its budget: the signal
+/// cost on the output grid and the geometry cost, and whether both passed.
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct Fidelity {
+    pub budget: String,
+    pub psnr_db: Option<f64>,
+    pub ssim: Option<f64>,
+    pub lsd_db: Option<f64>,
+    pub resample_ratio: f64,
+    pub crop_area: f64,
+    pub time_stretch: f64,
+    pub passed: bool,
+    /// The refusal reason when the budget was missed.
+    pub refusal: Option<String>,
+}
+
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct Report {
     pub schema_version: String,
@@ -72,6 +88,11 @@ pub struct Report {
     pub verb: String,
     pub profile: String,
     pub format: String,
+    /// The container the output is written in. A metadata rewrite keeps the
+    /// input container; a re-encode names the container it emitted.
+    pub output_format: String,
+    /// The fidelity measurement of a degrade plan, absent on a metadata plan.
+    pub fidelity: Option<Fidelity>,
     pub scan_states: Vec<ScanRow>,
     pub findings: Vec<Finding>,
     pub actions: Vec<Action>,
@@ -102,10 +123,38 @@ pub fn render_text(r: &Report) -> String {
     let _ = writeln!(o, "unmark {} | policy {}", r.tool_version, r.policy_version);
     let _ = writeln!(
         o,
-        "verb: {} | profile: {} | format: {}",
-        r.verb, r.profile, r.format
+        "verb: {} | profile: {} | format: {} | output: {}",
+        r.verb, r.profile, r.format, r.output_format
     );
     let _ = writeln!(o, "digest: {}", r.policy_digest);
+    if let Some(f) = &r.fidelity {
+        let mut parts = Vec::new();
+        if let Some(p) = f.psnr_db {
+            parts.push(format!("PSNR {p:.2} dB"));
+        }
+        if let Some(s) = f.ssim {
+            parts.push(format!("SSIM {s:.4}"));
+        }
+        if let Some(l) = f.lsd_db {
+            parts.push(format!("LSD {l:.3} dB"));
+        }
+        parts.push(format!("resample ratio {:.3}", f.resample_ratio));
+        parts.push(format!("crop area {:.3}", f.crop_area));
+        let _ = writeln!(
+            o,
+            "fidelity ({}): {} | {}",
+            f.budget,
+            parts.join(", "),
+            if f.passed {
+                "within budget".to_string()
+            } else {
+                format!(
+                    "refused: {}",
+                    f.refusal.as_deref().unwrap_or("budget missed")
+                )
+            }
+        );
+    }
     let _ = writeln!(o);
 
     if let Some(w) = &r.camera_origin_warning {

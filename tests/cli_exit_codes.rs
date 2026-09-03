@@ -1,6 +1,6 @@
-//! Exit codes observed from the built binary, not the library. Selecting a
-//! degrade profile in the metadata-tier release is a usage error at exit 2,
-//! with a message naming the release the profile ships in.
+//! Exit codes observed from the built binary, not the library. Selecting an
+//! audio degrade profile is a usage error at exit 2 until the audio ceilings
+//! calibrate, with a message saying so.
 
 use std::path::PathBuf;
 use std::process::Command;
@@ -23,12 +23,7 @@ fn run(args: &[&str]) -> (i32, String) {
 #[test]
 fn a_degrade_profile_is_a_usage_error_at_exit_2() {
     let png = fixture("generated.png");
-    for profile in [
-        "image-safe",
-        "image-aggressive",
-        "audio-safe",
-        "audio-aggressive",
-    ] {
+    for profile in ["audio-safe", "audio-aggressive"] {
         let (code, stderr) = run(&["inspect", "--profile", profile, png.to_str().unwrap()]);
         assert_eq!(code, 2, "{profile} must be a usage error, stderr: {stderr}");
         assert!(

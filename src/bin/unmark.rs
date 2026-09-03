@@ -65,7 +65,8 @@ fn usage() -> &'static str {
      unmark --version | -V | --help | -h\n\
      \n\
      profiles (--profile, required, no default):\n  \
-     image-metadata, audio-metadata (needs the audio feature), repo-files\n\
+     image-metadata, image-safe, image-aggressive, audio-metadata (needs the audio feature), repo-files\n  \
+     audio-safe and audio-aggressive stay gated until the audio ceilings calibrate\n\
      \n\
      exit codes:\n  \
      0   plan applied, every confirmable mark removed and re-proven, residuals acknowledged\n  \
@@ -233,6 +234,25 @@ fn cmd_clean(mut parser: lexopt::Parser) -> Result<i32, lexopt::Error> {
     };
     match clean(&input, &profile, &opts, &pkg) {
         Ok(outcome) => {
+            // The output container is decided by the plan. An --out
+            // extension that contradicts it is a usage error, and nothing
+            // is written.
+            if outcome.output.is_some() {
+                if let Some(expected) = extensions_for_output(&outcome.report.output_format) {
+                    let ext = std::path::Path::new(&out)
+                        .extension()
+                        .map(|e| e.to_string_lossy().to_ascii_lowercase())
+                        .unwrap_or_default();
+                    if !expected.contains(&ext.as_str()) {
+                        eprintln!(
+                            "unmark: the plan emits {}, so --out must end in .{}; {out} does not. Nothing written.",
+                            outcome.report.output_format,
+                            expected.join(" or .")
+                        );
+                        return Ok(EXIT_USAGE);
+                    }
+                }
+            }
             emit(output_text, &outcome.report);
             if let Some(bytes) = outcome.output {
                 if let Err(e) = std::fs::write(&out, &bytes) {
@@ -393,6 +413,18 @@ fn parse_common(parser: &mut lexopt::Parser) -> Result<Common, lexopt::Error> {
         }
     }
     Ok(c)
+}
+
+/// The extensions a written container may carry, by report format name.
+fn extensions_for_output(format: &str) -> Option<&'static [&'static str]> {
+    match format {
+        "jpeg" => Some(&["jpg", "jpeg"]),
+        "png" => Some(&["png"]),
+        "webp" => Some(&["webp"]),
+        "riff-wav" => Some(&["wav"]),
+        "flac" => Some(&["flac"]),
+        _ => None,
+    }
 }
 
 fn report_error(e: UnmarkError) -> i32 {

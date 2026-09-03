@@ -101,8 +101,15 @@ pub struct CellRow {
     /// The largest single generator's share of the scored assets.
     pub generator_max_share: f64,
     pub generator_cap_ok: bool,
-    /// `qualified`, `unqualified`, `generator-cap`, `held`, or
-    /// `informational`.
+    /// Scored assets per content class; `unclassified` counts toward n and
+    /// toward no class.
+    pub classes: Vec<(String, usize)>,
+    /// Required classes under class_min.
+    pub missing_classes: Vec<String>,
+    /// Rows lost to the exact decoded-pixel dedupe.
+    pub pixel_identical_collapsed: usize,
+    /// `qualified`, `count-qualified` (n_min met, a required class short),
+    /// `unqualified`, `generator-cap`, `held`, or `informational`.
     pub status: String,
     pub qualified: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -121,6 +128,7 @@ pub struct CellInput<'a> {
     pub assets: Vec<&'a AssetResult>,
     /// Near-duplicate rows that would have joined this cell, for the report.
     pub collapsed: usize,
+    pub pixel_collapsed: usize,
 }
 
 pub fn plan_score<'a>(asset: &'a AssetResult, plan: &str) -> Option<&'a Score> {
@@ -239,13 +247,35 @@ pub fn build_cell(
     // A cell with one generator only is capped by definition; a cell with
     // no scored asset has nothing to cap.
     let cap_ok = count == 0 || max_share <= 0.5;
-    let qualified = !informational && count >= c.n_min && cap_ok;
+    // Content classes over the scored assets.
+    let mut classes: BTreeMap<String, usize> = BTreeMap::new();
+    for a in input.assets.iter().filter(|a| scored(a, &input.plan)) {
+        let class = if a.content_class.is_empty() {
+            "unclassified".to_string()
+        } else {
+            a.content_class.clone()
+        };
+        *classes.entry(class).or_default() += 1;
+    }
+    let media = if is_audio {
+        crate::asset::Media::Audio
+    } else {
+        crate::asset::Media::Image
+    };
+    let missing: Vec<String> = super::manifest::required_classes(media)
+        .iter()
+        .filter(|cl| classes.get(**cl).copied().unwrap_or(0) < c.class_min)
+        .map(|cl| cl.to_string())
+        .collect();
+    let qualified = !informational && count >= c.n_min && cap_ok && missing.is_empty();
     let status = if informational {
         "informational"
     } else if qualified {
         "qualified"
     } else if count >= c.n_min && !cap_ok {
         "generator-cap"
+    } else if count >= c.n_min {
+        "count-qualified"
     } else if count == 0 && held > 0 {
         "held"
     } else {
@@ -269,6 +299,9 @@ pub fn build_cell(
         generators: gens.len(),
         generator_max_share: max_share,
         generator_cap_ok: cap_ok,
+        classes: classes.into_iter().collect(),
+        missing_classes: missing,
+        pixel_identical_collapsed: input.pixel_collapsed,
         status: status.to_string(),
         qualified,
         image,

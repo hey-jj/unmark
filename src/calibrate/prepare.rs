@@ -41,6 +41,11 @@ pub struct PrepareOptions {
     /// Hamming distance for the automatic near-duplicate collapse; zero
     /// leaves the collapse to the manifest's `near_duplicate_of`.
     pub near_duplicate_bits: u32,
+    /// `media=class` defaults for rows without a content class, `media`
+    /// being `image` or `audio`.
+    pub content_class_rules: Vec<String>,
+    /// `field=value` rules; a matching row is report-only under that rule.
+    pub report_only_rules: Vec<String>,
     pub progress: Option<Progress>,
 }
 
@@ -56,6 +61,12 @@ pub struct CountRow {
     pub generator_max_share: f64,
     pub generator_cap_ok: bool,
     pub near_duplicates_collapsed: usize,
+    /// Rows collapsed because their decoded pixels or samples were identical
+    /// to an earlier row's.
+    pub pixel_identical_collapsed: usize,
+    pub classes: Vec<(String, usize)>,
+    pub missing_classes: Vec<String>,
+    pub class_qualified: bool,
     pub marks: Vec<(String, usize)>,
 }
 
@@ -98,7 +109,12 @@ pub fn prepare(
     mut opts: PrepareOptions,
 ) -> Result<Prepared, String> {
     opts.filters.validate()?;
-    for r in &opts.ladder_rules {
+    for r in opts
+        .ladder_rules
+        .iter()
+        .chain(&opts.report_only_rules)
+        .chain(&opts.content_class_rules)
+    {
         split_rule(r)?;
     }
     let ctx = Context::new(pkg)?;
@@ -144,6 +160,13 @@ pub fn prepare(
                         .cloned()
                         .unwrap_or_else(|| format!("{k}={v}"));
                 }
+            }
+        }
+        for r in &opts.report_only_rules {
+            let (k, v) = split_rule(r)?;
+            if row.field(k).as_deref() == Some(v) {
+                row.fields
+                    .insert("report_only".to_string(), format!("{k}={v}"));
             }
         }
         if manifest_format(&row.container).is_none() {
@@ -212,6 +235,17 @@ pub fn prepare(
         }
         row.fields
             .insert("level".to_string(), format!("{}", p.level));
+        row.fields
+            .insert("pixel_sha256".to_string(), p.pixel_sha256.clone());
+        if row.content_class.is_empty() {
+            let media = if p.width.is_some() { "image" } else { "audio" };
+            for r in &opts.content_class_rules {
+                let (k, v) = split_rule(r)?;
+                if k == media {
+                    row.content_class = v.to_string();
+                }
+            }
+        }
         if p.c2pa_observed {
             c2pa_observed += 1;
             if !row.documented_marks.iter().any(|m| m == "c2pa:observed") {
@@ -233,6 +267,46 @@ pub fn prepare(
         out_assets.push(row);
     }
 
+    // Exact dedupe on the decoded pixel or sample stream, always on: rows in
+    // the same cell with identical decoded content count once, the lowest
+    // file sha kept as the base.
+    let mut by_pixels: BTreeMap<(String, String, String), Vec<usize>> = BTreeMap::new();
+    for (i, a) in out_assets.iter().enumerate() {
+        if a.post_processed || a.control || a.near_duplicate_of.is_some() {
+            continue;
+        }
+        if let Some(ps) = a.fields.get("pixel_sha256") {
+            by_pixels
+                .entry((
+                    a.container.clone(),
+                    a.band.clone().unwrap_or_default(),
+                    ps.clone(),
+                ))
+                .or_default()
+                .push(i);
+        }
+    }
+    for (_, members) in by_pixels {
+        if members.len() < 2 {
+            continue;
+        }
+        let base = members
+            .iter()
+            .copied()
+            .min_by_key(|&i| out_assets[i].sha256.clone())
+            .unwrap();
+        let base_key = out_assets[base].key();
+        for i in members {
+            if i != base {
+                out_assets[i].near_duplicate_of = Some(base_key.clone());
+                out_assets[i].fields.insert(
+                    "near_duplicate_rule".to_string(),
+                    "pixel-sha256".to_string(),
+                );
+            }
+        }
+    }
+
     // Near-duplicate collapse: the first row of a hash cluster is the base.
     let mut bases: Vec<(String, u64, String)> = Vec::new();
     for (idx, container, h) in &hashes {
@@ -247,6 +321,9 @@ pub fn prepare(
         match hit {
             Some((d, base)) if opts.near_duplicate_bits > 0 && d <= opts.near_duplicate_bits => {
                 out_assets[*idx].near_duplicate_of = Some(base.clone());
+                out_assets[*idx]
+                    .fields
+                    .insert("near_duplicate_rule".to_string(), "dhash".to_string());
                 out_assets[*idx]
                     .fields
                     .insert("near_duplicate_distance".to_string(), d.to_string());
@@ -291,6 +368,7 @@ pub fn prepare(
             row.derived_from = src.key();
             row.native_origin = Some(true);
             row.fields.remove("webp_lossy");
+            row.fields.remove("near_duplicate_rule");
             if target == "webp" {
                 row.fields
                     .insert("webp_lossy".to_string(), "false".to_string());
@@ -355,6 +433,8 @@ pub fn prepare(
     let mut ladder: BTreeMap<String, usize> = BTreeMap::new();
     let mut controls = 0usize;
     let mut collapsed: BTreeMap<(String, String), usize> = BTreeMap::new();
+    let mut pixel_collapsed: BTreeMap<(String, String), usize> = BTreeMap::new();
+    let class_min = pkg.calibration.class_min;
     for a in &out_assets {
         let (e, reason) = eligibility(a);
         let band = a.band.clone().unwrap_or_default();
@@ -378,7 +458,14 @@ pub fn prepare(
                     .entry(format!("{}/{band}/{class}", a.container))
                     .or_default() += 1;
                 if class == "near-duplicate" {
-                    *collapsed.entry((a.container.clone(), band)).or_default() += 1;
+                    let key = (a.container.clone(), band);
+                    if a.fields.get("near_duplicate_rule").map(String::as_str)
+                        == Some("pixel-sha256")
+                    {
+                        *pixel_collapsed.entry(key).or_default() += 1;
+                    } else {
+                        *collapsed.entry(key).or_default() += 1;
+                    }
                 }
             }
             Eligibility::Ladder => {
@@ -396,10 +483,27 @@ pub fn prepare(
     for ((format, band, derived), assets) in floor {
         let mut gens: BTreeMap<&str, usize> = BTreeMap::new();
         let mut marks: BTreeMap<String, usize> = BTreeMap::new();
+        let mut classes: BTreeMap<String, usize> = BTreeMap::new();
         for a in &assets {
             *gens.entry(a.generator.as_str()).or_default() += 1;
             *marks.entry(a.marks_key()).or_default() += 1;
+            let class = if a.content_class.is_empty() {
+                "unclassified".to_string()
+            } else {
+                a.content_class.clone()
+            };
+            *classes.entry(class).or_default() += 1;
         }
+        let media = if matches!(format.as_str(), "wav" | "flac") {
+            crate::asset::Media::Audio
+        } else {
+            crate::asset::Media::Image
+        };
+        let missing: Vec<String> = super::manifest::required_classes(media)
+            .iter()
+            .filter(|c| classes.get(**c).copied().unwrap_or(0) < class_min)
+            .map(|c| c.to_string())
+            .collect();
         let count = assets.len();
         let max_share = gens.values().copied().max().unwrap_or(0) as f64 / count.max(1) as f64;
         let max_share = (max_share * 1000.0).round() / 1000.0;
@@ -412,7 +516,14 @@ pub fn prepare(
             generators: gens.len(),
             generator_max_share: max_share,
             generator_cap_ok: max_share <= 0.5,
-            near_duplicates_collapsed: collapsed.get(&(format, band)).copied().unwrap_or(0),
+            near_duplicates_collapsed: collapsed
+                .get(&(format.clone(), band.clone()))
+                .copied()
+                .unwrap_or(0),
+            pixel_identical_collapsed: pixel_collapsed.get(&(format, band)).copied().unwrap_or(0),
+            classes: classes.into_iter().collect(),
+            class_qualified: missing.is_empty(),
+            missing_classes: missing,
             marks: marks.into_iter().collect(),
         });
     }
@@ -451,6 +562,12 @@ pub fn prepare(
         manifest: Manifest {
             schema_version: MANIFEST_SCHEMA_VERSION.to_string(),
             source_inventory,
+            prepare: Some(super::manifest::PrepareInfo {
+                near_duplicate_bits: opts.near_duplicate_bits,
+                content_class_rules: opts.content_class_rules.clone(),
+                ladder_rules: opts.ladder_rules.clone(),
+                report_only_rules: opts.report_only_rules.clone(),
+            }),
             assets: out_assets,
         },
         counts,
@@ -503,14 +620,17 @@ pub fn synth_clip(kind: &str, seconds: f64, seed: u64) -> Result<Vec<u8>, String
     let rate = 48000u32;
     let n = (rate as f64 * seconds).round() as usize;
     let mut rng = Rng::seed(seed);
-    let base_hz = 110.0 * 2f64.powf(rng.uniform() * 2.0);
+    let base_hz = 110.0 * crate::dsp::exp(rng.uniform() * 2.0 * std::f64::consts::LN_2);
     let mut channels = Vec::new();
     for ch in 0..2usize {
         let detune = 1.0 + (ch as f64 - 0.5) * 0.002;
         let (mut b0, mut b1, mut b2, mut brown) = (0.0f64, 0.0f64, 0.0f64, 0.0f64);
+        // Harmonic phases accumulate and wrap, so the sine argument never
+        // grows with time.
+        let mut phases = [0.0f64; 8];
+        let mut vib_phase = 0.0f64;
         let mut v = Vec::with_capacity(n);
-        for i in 0..n {
-            let t = i as f64 / rate as f64;
+        for _ in 0..n {
             let white = rng.gaussian();
             // Kellet's economy pinking filter.
             b0 = 0.99765 * b0 + white * 0.0990460;
@@ -518,12 +638,14 @@ pub fn synth_clip(kind: &str, seconds: f64, seed: u64) -> Result<Vec<u8>, String
             b2 = 0.57000 * b2 + white * 1.0526913;
             let pink = (b0 + b1 + b2 + white * 0.1848) * 0.08;
             brown = 0.998 * brown + white * 0.02;
-            let vib = 1.0 + 0.004 * (2.0 * std::f64::consts::PI * 0.3 * t).sin();
+            vib_phase = wrap(vib_phase + 2.0 * std::f64::consts::PI * 0.3 / rate as f64);
+            let vib = 1.0 + 0.004 * crate::dsp::sin(vib_phase);
             let mut tone = 0.0;
             for h in 1..=8 {
                 let f = base_hz * h as f64 * detune * vib;
+                phases[h - 1] = wrap(phases[h - 1] + 2.0 * std::f64::consts::PI * f / rate as f64);
                 if f < 20000.0 {
-                    tone += (2.0 * std::f64::consts::PI * f * t).sin() / h as f64;
+                    tone += crate::dsp::sin(phases[h - 1]) / h as f64;
                 }
             }
             tone *= 0.25;
@@ -544,6 +666,15 @@ pub fn synth_clip(kind: &str, seconds: f64, seed: u64) -> Result<Vec<u8>, String
         channels,
     };
     crate::codec::wav::encode(&audio, 24).map_err(|e| e.to_string())
+}
+
+/// Wrap a phase into [-pi, pi].
+fn wrap(p: f64) -> f64 {
+    if p > std::f64::consts::PI {
+        p - 2.0 * std::f64::consts::PI
+    } else {
+        p
+    }
 }
 
 #[cfg(not(feature = "audio"))]
