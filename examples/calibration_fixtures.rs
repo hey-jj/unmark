@@ -8,6 +8,7 @@
 //! A lossy WebP made by an external `cwebp` is welcome in the directory but is
 //! not produced here, because no pure Rust lossy WebP encoder exists.
 
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use unmark::calibrate::{self, Manifest, ManifestAsset};
 use unmark::codec::{self, Audio, Image};
@@ -96,15 +97,16 @@ fn main() {
         assets.push(ManifestAsset {
             path: name.to_string(),
             sha256: calibrate::sha256_hex(bytes),
-            format: format.to_string(),
+            container: format.to_string(),
             width: w.map(|v| v as u32),
             height: h.map(|v| v as u32),
             duration_s: dur,
             rate,
             channels: ch,
             generator: "unmark calibration_fixtures (synthetic)".to_string(),
-            class: class.to_string(),
+            content_class: class.to_string(),
             post_processed: false,
+            ladder_step: String::new(),
             control: false,
             fixture: true,
             round: "fixture".to_string(),
@@ -113,7 +115,17 @@ fn main() {
                 .trim_end_matches(|c| c != '.')
                 .trim_end_matches('.')
                 .to_string(),
-            fields: Default::default(),
+            derived: "none".to_string(),
+            derived_from: String::new(),
+            documented_marks: Vec::new(),
+            near_duplicate_of: None,
+            // The generator wrote these at their native rate and container.
+            native_rate: Some(true),
+            native_origin: Some(true),
+            source_quality: None,
+            variance_ok: None,
+            band: None,
+            fields: BTreeMap::new(),
         });
     };
 
@@ -308,6 +320,7 @@ fn main() {
 
     let manifest = Manifest {
         schema_version: calibrate::MANIFEST_SCHEMA_VERSION.to_string(),
+        source_inventory: None,
         assets,
     };
     let mut json = serde_json::to_string_pretty(&manifest).unwrap();

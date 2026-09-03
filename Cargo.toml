@@ -12,6 +12,7 @@ repository = "https://github.com/hey-jj/unmark"
 include = [
     "src/**",
     "examples/**",
+    "tools/**",
     "policy/**",
     "skills/**",
     "tests/**",

@@ -89,7 +89,7 @@ fn fixture_scores_recompute_to_three_decimals() {
     for a in &manifest.assets {
         let bytes = std::fs::read(dir.join(&a.path)).unwrap();
         let result = calibrate::evaluate_asset(&bytes, a, &ctx);
-        if !cfg!(feature = "audio") && matches!(a.format.as_str(), "wav" | "flac") {
+        if !cfg!(feature = "audio") && matches!(a.container.as_str(), "wav" | "flac") {
             assert_eq!(
                 result.excluded.as_deref(),
                 Some("audio feature not built"),
@@ -104,12 +104,13 @@ fn fixture_scores_recompute_to_three_decimals() {
             a.path,
             result.excluded
         );
+        assert_eq!(result.doc_id, a.doc_id, "fixture rows key by doc_id");
         for p in &result.plans {
             let pinned = r
                 .fixture
                 .iter()
-                .find(|f| f.path == a.path && f.plan == p.plan)
-                .unwrap_or_else(|| panic!("record has no fixture row for {} {}", a.path, p.plan));
+                .find(|f| f.doc_id == a.doc_id && f.plan == p.plan)
+                .unwrap_or_else(|| panic!("record has no fixture row for {} {}", a.doc_id, p.plan));
             assert_eq!(
                 p.score, pinned.score,
                 "{} {} recomputed differently",
@@ -122,17 +123,29 @@ fn fixture_scores_recompute_to_three_decimals() {
 }
 
 #[test]
-fn no_fixture_row_is_an_error() {
+fn no_fixture_row_is_an_error_and_no_row_names_a_path() {
     let r = record();
     for f in &r.fixture {
         assert!(
             !matches!(f.score, Score::Error { .. }),
             "{} {} is an error row: {:?}",
-            f.path,
+            f.doc_id,
             f.plan,
             f.score
         );
     }
+    // Per-asset rows key by doc_id and sha256; the record carries no path.
+    let v: serde_json::Value = serde_json::from_str(RECORD).unwrap();
+    for section in ["assets", "fixture"] {
+        for row in v[section].as_array().unwrap() {
+            assert!(row.get("path").is_none(), "{section} row carries a path");
+            assert!(row.get("doc_id").is_some() && row.get("sha256").is_some());
+        }
+    }
+    assert!(
+        !TABLE.contains("documents/"),
+        "the owner table must not name corpus paths"
+    );
 }
 
 #[test]
