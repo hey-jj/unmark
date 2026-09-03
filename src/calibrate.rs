@@ -217,6 +217,30 @@ pub fn normalize_format(name: &str) -> String {
     }
 }
 
+/// The cell format for an inventory row: the first of `physical_variant`,
+/// `format`, and the path's extension that names a calibrated container.
+/// When none does, the inventory's own word stands (the variant when it has
+/// one, else the format column), so the row is reported as not calibrated
+/// under that name. The
+/// container sniff at measurement time still has the last word.
+pub fn derive_format(variant: &str, format: &str, path: &str) -> String {
+    let ext = std::path::Path::new(path)
+        .extension()
+        .map(|e| e.to_string_lossy().to_string())
+        .unwrap_or_default();
+    for candidate in [variant, format, &ext] {
+        let n = normalize_format(candidate);
+        if manifest_format(&n).is_some() {
+            return n;
+        }
+    }
+    if variant.trim().is_empty() {
+        normalize_format(format)
+    } else {
+        normalize_format(variant)
+    }
+}
+
 /// A small RFC 4180 reader: quoted fields, doubled quotes, CRLF or LF.
 pub fn parse_csv(text: &str) -> Result<Vec<Vec<String>>, String> {
     let mut rows = Vec::new();
@@ -261,10 +285,9 @@ pub fn parse_csv(text: &str) -> Result<Vec<Vec<String>>, String> {
 }
 
 /// Read an inventory CSV as a manifest. Required columns: `path`, `sha256`,
-/// and `format`. The cell format comes from `physical_variant` when that
-/// column is present and non-empty, otherwise from `format`, normalized.
-/// `round` maps to the round, `generator_model` to the generator, and
-/// `archetype` to the class. Every column is also kept verbatim in `fields`.
+/// and `format`. The cell format is derived by `derive_format`. `round`
+/// maps to the round, `generator_model` to the generator, and `archetype`
+/// to the class. Every column is also kept verbatim in `fields`.
 pub fn parse_manifest_csv(text: &str) -> Result<Manifest, String> {
     let rows = parse_csv(text)?;
     let mut it = rows.into_iter();
@@ -295,16 +318,12 @@ pub fn parse_manifest_csv(text: &str) -> Result<Manifest, String> {
         for (h, v) in header.iter().zip(&row) {
             fields.insert(h.trim().to_string(), v.trim().to_string());
         }
-        let variant = get("physical_variant");
-        let raw_format = if variant.is_empty() {
-            row[format_i].trim().to_string()
-        } else {
-            variant
-        };
+        let path = row[path_i].trim().to_string();
+        let format = derive_format(&get("physical_variant"), row[format_i].trim(), &path);
         assets.push(ManifestAsset {
-            path: row[path_i].trim().to_string(),
+            path,
             sha256: row[sha_i].trim().to_ascii_lowercase(),
-            format: normalize_format(&raw_format),
+            format,
             width: None,
             height: None,
             duration_s: None,
@@ -2855,6 +2874,13 @@ mod tests {
         assert_eq!(a.field("format").as_deref(), Some("png"));
         let b = &m.assets[1];
         assert_eq!(b.format, "mp3");
+        assert_eq!(derive_format("screenshot", "screenshot", "d/x.png"), "png");
+        assert_eq!(
+            derive_format("credentialed", "c2pa-asset", "d/x.webp"),
+            "webp"
+        );
+        assert_eq!(derive_format("", "audio", "d/x.wav"), "wav");
+        assert_eq!(derive_format("", "pdf-image", "d/x.pdf"), "pdf-image");
         assert_eq!(b.class, "R4 \"x\"");
         assert!(
             manifest_format(&b.format).is_none(),
