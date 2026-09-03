@@ -18,7 +18,7 @@ digest = ""
 # scan_state: the state a detector reports per mark class.
 #   confirmed_present  found, with a location or a decoded payload
 #   confirmed_absent   scanned exhaustively in a supported container, not present
-#   unsupported_format the container is not one this build scans for the class
+#   unsupported_format the container is not one this build scans for that mark class
 #   malformed          the structure was found and would not parse, presence unknown
 #   not_attempted      a blind class, or a detector this build does not carry
 # Only confirmed_absent licenses the word absent, and only over the enumerated
@@ -93,14 +93,14 @@ guard = "A LIST INFO chunk or an embedded id3 chunk in a WAV, WebP, or AVI conta
 id = "invisibles"
 honesty = "confirmable"
 label = "invisible Unicode"
-guard = "Zero-width characters, variation selectors, and unusual spaces in a text file. A variation-selector run can also carry a C2PA text wrapper, so a run is classified before it is removed and a wrapper is routed to the manifest path."
+guard = "Zero-width characters, variation selectors, and unusual spaces in a text file. A variation-selector run can also carry a C2PA text wrapper, so a run is sorted by kind before it is removed and a wrapper is routed to the manifest path."
 
 [[mark_class]]
 id = "dwtdct"
 honesty = "confirmable"
 label = "dwtDct pixel mark"
-guard = "The keyless dwtDct mark from the invisible-watermark package, embedded by the CompVis Stable Diffusion script as the 136-bit text StableDiffusionV1 and by the Diffusers SDXL pipeline as the fixed 48-bit payload B3EC907BB19E. The decoder reads the U channel after a BGR to YUV conversion, takes one level of Haar wavelet, quantizes the largest non-first value of each 4x4 low-low block with step 36, and majority-votes the repetitions. Presence is a Hamming agreement with a known payload at or above the declared threshold. The resize at the pinned ratio removes it."
-citation = "https://github.com/ShieldMnt/invisible-watermark/wiki/Frequency-Methods"
+guard = "The keyless dwtDct mark, embedded by the CompVis Stable Diffusion script as the 136-bit text StableDiffusionV1 and by the Diffusers SDXL pipeline as the fixed 48-bit payload B3EC907BB19E. The decoder reads the U channel after a BGR to YUV conversion, takes one level of Haar wavelet, quantizes the largest non-first value of each 4x4 low-low block with step 36, and majority-votes the repetitions. Presence is a Hamming agreement with a known payload at or above the declared threshold. The resize at the pinned ratio removes it."
+citation = "https://github.com/CompVis/stable-diffusion/blob/main/scripts/txt2img.py and https://github.com/huggingface/diffusers/blob/main/src/diffusers/pipelines/stable_diffusion_xl/watermark.py"
 
 [[mark_class]]
 id = "synthid_image"
@@ -158,7 +158,7 @@ guard = "A soft binding registered with an external service. The specification a
 id = "generative_fingerprint"
 honesty = "unaddressed"
 label = "generative fingerprint"
-guard = "Frequency artifacts and upsampling traces that let a classifier flag a generated image with no watermark involved. No transform here touches them."
+guard = "Frequency artifacts and upsampling traces that let a detector flag a generated image with no watermark involved. No transform here touches them."
 
 # ---------------------------------------------------------------------------
 # Transform catalog. Every entry here runs by default on the containers it
@@ -237,7 +237,7 @@ order = 70
 kind = "metadata"
 applies = ["png", "webp", "riff-wav", "flac"]
 target = "Any ancillary chunk not required for decoding and valid output"
-guard = "Drop every ancillary chunk the keep list does not name. The keep list holds only what decoding and valid output require, so a color profile and a colorimetry chunk stay and everything else goes."
+guard = "Drop every ancillary chunk the keep list does not name. The keep list holds only what decoding and valid output require, so an ICC color-profile chunk and a colorimetry chunk stay and everything else goes."
 
 [[transform]]
 id = "MC07"
@@ -246,7 +246,7 @@ order = 80
 kind = "text"
 applies = ["text", "svg", "html"]
 target = "Zero-width characters, variation selectors, unusual spaces in text files"
-guard = "Classify each variation-selector run before removing it. A run that parses as a C2PA text wrapper is routed to the manifest path. A run that looks like a wrapper and fails to parse reports malformed and is left alone. Everything else is removed as invisible-character hygiene."
+guard = "Sort each variation-selector run by kind before removing it. A run that parses as a C2PA text wrapper is routed to the manifest path. A run that looks like a wrapper and fails to parse reports malformed and is left alone. Everything else is removed as invisible-character hygiene."
 
 [[transform]]
 id = "MC08"
@@ -265,8 +265,8 @@ kind = "pixel"
 applies = ["png", "jpeg", "webp"]
 params = { ratio = 0.95, filter = "lanczos3" }
 strength = "both edges to 95 percent, Lanczos3 on the scalar path"
-cited_effect = "dwtDct fails to decode after a 50 percent resize. The sweep over the efficacy fixtures found no fixture decoding at any ratio from 99.5 percent down, and 95 percent is the mildest ratio that changes both dimensions of every image at or above 10 pixels, so the resample can never round back onto the input grid."
-citation = "https://github.com/ShieldMnt/invisible-watermark"
+cited_effect = "dwtDct fails to decode after a resize. The sweep over the efficacy fixtures found no fixture decoding at any ratio from 99.5 percent down to 50 percent, the floor of the sweep, and 95 percent is the mildest ratio that changes both dimensions of every image at or above 10 pixels, so the resample can never round back onto the input grid."
+citation = "examples/metrics.rs sweep over fixtures/efficacy on 2026-09-03, with the oracle agreement checks in tests/efficacy.rs"
 target = "The dwtDct pixel mark"
 guard = "Resample both edges by the pinned ratio with a separable Lanczos3 kernel. This is the removal path for the dwtDct mark, and re-inspection proves the payload no longer decodes. Use --no-degrade or --keep PX02 to skip it."
 

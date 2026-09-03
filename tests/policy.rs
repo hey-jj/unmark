@@ -33,21 +33,68 @@ fn the_package_carries_the_default_run_and_the_held_list() {
     assert_eq!(pkg.sanity.status, "proposed");
 }
 
+/// The vocabulary the redirect forbids in the shipped policy: run profiles,
+/// fidelity budgets, calibration bands and cells, percentile derivations,
+/// the residual tier, and the content classes of the calibration corpus.
+/// Matched on whole tokens, so `icc-profile` in the keep list and
+/// `mark_class` as a table name are single tokens that never match, and a
+/// bare `class` survives only as the mark-class unit the scan states use.
 #[test]
 fn the_shipped_policy_carries_no_calibration_or_profile_vocabulary() {
     let text = policy::POLICY_TOML.to_ascii_lowercase();
-    for word in [
-        "[profile",
-        "[budget",
+    let tokens: Vec<&str> = text
+        .split(|c: char| !(c.is_ascii_alphanumeric() || c == '-' || c == '_'))
+        .filter(|t| !t.is_empty())
+        .collect();
+    const FORBIDDEN: &[&str] = &[
+        "profile",
+        "profiles",
+        "budget",
+        "budgets",
         "band",
+        "bands",
         "cell",
+        "cells",
         "percentile",
+        "percentiles",
         "residual",
+        "residuals",
         "content_class",
+        "class_min",
         "i-generated-this",
+        "acknowledge-residual",
         "acknowledge",
+        "opt-in",
+    ];
+    for t in &tokens {
+        assert!(
+            !FORBIDDEN.contains(t),
+            "policy.toml carries the token {t:?}"
+        );
+    }
+    const CLASS_HEADS: &[&str] = &["mark", "honesty", "blind", "manifest", "confirmable"];
+    for (i, t) in tokens.iter().enumerate() {
+        if *t == "class" || *t == "classes" {
+            let prev = i.checked_sub(1).and_then(|j| tokens.get(j)).copied();
+            assert!(
+                prev.is_some_and(|p| CLASS_HEADS.contains(&p)),
+                "policy.toml uses {t:?} after {prev:?}, not as the mark-class unit"
+            );
+        }
+    }
+    for table in [
+        "[profile",
+        "[[profile",
+        "[budget",
+        "[[budget",
+        "[calibration",
+        "[[band",
+        "[[cell",
     ] {
-        assert!(!text.contains(word), "policy.toml carries {word:?}");
+        assert!(
+            !text.contains(table),
+            "policy.toml carries the table {table:?}"
+        );
     }
 }
 

@@ -3,7 +3,7 @@
 Regenerate with `unmark policy snapshot` after any policy change. Edits here are overwritten.
 
 - policy version: 0.2.0
-- policy digest: sha256:8e26ce3f7df162c45827b1a6e092747df7ae2386f8ac29f20cba52f776944d89
+- policy digest: sha256:31736d3ac0528b055680de2cca4c5a7bd19f4593c53ba1685aa6543a8dd93085
 
 ## What the tool may say about each mark
 
@@ -66,12 +66,12 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 ### invisibles (confirmable)
 
-- invisible Unicode: Zero-width characters, variation selectors, and unusual spaces in a text file. A variation-selector run can also carry a C2PA text wrapper, so a run is classified before it is removed and a wrapper is routed to the manifest path.
+- invisible Unicode: Zero-width characters, variation selectors, and unusual spaces in a text file. A variation-selector run can also carry a C2PA text wrapper, so a run is sorted by kind before it is removed and a wrapper is routed to the manifest path.
 
 ### dwtdct (confirmable)
 
-- dwtDct pixel mark: The keyless dwtDct mark from the invisible-watermark package, embedded by the CompVis Stable Diffusion script as the 136-bit text StableDiffusionV1 and by the Diffusers SDXL pipeline as the fixed 48-bit payload B3EC907BB19E. The decoder reads the U channel after a BGR to YUV conversion, takes one level of Haar wavelet, quantizes the largest non-first value of each 4x4 low-low block with step 36, and majority-votes the repetitions. Presence is a Hamming agreement with a known payload at or above the declared threshold. The resize at the pinned ratio removes it.
-- citation: https://github.com/ShieldMnt/invisible-watermark/wiki/Frequency-Methods
+- dwtDct pixel mark: The keyless dwtDct mark, embedded by the CompVis Stable Diffusion script as the 136-bit text StableDiffusionV1 and by the Diffusers SDXL pipeline as the fixed 48-bit payload B3EC907BB19E. The decoder reads the U channel after a BGR to YUV conversion, takes one level of Haar wavelet, quantizes the largest non-first value of each 4x4 low-low block with step 36, and majority-votes the repetitions. Presence is a Hamming agreement with a known payload at or above the declared threshold. The resize at the pinned ratio removes it.
+- citation: https://github.com/CompVis/stable-diffusion/blob/main/scripts/txt2img.py and https://github.com/huggingface/diffusers/blob/main/src/diffusers/pipelines/stable_diffusion_xl/watermark.py
 
 ### synthid_image (blind)
 
@@ -113,7 +113,7 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 ### generative_fingerprint (unaddressed)
 
-- generative fingerprint: Frequency artifacts and upsampling traces that let a classifier flag a generated image with no watermark involved. No transform here touches them.
+- generative fingerprint: Frequency artifacts and upsampling traces that let a detector flag a generated image with no watermark involved. No transform here touches them.
 
 ## Transforms in the default run
 
@@ -155,12 +155,12 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 ### MC06 strip-unlisted-chunks (metadata, on png webp riff-wav flac)
 
 - target: Any ancillary chunk not required for decoding and valid output
-- Drop every ancillary chunk the keep list does not name. The keep list holds only what decoding and valid output require, so a color profile and a colorimetry chunk stay and everything else goes.
+- Drop every ancillary chunk the keep list does not name. The keep list holds only what decoding and valid output require, so an ICC color-profile chunk and a colorimetry chunk stay and everything else goes.
 
 ### MC07 strip-invisible-unicode (text, on text svg html)
 
 - target: Zero-width characters, variation selectors, unusual spaces in text files
-- Classify each variation-selector run before removing it. A run that parses as a C2PA text wrapper is routed to the manifest path. A run that looks like a wrapper and fails to parse reports malformed and is left alone. Everything else is removed as invisible-character hygiene.
+- Sort each variation-selector run by kind before removing it. A run that parses as a C2PA text wrapper is routed to the manifest path. A run that looks like a wrapper and fails to parse reports malformed and is left alone. Everything else is removed as invisible-character hygiene.
 
 ### MC08 strip-generator-headers (text, on text svg html)
 
@@ -172,8 +172,8 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 - target: The dwtDct pixel mark
 - parameters: filter=lanczos3, ratio=0.95
 - strength: both edges to 95 percent, Lanczos3 on the scalar path
-- cited effect: dwtDct fails to decode after a 50 percent resize. The sweep over the efficacy fixtures found no fixture decoding at any ratio from 99.5 percent down, and 95 percent is the mildest ratio that changes both dimensions of every image at or above 10 pixels, so the resample can never round back onto the input grid.
-- citation: https://github.com/ShieldMnt/invisible-watermark
+- cited effect: dwtDct fails to decode after a resize. The sweep over the efficacy fixtures found no fixture decoding at any ratio from 99.5 percent down to 50 percent, the floor of the sweep, and 95 percent is the mildest ratio that changes both dimensions of every image at or above 10 pixels, so the resample can never round back onto the input grid.
+- citation: examples/metrics.rs sweep over fixtures/efficacy on 2026-09-03, with the oracle agreement checks in tests/efficacy.rs
 - Resample both edges by the pinned ratio with a separable Lanczos3 kernel. This is the removal path for the dwtDct mark, and re-inspection proves the payload no longer decodes. Use --no-degrade or --keep PX02 to skip it.
 
 ### PX01 re-encode (pixel, on jpeg)

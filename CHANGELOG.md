@@ -42,8 +42,7 @@ gone, what was kept and why, and what survived.
   grid-matched reference falls below the proposed floor is refused and nothing
   is written.
 - Builder-rendered efficacy fixtures under `fixtures/efficacy/`, watermarked
-  through the invisible-watermark package as a subprocess oracle, and
-  `examples/metrics.rs` over a directory.
+  through the subprocess oracle, and `examples/metrics.rs` over a directory.
 - Pure-Rust codecs behind the transforms, PNG, JPEG with an in-crate baseline
   encoder, WebP with a lossless write, WAV, and FLAC, and libm-free sine,
   cosine, logarithm, and exponential in `dsp`.

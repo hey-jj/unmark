@@ -1,9 +1,9 @@
-//! The dwtDct pixel mark: the keyless watermark the invisible-watermark
-//! package embeds, which the CompVis Stable Diffusion script applies as the
-//! UTF-8 text `StableDiffusionV1` and the Diffusers SDXL pipeline as a fixed
-//! 48-bit payload. This module is a ground-up detector written from the
-//! algorithm description; it carries no code from that package, and the
-//! package is used only as a subprocess oracle in the efficacy test.
+//! The dwtDct pixel mark: the keyless watermark the Stable Diffusion
+//! pipelines embed, which the CompVis script applies as the UTF-8 text
+//! `StableDiffusionV1` and the Diffusers SDXL pipeline as a fixed 48-bit
+//! payload. This module is a ground-up detector written from the public
+//! algorithm description. It carries no code from the embedding package,
+//! which serves only as a subprocess oracle in the efficacy test.
 //!
 //! The decoder converts BGR to YUV and reads the U channel, crops to
 //! multiples of four, takes one level of Haar wavelet and keeps the low-low
