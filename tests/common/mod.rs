@@ -178,7 +178,16 @@ pub fn build_jpeg(o: &JpegOpts) -> Vec<u8> {
     if o.c2pa {
         let default = b"JP\0\0jumb c2pa manifest".to_vec();
         let payload = o.c2pa_payload.as_ref().unwrap_or(&default);
-        out.extend_from_slice(&jpeg_app(0xEB, payload));
+        // The JPEG box carriage: CI "JP", a box instance, a packet sequence,
+        // then the box.
+        let mut packet = Vec::new();
+        if payload.starts_with(b"JP") {
+            packet.extend_from_slice(payload);
+        } else {
+            packet.extend_from_slice(b"JP\0\x01\0\0\0\x01");
+            packet.extend_from_slice(payload);
+        }
+        out.extend_from_slice(&jpeg_app(0xEB, &packet));
     }
     // The real frame, scan, and end of image.
     out.extend_from_slice(&jpeg_body());
@@ -419,4 +428,256 @@ pub fn build_mp4_with_c2pa_uuid() -> (Vec<u8>, Vec<u8>) {
     out.extend_from_slice(&moov);
     out.extend_from_slice(&mdat);
     (out, sample)
+}
+
+// --- A C2PA manifest store writer, test-only ---------------------------------
+//
+// The crate writes no manifests. These helpers build well-formed stores so the
+// capture rule can be exercised against real structure: JUMBF boxes, a claim
+// in CBOR that references its assertions, an actions assertion, and a COSE
+// signature box carrying a certificate whose subject names an organization.
+
+#[allow(dead_code)]
+pub enum Cb {
+    U(u64),
+    N(u64),
+    T(String),
+    B(Vec<u8>),
+    A(Vec<Cb>),
+    M(Vec<(Cb, Cb)>),
+    Tag(u64, Box<Cb>),
+    Null,
+}
+
+#[allow(dead_code)]
+fn cb_head(major: u8, n: u64) -> Vec<u8> {
+    let mut out = Vec::new();
+    if n < 24 {
+        out.push((major << 5) | n as u8);
+    } else if n <= 0xFF {
+        out.push((major << 5) | 24);
+        out.push(n as u8);
+    } else if n <= 0xFFFF {
+        out.push((major << 5) | 25);
+        out.extend_from_slice(&(n as u16).to_be_bytes());
+    } else {
+        out.push((major << 5) | 26);
+        out.extend_from_slice(&(n as u32).to_be_bytes());
+    }
+    out
+}
+
+#[allow(dead_code)]
+pub fn cbor(v: &Cb) -> Vec<u8> {
+    match v {
+        Cb::U(n) => cb_head(0, *n),
+        Cb::N(n) => cb_head(1, *n),
+        Cb::T(t) => {
+            let mut o = cb_head(3, t.len() as u64);
+            o.extend_from_slice(t.as_bytes());
+            o
+        }
+        Cb::B(b) => {
+            let mut o = cb_head(2, b.len() as u64);
+            o.extend_from_slice(b);
+            o
+        }
+        Cb::A(items) => {
+            let mut o = cb_head(4, items.len() as u64);
+            for i in items {
+                o.extend(cbor(i));
+            }
+            o
+        }
+        Cb::M(pairs) => {
+            let mut o = cb_head(5, pairs.len() as u64);
+            for (k, v) in pairs {
+                o.extend(cbor(k));
+                o.extend(cbor(v));
+            }
+            o
+        }
+        Cb::Tag(t, inner) => {
+            let mut o = cb_head(6, *t);
+            o.extend(cbor(inner));
+            o
+        }
+        Cb::Null => vec![0xF6],
+    }
+}
+
+#[allow(dead_code)]
+fn t(s: &str) -> Cb {
+    Cb::T(s.to_string())
+}
+
+#[allow(dead_code)]
+pub fn jbox(kind: &[u8; 4], payload: &[u8]) -> Vec<u8> {
+    let mut out = ((payload.len() + 8) as u32).to_be_bytes().to_vec();
+    out.extend_from_slice(kind);
+    out.extend_from_slice(payload);
+    out
+}
+
+/// A labelled superbox with the C2PA UUID for `role`.
+#[allow(dead_code)]
+pub fn jumb(role: &[u8; 4], label: &str, content: &[Vec<u8>]) -> Vec<u8> {
+    let mut jumd = role.to_vec();
+    jumd.extend_from_slice(&[
+        0x00, 0x11, 0x00, 0x10, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71,
+    ]);
+    jumd.push(0x03);
+    jumd.extend_from_slice(label.as_bytes());
+    jumd.push(0);
+    let mut inner = jbox(b"jumd", &jumd);
+    for c in content {
+        inner.extend_from_slice(c);
+    }
+    jbox(b"jumb", &inner)
+}
+
+#[allow(dead_code)]
+pub struct ActionSpec {
+    pub action: &'static str,
+    pub source_type: Option<&'static str>,
+    pub agent: Option<&'static str>,
+}
+
+#[allow(dead_code)]
+pub struct ManifestSpec {
+    pub label: String,
+    pub actions: Vec<ActionSpec>,
+    pub signer_org: Option<String>,
+    pub claim_generator: String,
+    /// Whether the claim references the actions assertion. A store that
+    /// carries actions the claim never references is malformed.
+    pub reference_actions: bool,
+}
+
+#[allow(dead_code)]
+impl ManifestSpec {
+    pub fn new(label: &str) -> Self {
+        ManifestSpec {
+            label: label.to_string(),
+            actions: Vec::new(),
+            signer_org: None,
+            claim_generator: "test-writer/0.0".to_string(),
+            reference_actions: true,
+        }
+    }
+    pub fn action(
+        mut self,
+        action: &'static str,
+        source_type: Option<&'static str>,
+        agent: Option<&'static str>,
+    ) -> Self {
+        self.actions.push(ActionSpec {
+            action,
+            source_type,
+            agent,
+        });
+        self
+    }
+    pub fn signer(mut self, org: &str) -> Self {
+        self.signer_org = Some(org.to_string());
+        self
+    }
+    pub fn generator(mut self, g: &str) -> Self {
+        self.claim_generator = g.to_string();
+        self
+    }
+    pub fn unreferenced_actions(mut self) -> Self {
+        self.reference_actions = false;
+        self
+    }
+}
+
+pub const DIGITAL_CAPTURE_URI: &str =
+    "http://cv.iptc.org/newscodes/digitalsourcetype/digitalCapture";
+pub const TRAINED_MEDIA_URI: &str =
+    "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia";
+
+/// A minimal DER blob: SEQUENCE { SET { SEQUENCE { OID 2.5.4.10, UTF8String org } } }.
+#[allow(dead_code)]
+fn der_cert(org: &str) -> Vec<u8> {
+    let mut attr = vec![0x06, 0x03, 0x55, 0x04, 0x0A, 0x0C, org.len() as u8];
+    attr.extend_from_slice(org.as_bytes());
+    let seq = [&[0x30, attr.len() as u8][..], &attr].concat();
+    let set = [&[0x31, seq.len() as u8][..], &seq].concat();
+    [&[0x30, set.len() as u8][..], &set].concat()
+}
+
+#[allow(dead_code)]
+pub fn manifest_store(specs: &[ManifestSpec]) -> Vec<u8> {
+    let mut manifests = Vec::new();
+    for spec in specs {
+        let mut actions = Vec::new();
+        for a in &spec.actions {
+            let mut m = vec![(t("action"), t(a.action))];
+            if let Some(st) = a.source_type {
+                m.push((t("digitalSourceType"), t(st)));
+            }
+            if let Some(ag) = a.agent {
+                m.push((t("softwareAgent"), t(ag)));
+            }
+            actions.push(Cb::M(m));
+        }
+        let mut assertion_boxes = Vec::new();
+        let mut refs = Vec::new();
+        if !spec.actions.is_empty() {
+            let body = cbor(&Cb::M(vec![(t("actions"), Cb::A(actions))]));
+            assertion_boxes.push(jumb(b"cbor", "c2pa.actions", &[jbox(b"cbor", &body)]));
+            if spec.reference_actions {
+                refs.push(Cb::M(vec![
+                    (t("url"), t("self#jumbf=c2pa.assertions/c2pa.actions")),
+                    (t("hash"), Cb::B(vec![0u8; 32])),
+                ]));
+            }
+        }
+        let assertion_store = jumb(b"c2as", "c2pa.assertions", &assertion_boxes);
+        let claim = cbor(&Cb::M(vec![
+            (t("dc:format"), t("image/png")),
+            (t("instanceID"), t("xmp:iid:test")),
+            (t("claim_generator"), t(&spec.claim_generator)),
+            (t("assertions"), Cb::A(refs)),
+            (t("signature"), t("self#jumbf=c2pa.signature")),
+            (t("alg"), t("sha256")),
+        ]));
+        let claim_box = jumb(b"c2cl", "c2pa.claim", &[jbox(b"cbor", &claim)]);
+        let protected = cbor(&Cb::M(vec![(Cb::U(1), Cb::N(6))]));
+        let mut unprotected = Vec::new();
+        if let Some(org) = &spec.signer_org {
+            unprotected.push((Cb::U(33), Cb::B(der_cert(org))));
+        }
+        let cose = cbor(&Cb::Tag(
+            18,
+            Box::new(Cb::A(vec![
+                Cb::B(protected),
+                Cb::M(unprotected),
+                Cb::Null,
+                Cb::B(vec![0u8; 64]),
+            ])),
+        ));
+        let signature_box = jumb(b"c2cs", "c2pa.signature", &[jbox(b"cbor", &cose)]);
+        manifests.push(jumb(
+            b"c2ma",
+            &spec.label,
+            &[assertion_store, claim_box, signature_box],
+        ));
+    }
+    jumb(b"c2pa", "c2pa", &manifests)
+}
+
+/// One manifest carrying a capture claim, signed by `org` when given.
+#[allow(dead_code)]
+pub fn capture_store(org: Option<&str>) -> Vec<u8> {
+    let mut spec = ManifestSpec::new("urn:uuid:capture-1").action(
+        "c2pa.created",
+        Some(DIGITAL_CAPTURE_URI),
+        None,
+    );
+    if let Some(o) = org {
+        spec = spec.signer(o);
+    }
+    manifest_store(&[spec])
 }

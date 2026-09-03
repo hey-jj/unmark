@@ -146,8 +146,19 @@ fn flac_vorbis_strip_is_opt_in_and_preserves_audio() {
         "a default pass must not remove Vorbis comments"
     );
 
-    // The opt-in strip removes the comment and leaves the audio frames identical.
+    // The unlisted-block strip alone leaves the comment, which answers to its
+    // own transform, so a kept comment survives it.
     let spec = all_off_but(|s| s.unlisted = true);
+    let unlisted_only = container::rewrite(&flac, Format::Flac, &spec).unwrap();
+    assert_eq!(
+        detect::inspect(&unlisted_only)
+            .get("vorbis")
+            .map(|d| d.state),
+        Some(ScanState::ConfirmedPresent)
+    );
+
+    // The Vorbis strip removes the comment and leaves the audio frames identical.
+    let spec = all_off_but(|s| s.vorbis = true);
     let out = container::rewrite(&flac, Format::Flac, &spec).unwrap();
     assert_eq!(
         before,

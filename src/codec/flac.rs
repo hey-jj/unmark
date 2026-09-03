@@ -49,8 +49,16 @@ pub fn encode(audio: &Audio, bits: u16) -> Result<Vec<u8>, CodecError> {
         return Err(CodecError::Setting(format!("flac: {channels} channels")));
     }
     let samples = audio.quantize(bits);
+    // A final block shorter than sixteen samples is not a valid FLAC block,
+    // so the block size steps down until the remainder is zero or at least
+    // sixteen.
+    let frames = audio.frames();
+    let mut block_size = BLOCK_SIZE;
+    while block_size > 16 && frames % block_size != 0 && frames % block_size < 16 {
+        block_size -= 16;
+    }
     let mut config = flacenc::config::Encoder::default();
-    config.block_size = BLOCK_SIZE;
+    config.block_size = block_size;
     config.multithread = false;
     let config = config
         .into_verified()
@@ -61,7 +69,7 @@ pub fn encode(audio: &Audio, bits: u16) -> Result<Vec<u8>, CodecError> {
         bits as usize,
         audio.rate as usize,
     );
-    let stream = flacenc::encode_with_fixed_block_size(&config, source, BLOCK_SIZE)
+    let stream = flacenc::encode_with_fixed_block_size(&config, source, block_size)
         .map_err(|e| CodecError::Setting(format!("flac: {e:?}")))?;
     let mut sink = flacenc::bitsink::ByteSink::new();
     stream

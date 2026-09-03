@@ -82,8 +82,10 @@ false-positive rate of 0.60, so the report calls it a reduction, never a removal
 ## Certified capture
 
 A well-formed C2PA manifest whose `c2pa.created` action carries the `digitalCapture`
-source type, or whose signer is a camera vendor, with no later generative action, is a
-certified capture. The default run keeps it and the output is byte-identical. The
+source type, or whose signer certificate names a camera vendor, with no later generative
+action, is a certified capture. Well-formed means the JUMBF boxes, the claim CBOR, the
+assertion references, and the actions assertion all parse. Capture keywords inside bytes
+that do not parse as a manifest store are not a claim, and such bytes strip by default. The default run keeps it and the output is byte-identical. The
 report says `Certified capture kept. Claim: ...` and adds `Signature status: not
 signature-verified.` Pass `--strip-capture` to strip it.
 
@@ -107,6 +109,13 @@ because there is no cited effect on any mark. Rotation, blur, crop, and JPEG-qua
 degrade are held because no cited figure shows an effect at a stated strength. unmark
 cannot signature-verify a capture claim. The SynthID and regeneration results are
 out-of-tree evidence notes, not product policy.
+
+dwtDct detection on a chroma-subsampled JPEG is unreliable. The subsampling halves the
+U channel the mark lives in. On quality-95 4:2:0 encodes of the marked efficacy bases the
+reference decoder reads agreements between 0.44 and 0.77 and the in-crate rule between
+0.40 and 0.63, against the 0.80 threshold, while 4:4:4 encodes of the same bases decode
+at 1.00. On such input the report marks the dwtDct row unsupported with that note, the
+resize still runs, and no removal is claimed.
 
 A lossy WebP input is written lossless, because no pure-Rust lossy WebP encoder exists.
 MP3 and MP4 audio are not decoded, so only their tags are stripped. Safety hashes used

@@ -144,3 +144,25 @@ pub fn scan(bytes: &[u8]) -> (Vec<Detection>, bool) {
     }
     (out, complete)
 }
+
+/// Whether the frame header declares chroma subsampling: a component whose
+/// sampling factors differ from the first component's. None when no frame
+/// header was read.
+pub fn chroma_subsampled(bytes: &[u8]) -> Option<bool> {
+    let (segs, _) = segments(bytes);
+    for s in segs {
+        if matches!(
+            s.marker,
+            0xC0..=0xC3 | 0xC5..=0xC7 | 0xC9..=0xCB | 0xCD..=0xCF
+        ) {
+            let n = *s.data.get(5)? as usize;
+            let mut factors = Vec::with_capacity(n);
+            for i in 0..n {
+                factors.push(*s.data.get(6 + i * 3 + 1)?);
+            }
+            let first = *factors.first()?;
+            return Some(factors.iter().any(|f| *f != first));
+        }
+    }
+    None
+}

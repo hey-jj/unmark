@@ -21,8 +21,9 @@ fn fixture_dir() -> PathBuf {
         .collect()
 }
 
-/// The committed marked fixtures that the declared rule reads present, with
-/// the payload each carries.
+/// The committed marked fixtures, with the payload each carries. Every one
+/// decodes at or above `FIXTURE_FLOOR` through the in-crate rule and the
+/// oracle before cleaning. The two JPEG entries are quality-95 4:4:4 encodes.
 const MARKED: &[(&str, &str)] = &[
     ("flat-illustration-sdxl.png", "sdxl-48"),
     ("flat-illustration-compvis.png", "compvis-136"),
@@ -31,18 +32,16 @@ const MARKED: &[(&str, &str)] = &[
     ("text-ui-sdxl.png", "sdxl-48"),
     ("text-ui-compvis.png", "compvis-136"),
     ("photo-like-sdxl.png", "sdxl-48"),
+    ("photo-like-compvis.png", "compvis-136"),
+    ("photo-like-sdxl.jpg", "sdxl-48"),
     ("small-sdxl.png", "sdxl-48"),
+    ("small-compvis.png", "compvis-136"),
+    ("small-sdxl.jpg", "sdxl-48"),
 ];
 
-/// Marked fixtures the rule reads below its threshold even before cleaning:
-/// the oracle's own decode of them sits below 0.80 too. They exercise the
-/// rule's direction, never the removal claim.
-const WEAK: &[&str] = &[
-    "photo-like-compvis.png",
-    "small-compvis.png",
-    "photo-like-sdxl.jpg",
-    "small-sdxl.jpg",
-];
+/// The agreement every marked fixture must reach before cleaning, through
+/// the in-crate rule and through the oracle.
+const FIXTURE_FLOOR: f64 = 0.9;
 
 fn read(name: &str) -> Vec<u8> {
     std::fs::read(fixture_dir().join(name)).unwrap_or_else(|e| panic!("{name}: {e}"))
@@ -111,8 +110,8 @@ fn every_marked_fixture_reads_present_before_and_absent_after_the_default_run() 
         let before = dwtdct::detect(&img);
         let d = before.iter().find(|d| d.payload == *payload).unwrap();
         assert!(
-            d.present,
-            "{name}: {payload} reads absent before cleaning (agreement {})",
+            d.present && d.agreement >= FIXTURE_FLOOR,
+            "{name}: {payload} reads {} before cleaning, under the fixture floor",
             d.agreement
         );
         let out = clean(&bytes, &Options::default(), &pkg).unwrap();
@@ -149,6 +148,11 @@ fn every_marked_fixture_reads_present_before_and_absent_after_the_default_run() 
             let expected = dwtdct::payload_bits(payload).unwrap();
             let (mine_before, _) = dwtdct::decode(&img, expected.len());
             let o_before = oracle_bits(py, &fixture_dir().join(name), expected.len());
+            let o_strength = dwtdct::agreement(&o_before, &expected);
+            assert!(
+                o_strength >= FIXTURE_FLOOR,
+                "{name}: the oracle reads {o_strength:.3} before cleaning, under the fixture floor"
+            );
             let agree_before = dwtdct::agreement(&mine_before, &o_before);
             assert!(
                 agree_before >= 0.9,
@@ -167,28 +171,56 @@ fn every_marked_fixture_reads_present_before_and_absent_after_the_default_run() 
     let _ = std::fs::remove_dir_all(&scratch);
 }
 
+/// A chroma-subsampled JPEG halves the U channel the mark lives in. The
+/// reference decoder fails on such input as well, so the row reads
+/// unsupported with the measured note, and the resize claims no removal.
 #[test]
-fn the_weak_fixtures_read_below_the_rule_before_cleaning_and_stay_below() {
+fn a_chroma_subsampled_jpeg_marks_dwtdct_detection_unreliable_and_claims_nothing() {
+    let path: PathBuf = [
+        env!("CARGO_MANIFEST_DIR"),
+        "fixtures",
+        "subsampled-sdxl-420.jpg",
+    ]
+    .iter()
+    .collect();
+    let bytes = std::fs::read(&path).unwrap();
+    assert_eq!(unmark::detect::jpeg::chroma_subsampled(&bytes), Some(true));
     let pkg = policy::load().unwrap();
-    for name in WEAK {
-        let bytes = read(name);
-        let before = dwtdct::detect(&decode(&bytes));
-        assert!(before.iter().all(|d| !d.present), "{name}: {before:?}");
-        let out = clean(&bytes, &Options::default(), &pkg).unwrap();
-        assert_eq!(out.report.exit_code, 0, "{name}: {:?}", out.report.actions);
-        let px02 = out
-            .report
-            .actions
-            .iter()
-            .find(|a| a.transform == "PX02")
-            .unwrap();
-        assert!(
-            px02.result
-                .starts_with("applied; no dwtDct payload decoded"),
-            "{name}: {}",
-            px02.result
-        );
-    }
+    let r = unmark::inspect(&bytes, &Options::default(), &pkg).unwrap();
+    let row = r.scan_states.iter().find(|s| s.class == "dwtdct").unwrap();
+    assert_eq!(row.state, unmark::scan::ScanState::UnsupportedFormat);
+    let finding = r.findings.iter().find(|f| f.class == "dwtdct").unwrap();
+    assert!(finding
+        .evidence
+        .iter()
+        .any(|e| e == unmark::DWTDCT_SUBSAMPLED_NOTE));
+    let out = clean(&bytes, &Options::default(), &pkg).unwrap();
+    assert_eq!(out.report.exit_code, 0, "{:?}", out.report.actions);
+    let px02 = out
+        .report
+        .actions
+        .iter()
+        .find(|a| a.transform == "PX02")
+        .unwrap();
+    assert!(
+        px02.result.contains("no removal is claimed"),
+        "{}",
+        px02.result
+    );
+    assert!(!out
+        .report
+        .stripped_and_proven_gone
+        .iter()
+        .any(|l| l == "dwtDct pixel mark"));
+    // The same mark in a 4:4:4 JPEG decodes and is removed.
+    let full = read("photo-like-sdxl.jpg");
+    assert_eq!(unmark::detect::jpeg::chroma_subsampled(&full), Some(false));
+    let out = clean(&full, &Options::default(), &pkg).unwrap();
+    assert!(out
+        .report
+        .stripped_and_proven_gone
+        .iter()
+        .any(|l| l == "dwtDct pixel mark"));
 }
 
 /// A builder-rendered unmarked image: gradients, texture, and flat regions

@@ -227,7 +227,7 @@ fn encode_vs(bytes: &[u8]) -> String {
 
 #[test]
 fn a_wrapper_carrying_a_capture_claim_is_certified_capture_and_kept() {
-    let wrapper = encode_vs(b"jumb c2pa.captured signer Leica Camera AG");
+    let wrapper = encode_vs(&capture_store(Some("Leica Camera AG")));
     let text = format!("caption{wrapper}\n");
     let out = clean(text.as_bytes(), &Options::default(), &pkg()).unwrap();
     assert_eq!(out.report.exit_code, EXIT_OK);
@@ -248,7 +248,9 @@ fn a_wrapper_carrying_a_capture_claim_is_certified_capture_and_kept() {
 
 #[test]
 fn a_publisher_wrapper_without_a_capture_action_is_stripped_by_default() {
-    let wrapper = encode_vs(b"jumb c2pa credit: Reuters");
+    let wrapper = encode_vs(&manifest_store(&[ManifestSpec::new("urn:uuid:pub-w")
+        .generator("Reuters Newsroom/2.0")
+        .action("c2pa.published", None, None)]));
     let text = format!("caption{wrapper}\n");
     let out = clean(text.as_bytes(), &Options::default(), &pkg()).unwrap();
     assert_eq!(out.report.exit_code, EXIT_OK);

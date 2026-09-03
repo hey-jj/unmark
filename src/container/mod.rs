@@ -194,6 +194,64 @@ pub fn carry_ancillary(source: &[u8], fresh: &[u8], format: Format) -> Vec<u8> {
             out.extend_from_slice(&fresh[cut..]);
             out
         }
+        Format::Flac => {
+            use crate::detect::flac::{blocks, STREAMINFO, VORBIS_COMMENT};
+            let (src, _, ok) = blocks(source);
+            if !ok {
+                return fresh.to_vec();
+            }
+            // Padding and the seek table describe the old frames; every
+            // other block is metadata the strips left in place.
+            let carried: Vec<&[u8]> = src
+                .iter()
+                .filter(|b| !matches!(b.kind, STREAMINFO | 1 | 3))
+                .filter_map(|b| source.get(b.start..b.start + b.total))
+                .collect();
+            if carried.is_empty() {
+                return fresh.to_vec();
+            }
+            let src_has_vorbis = src.iter().any(|b| b.kind == VORBIS_COMMENT);
+            let (dst, audio_start, ok) = blocks(fresh);
+            if !ok || dst.is_empty() {
+                return fresh.to_vec();
+            }
+            let mut out_blocks: Vec<Vec<u8>> = dst
+                .iter()
+                .filter(|b| !(b.kind == VORBIS_COMMENT && src_has_vorbis))
+                .filter_map(|b| fresh.get(b.start..b.start + b.total).map(|s| s.to_vec()))
+                .collect();
+            out_blocks.extend(carried.iter().map(|c| c.to_vec()));
+            let last = out_blocks.len() - 1;
+            let mut out = b"fLaC".to_vec();
+            for (i, b) in out_blocks.iter_mut().enumerate() {
+                if i == last {
+                    b[0] |= 0x80;
+                } else {
+                    b[0] &= 0x7F;
+                }
+                out.extend_from_slice(b);
+            }
+            out.extend_from_slice(&fresh[audio_start..]);
+            out
+        }
+        Format::RiffWav => {
+            let (src, _) = crate::detect::riff::chunks(source);
+            let carried: Vec<&[u8]> = src
+                .iter()
+                .filter(|c| !matches!(&c.id, b"fmt " | b"data" | b"fact"))
+                .filter_map(|c| source.get(c.start..c.start + c.total))
+                .collect();
+            if carried.is_empty() || fresh.len() < 12 {
+                return fresh.to_vec();
+            }
+            let mut out = fresh.to_vec();
+            for c in carried {
+                out.extend_from_slice(c);
+            }
+            let riff_len = (out.len() - 8) as u32;
+            out[4..8].copy_from_slice(&riff_len.to_le_bytes());
+            out
+        }
         _ => fresh.to_vec(),
     }
 }

@@ -1,12 +1,24 @@
 //! FLAC rewriter. It removes the Vorbis comment block whole, the default in
-//! this release with --keep vorbis as the opt-out, and rebuilds the last-block
-//! flag so the metadata chain stays valid. The audio
+//! this release with --keep vorbis as the opt-out, drops unlisted blocks, and
+//! rebuilds the last-block flag so the metadata chain stays valid. The audio
 //! frames and the kept blocks are copied verbatim. A walk that never reached
 //! the last-block flag cannot place the audio frames, so the rewriter refuses
 //! rather than copy an unknown layout.
 
 use super::{DropSpec, RewriteError};
 use crate::detect::flac::{blocks, VORBIS_COMMENT};
+
+/// The Vorbis comment answers to its own transform only, so a `--keep
+/// vorbis` survives the unlisted-block strip. The unlisted strip removes
+/// application, picture, and reserved blocks; STREAMINFO, padding, the seek
+/// table, and the cue sheet stay.
+fn should_drop(kind: u8, spec: &DropSpec) -> bool {
+    match kind {
+        VORBIS_COMMENT => spec.vorbis,
+        2 | 6 | 7..=126 => spec.unlisted,
+        _ => false,
+    }
+}
 
 pub fn rewrite(bytes: &[u8], spec: &DropSpec) -> Result<Vec<u8>, RewriteError> {
     let (blocks, audio_start, complete) = blocks(bytes);
@@ -18,8 +30,10 @@ pub fn rewrite(bytes: &[u8], spec: &DropSpec) -> Result<Vec<u8>, RewriteError> {
     if !(spec.vorbis || spec.unlisted) || blocks.is_empty() {
         return Ok(bytes.to_vec());
     }
-    let mut kept: Vec<&crate::detect::flac::Block> =
-        blocks.iter().filter(|b| b.kind != VORBIS_COMMENT).collect();
+    let mut kept: Vec<&crate::detect::flac::Block> = blocks
+        .iter()
+        .filter(|b| !should_drop(b.kind, spec))
+        .collect();
     if kept.len() == blocks.len() {
         return Ok(bytes.to_vec()); // nothing to remove
     }

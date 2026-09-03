@@ -24,8 +24,15 @@ gone, what was kept and why, and what survived.
   AudioSeal.
 - Certified capture: a well-formed C2PA capture claim with no later generative
   action is kept byte-identical and reported with its quoted claim and the
-  signature status. `--strip-capture` strips it.
+  signature status. `--strip-capture` strips it. Well-formed is structural:
+  in-crate JUMBF and CBOR readers parse the store, the claim, its assertion
+  references, the actions assertion, and the signer certificate names.
+  Keyword text in an unparseable payload is not a claim.
 - The capture-uncertain hint for camera EXIF without a claim.
+- Kept metadata rides through every re-encode: PNG chunks, JPEG segments,
+  WebP EXIF, XMP, and ICC, FLAC metadata blocks, and WAV chunks.
+- The dwtDct row on a chroma-subsampled JPEG reads unsupported with the
+  measured note, and the resize claims no removal there.
 - `--keep <id|class>`, repeatable, and `--no-degrade`. Every preserved item is
   reported as kept by flag.
 - MP4 `ilst` removal with `stco` and `co64` correction, and `MC10`, the FLAC

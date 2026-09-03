@@ -18,10 +18,12 @@
 pub mod asset;
 pub mod budget;
 pub mod capture;
+pub mod cbor;
 pub mod codec;
 pub mod container;
 pub mod detect;
 pub mod dsp;
+pub mod jumbf;
 pub mod mark;
 pub mod policy;
 pub mod report;
@@ -254,6 +256,11 @@ fn decode_image(bytes: &[u8], format: Format) -> Option<codec::Image> {
     codec::decode_image(bytes, format).ok()
 }
 
+/// The note a chroma-subsampled JPEG input carries on its dwtDct row. The
+/// subsampling halves the U channel the mark lives in, and the reference
+/// decoder fails on such input too, so an absent decode claims nothing.
+pub const DWTDCT_SUBSAMPLED_NOTE: &str = "chroma-subsampled JPEG input: dwtDct detection is unreliable here. On quality-95 4:2:0 encodes of the marked efficacy bases the reference decoder reads agreements from 0.44 to 0.77 and the in-crate rule from 0.40 to 0.63 against the 0.80 threshold, while the 4:4:4 encodes of the same bases decode at 1.00. Absence is not claimed";
+
 /// The full read of an asset: the container detections plus the dwtDct
 /// decision for an image.
 fn full_inspect(bytes: &[u8]) -> Detections {
@@ -261,7 +268,14 @@ fn full_inspect(bytes: &[u8]) -> Detections {
     #[cfg(feature = "image")]
     if det.format.media() == asset::Media::Image {
         let img = decode_image(bytes, det.format);
-        let (row, _) = dwtdct_detection(img.as_ref());
+        let (mut row, _) = dwtdct_detection(img.as_ref());
+        if det.format == Format::Jpeg
+            && detect::jpeg::chroma_subsampled(bytes) == Some(true)
+            && row.state == ScanState::ConfirmedAbsent
+        {
+            row.state = ScanState::UnsupportedFormat;
+            row.evidence.push(DWTDCT_SUBSAMPLED_NOTE.to_string());
+        }
         det.items.push(row);
     }
     det
@@ -320,6 +334,7 @@ fn rows_and_findings(pkg: &PolicyPackage, det: &Detections) -> (Vec<ScanRow>, Ve
         let reportable = match d.honesty {
             Honesty::Confirmable => {
                 matches!(d.state, ScanState::ConfirmedPresent | ScanState::Malformed)
+                    || (d.state == ScanState::UnsupportedFormat && !d.evidence.is_empty())
             }
             Honesty::Blind | Honesty::Unaddressed => true,
         };
@@ -667,7 +682,12 @@ pub fn clean(
             for id in &pixel_ids {
                 match id.as_str() {
                     "PX02" => {
-                        let result = match (dwtdct_before, dwtdct_after) {
+                        let unreliable = det.get("dwtdct").map(|d| d.state)
+                            == Some(ScanState::UnsupportedFormat);
+                        let result = if unreliable {
+                            "applied; dwtDct detection is unreliable on chroma-subsampled JPEG input, so no removal is claimed".to_string()
+                        } else {
+                            match (dwtdct_before, dwtdct_after) {
                             (Some(true), Some(false)) => {
                                 "removed and proven gone: the dwtDct payload decoded before and fails the presence rule after".to_string()
                             }
@@ -675,6 +695,7 @@ pub fn clean(
                                 "the dwtDct payload still decodes after the resize".to_string()
                             }
                             _ => "applied; no dwtDct payload decoded before or after".to_string(),
+                        }
                         };
                         actions.push(action_for(pkg, id, "applied", &result));
                     }
@@ -741,7 +762,8 @@ pub fn clean(
             "applied",
             &format!("applied, survives: {effect}"),
         ));
-        out_bytes = written;
+        // The kept metadata blocks ride into the fresh container.
+        out_bytes = container::carry_ancillary(&out_bytes, &written, format);
     }
 
     // Re-inspect the output and prove the targeted confirmable marks gone.

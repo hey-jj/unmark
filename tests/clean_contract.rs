@@ -117,10 +117,7 @@ fn certified_capture_is_byte_identical_by_default_and_strips_under_the_flag() {
     let png = build_png(&PngOpts {
         text: true,
         c2pa: true,
-        c2pa_payload: Some(
-            b"jumb c2pa c2pa.created digitalSourceType digitalCapture signer Leica Camera AG"
-                .to_vec(),
-        ),
+        c2pa_payload: Some(capture_store(Some("Leica Camera AG"))),
         ..Default::default()
     });
     let p = pkg();
@@ -184,10 +181,13 @@ fn certified_capture_is_byte_identical_by_default_and_strips_under_the_flag() {
 fn a_capture_claim_with_a_later_generative_action_is_stripped_by_default() {
     let png = build_png(&PngOpts {
         c2pa: true,
-        c2pa_payload: Some(
-            b"jumb c2pa c2pa.created digitalCapture then c2pa.edited softwareAgent Adobe Firefly trainedAlgorithmicMedia"
-                .to_vec(),
-        ),
+        c2pa_payload: Some(manifest_store(&[ManifestSpec::new("urn:uuid:gen-1")
+            .action("c2pa.created", Some(DIGITAL_CAPTURE_URI), None)
+            .action(
+                "c2pa.edited",
+                Some(TRAINED_MEDIA_URI),
+                Some("Adobe Firefly"),
+            )])),
         ..Default::default()
     });
     let out = clean(&png, &Options::default(), &pkg()).unwrap();
@@ -204,7 +204,9 @@ fn a_capture_claim_with_a_later_generative_action_is_stripped_by_default() {
 fn a_publisher_manifest_without_a_capture_action_is_stripped_by_default() {
     let jpg = build_jpeg(&JpegOpts {
         c2pa: true,
-        c2pa_payload: Some(b"jumb c2pa claim_generator Reuters credit Reuters".to_vec()),
+        c2pa_payload: Some(manifest_store(&[ManifestSpec::new("urn:uuid:pub-1")
+            .generator("Reuters Newsroom/2.0")
+            .action("c2pa.published", None, None)])),
         ..Default::default()
     });
     let out = clean(&jpg, &Options::default(), &pkg()).unwrap();
@@ -222,6 +224,105 @@ fn a_publisher_manifest_without_a_capture_action_is_stripped_by_default() {
         after.get("c2pa").map(|d| d.state),
         Some(ScanState::ConfirmedPresent)
     );
+}
+
+#[test]
+fn keyword_text_in_a_manifest_chunk_is_not_a_capture_claim_and_is_stripped() {
+    // Bytes that carry every capture keyword but no JUMBF structure.
+    let keyworded: &[&[u8]] = &[
+        b"not-a-manifest c2pa.created digitalCapture",
+        b"jumb c2pa c2pa.created digitalSourceType digitalCapture signer Leica Camera AG",
+    ];
+    for payload in keyworded {
+        let png = build_png(&PngOpts {
+            text: true,
+            c2pa: true,
+            c2pa_payload: Some(payload.to_vec()),
+            ..Default::default()
+        });
+        let out = clean(&png, &Options::default(), &pkg()).unwrap();
+        assert_eq!(out.report.capture.status, "none");
+        assert!(!out.report.capture.kept);
+        let after = unmark::detect::inspect(&out.output.unwrap());
+        assert_eq!(
+            after.get("c2pa").map(|d| d.state),
+            Some(ScanState::ConfirmedAbsent),
+            "keyword bytes were kept as a capture"
+        );
+    }
+    // A store whose claim never references its actions assertion is not
+    // well-formed, and neither is a truncated store.
+    let unreferenced = manifest_store(&[ManifestSpec::new("urn:uuid:bad-1")
+        .action("c2pa.created", Some(DIGITAL_CAPTURE_URI), None)
+        .unreferenced_actions()]);
+    let good = capture_store(Some("Leica Camera AG"));
+    let truncated = good[..good.len() - 40].to_vec();
+    for payload in [unreferenced, truncated] {
+        let png = build_png(&PngOpts {
+            c2pa: true,
+            c2pa_payload: Some(payload),
+            ..Default::default()
+        });
+        let out = clean(&png, &Options::default(), &pkg()).unwrap();
+        assert_eq!(out.report.capture.status, "none");
+        let after = unmark::detect::inspect(&out.output.unwrap());
+        assert_eq!(
+            after.get("c2pa").map(|d| d.state),
+            Some(ScanState::ConfirmedAbsent)
+        );
+    }
+}
+
+#[test]
+fn a_well_formed_capture_store_is_certified_in_every_carriage() {
+    // The JPEG box carriage, the PNG chunk, and a signer-only claim.
+    let jpg = build_jpeg(&JpegOpts {
+        c2pa: true,
+        c2pa_payload: Some(capture_store(None)),
+        ..Default::default()
+    });
+    let out = clean(&jpg, &Options::default(), &pkg()).unwrap();
+    assert_eq!(
+        out.report.capture.status, "certified",
+        "{:?}",
+        out.report.capture
+    );
+    assert_eq!(out.output.as_deref(), Some(jpg.as_slice()));
+    let signer_only = manifest_store(&[ManifestSpec::new("urn:uuid:cam-1")
+        .action("c2pa.created", None, None)
+        .signer("Leica Camera AG")]);
+    let png = build_png(&PngOpts {
+        c2pa: true,
+        c2pa_payload: Some(signer_only),
+        ..Default::default()
+    });
+    let out = clean(&png, &Options::default(), &pkg()).unwrap();
+    assert_eq!(out.report.capture.status, "certified");
+    assert!(out
+        .report
+        .capture
+        .claim
+        .as_deref()
+        .unwrap_or("")
+        .contains("Leica"));
+    // The same signer with a later manifest that names a generative tool is
+    // not certified.
+    let chain = manifest_store(&[
+        ManifestSpec::new("urn:uuid:cam-2")
+            .action("c2pa.created", Some(DIGITAL_CAPTURE_URI), None)
+            .signer("Leica Camera AG"),
+        ManifestSpec::new("urn:uuid:edit-2")
+            .action("c2pa.opened", None, None)
+            .action("c2pa.edited", None, Some("Adobe Firefly")),
+    ]);
+    let png = build_png(&PngOpts {
+        c2pa: true,
+        c2pa_payload: Some(chain),
+        ..Default::default()
+    });
+    let out = clean(&png, &Options::default(), &pkg()).unwrap();
+    assert_eq!(out.report.capture.status, "generative");
+    assert!(!out.report.capture.kept);
 }
 
 #[test]
