@@ -9,7 +9,7 @@
 use super::evaluate::{probe, Context};
 use super::manifest::{
     annotate, eligibility, identity_only_format, manifest_format, resolve_path, sha256_hex,
-    split_rule, verify_sha256, Eligibility, Exclusion, Filters, LoadedManifest, Manifest,
+    split_rule, verdict, verify_sha256, Eligibility, Exclusion, Filters, LoadedManifest, Manifest,
     ManifestAsset,
 };
 use super::{Progress, MANIFEST_SCHEMA_VERSION};
@@ -83,6 +83,11 @@ pub struct CountsReport {
     pub ladder: Vec<(String, usize)>,
     pub controls: usize,
     pub identity_only: usize,
+    /// Rows whose corpus decoded-content hash was checked, and how many
+    /// agreed and disagreed with the harness's decode.
+    pub decoded_hash_agree: usize,
+    pub decoded_hash_disagree: usize,
+    pub origin_classes: Vec<(String, usize)>,
     pub c2pa_observed: usize,
     pub claim_generators: Vec<(String, usize)>,
     pub derived_written: usize,
@@ -137,6 +142,7 @@ pub fn prepare(
     let mut hashes: Vec<(usize, String, u64)> = Vec::new();
     let mut c2pa_observed = 0usize;
     let mut identity_only = 0usize;
+    let (mut hash_agree, mut hash_disagree) = (0usize, 0usize);
     let mut claim_generators: BTreeMap<String, usize> = BTreeMap::new();
     let total = manifest.assets.len();
     for (i, a) in manifest.assets.iter().enumerate() {
@@ -237,6 +243,19 @@ pub fn prepare(
             .insert("level".to_string(), format!("{}", p.level));
         row.fields
             .insert("pixel_sha256".to_string(), p.pixel_sha256.clone());
+        if let Some(sf) = &p.sample_format {
+            row.fields.insert("sample_format".to_string(), sf.clone());
+        }
+        if let Some(expected) = &row.decoded_content_sha256 {
+            let agree = expected == &p.pixel_sha256;
+            row.fields
+                .insert("decoded_hash_agreement".to_string(), agree.to_string());
+            if agree {
+                hash_agree += 1;
+            } else {
+                hash_disagree += 1;
+            }
+        }
         if row.content_class.is_empty() {
             let media = if p.width.is_some() { "image" } else { "audio" };
             for r in &opts.content_class_rules {
@@ -350,7 +369,11 @@ pub fn prepare(
         for src in sources {
             let target = match src.container.as_str() {
                 "png" => "webp",
-                "wav" => "flac",
+                // FLAC carries integer PCM only; a float32 source stays as
+                // emitted and has no lossless container derivation.
+                "wav" if src.fields.get("sample_format").map(String::as_str) != Some("float32") => {
+                    "flac"
+                }
                 _ => continue,
             };
             say(&mut opts, &format!("deriving {target} from {}", src.key()));
@@ -417,6 +440,11 @@ pub fn prepare(
                 near_duplicate_of: None,
                 native_rate: Some(true),
                 native_origin: Some(true),
+                origin: String::new(),
+                transcode_chain: String::new(),
+                decoded_content_sha256: None,
+                cell_id: String::new(),
+                license: String::new(),
                 source_quality: None,
                 variance_ok: Some(true),
                 band: Some(band.to_string()),
@@ -432,11 +460,16 @@ pub fn prepare(
     let mut report_only: BTreeMap<String, usize> = BTreeMap::new();
     let mut ladder: BTreeMap<String, usize> = BTreeMap::new();
     let mut controls = 0usize;
+    let mut origin_classes: BTreeMap<String, usize> = BTreeMap::new();
     let mut collapsed: BTreeMap<(String, String), usize> = BTreeMap::new();
     let mut pixel_collapsed: BTreeMap<(String, String), usize> = BTreeMap::new();
     let class_min = pkg.calibration.class_min;
     for a in &out_assets {
-        let (e, reason) = eligibility(a);
+        let v = verdict(a);
+        let (e, reason) = (v.eligibility, v.reason);
+        if !a.post_processed && !a.fields.contains_key("identity_only") {
+            *origin_classes.entry(v.origin_class.clone()).or_default() += 1;
+        }
         let band = a.band.clone().unwrap_or_default();
         match e {
             Eligibility::Floor | Eligibility::Container => {
@@ -545,6 +578,9 @@ pub fn prepare(
         ladder: ladder.into_iter().collect(),
         controls,
         identity_only,
+        decoded_hash_agree: hash_agree,
+        decoded_hash_disagree: hash_disagree,
+        origin_classes: origin_classes.into_iter().collect(),
         c2pa_observed,
         claim_generators: claim_generators.into_iter().collect(),
         derived_written,
@@ -663,6 +699,7 @@ pub fn synth_clip(kind: &str, seconds: f64, seed: u64) -> Result<Vec<u8>, String
     let audio = Audio {
         rate,
         bits: 24,
+        float: false,
         channels,
     };
     crate::codec::wav::encode(&audio, 24).map_err(|e| e.to_string())

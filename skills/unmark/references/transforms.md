@@ -3,7 +3,7 @@
 Regenerate with `unmark policy snapshot` after any policy change. Edits here are overwritten.
 
 - policy version: 0.2.0
-- policy digest: sha256:da18d3a1dcec2debe6bdb268f912fb6449047afb5362b067a5218273a9475fbe
+- policy digest: sha256:b1542b769b066e6dc18394b9a34f1667d9d907e768077e3839772bc6564c95d9
 
 ## What the tool may say about each mark
 
@@ -227,7 +227,7 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 ## Fidelity budgets
 
-Calibration status: provisional. Record: policy/calibration.json. Record sha256: bb2de1b6b151c856a940e4f9d0df89178b4c5602c2a37e91b1eaa8f4f6df2ef1. Corpus manifest sha256: 816e735fc268d4cd83f53c982140a08a064cb20d5d3366e03b06ad13f1cb2529. Date: 2026-09-03.
+Calibration status: provisional. Record: policy/calibration.json. Record sha256: 9a15eca069539de1ca6162af3d7e05fdec8f5f15db35b96ab271a28c3cfd71cb. Corpus manifest sha256: b4fe1d820ed92d50ada94c0b3104a5eadf0a0479f94837c3ad45427b06d86362. Date: 2026-09-03.
 
 | Budget | Kind | Signal floor or ceiling | Geometry |
 |---|---|---|---|

@@ -129,10 +129,30 @@ pub struct AssetRecord {
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub content_class: String,
     #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub origin_class: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub cell_id: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub license: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub sample_format: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub decoded_hash_agreement: Option<bool>,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     pub ladder_step: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub excluded: Option<String>,
     pub plans: Vec<PlanScore>,
+}
+
+/// The corpus decoded-content hash cross-check.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
+pub struct DecodedHashCheck {
+    pub checked: usize,
+    pub agree: usize,
+    pub disagree: usize,
+    /// doc_ids whose hash disagreed: a decoder disagreement, not a failure.
+    pub disagreements: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -176,6 +196,11 @@ pub struct Record {
     pub ladder: Vec<LadderRow>,
     pub identity: Vec<IdentityRow>,
     pub derived: Derived,
+    /// Cells whose lanes include a non-commercial license tag.
+    #[serde(default)]
+    pub non_commercial_cells: Vec<String>,
+    #[serde(default)]
+    pub decoded_hash: DecodedHashCheck,
     pub properties: Vec<Property>,
     pub determinism: Determinism,
     pub accepted: bool,
@@ -399,7 +424,31 @@ pub fn build_record(
                         cells.push(build_cell(&input, pkg, *informational, next.as_deref()));
                     }
                 }
+                if *informational && plan != "AU02" {
+                    continue;
+                }
                 if *informational {
+                    // AU02 alone splits by the source sample format only.
+                    let mut by_sf: BTreeMap<String, Vec<&AssetResult>> = BTreeMap::new();
+                    for a in native.iter().chain(container.iter()) {
+                        if !a.sample_format.is_empty() {
+                            by_sf.entry(a.sample_format.clone()).or_default().push(a);
+                        }
+                    }
+                    if by_sf.len() > 1 {
+                        for (key, assets) in by_sf {
+                            let input = CellInput {
+                                plan: plan.clone(),
+                                format: format.to_string(),
+                                bands: vec![format!("sample:{key}")],
+                                derived: "none".to_string(),
+                                assets,
+                                collapsed: 0,
+                                pixel_collapsed: 0,
+                            };
+                            strata.push(build_cell(&input, pkg, true, None));
+                        }
+                    }
                     continue;
                 }
                 // Report-only rows for the two calibrated plans.
@@ -439,6 +488,18 @@ pub fn build_record(
                 }
                 for ((class, band, derived), assets) in groups {
                     push_stratum(format!("report:{class}/{band}"), assets, &derived);
+                }
+                // Sample-format splits over the floor-setting audio rows.
+                let mut by_sf: BTreeMap<String, Vec<&AssetResult>> = BTreeMap::new();
+                for a in native.iter().chain(container.iter()) {
+                    if !a.sample_format.is_empty() {
+                        by_sf.entry(a.sample_format.clone()).or_default().push(a);
+                    }
+                }
+                if by_sf.len() > 1 {
+                    for (key, assets) in by_sf {
+                        push_stratum(format!("sample:{key}"), assets, "none");
+                    }
                 }
                 // Content-class splits over the floor-setting rows.
                 let mut by_class: BTreeMap<String, Vec<&AssetResult>> = BTreeMap::new();
@@ -830,6 +891,53 @@ pub fn build_record(
         },
     });
 
+    let non_commercial_cells: Vec<String> = cells
+        .iter()
+        .filter(|r| r.non_commercial)
+        .map(|r| format!("{}/{}/{}/{}", r.plan, r.format, r.band, r.derived))
+        .collect();
+    let mut decoded_hash = DecodedHashCheck::default();
+    for a in &scored {
+        match a.decoded_hash_agreement {
+            Some(true) => {
+                decoded_hash.checked += 1;
+                decoded_hash.agree += 1;
+            }
+            Some(false) => {
+                decoded_hash.checked += 1;
+                decoded_hash.disagree += 1;
+                decoded_hash.disagreements.push(a.doc_id.clone());
+            }
+            None => {}
+        }
+    }
+    properties.push(Property {
+        name: "decoded-content-hash".to_string(),
+        cell: None,
+        pass: true,
+        detail: if decoded_hash.checked == 0 {
+            "no row carried a corpus decoded-content hash".to_string()
+        } else {
+            format!(
+                "{} rows checked, {} agree, {} decoder disagreements (reported, not a failure)",
+                decoded_hash.checked, decoded_hash.agree, decoded_hash.disagree
+            )
+        },
+    });
+    properties.push(Property {
+        name: "license".to_string(),
+        cell: None,
+        pass: true,
+        detail: if non_commercial_cells.is_empty() {
+            "no cell rests on a non-commercial-licensed lane".to_string()
+        } else {
+            format!(
+                "cells resting on a non-commercial-licensed lane: {}",
+                non_commercial_cells.join(", ")
+            )
+        },
+    });
+
     let identity_ok = identity.iter().all(|r| r.identical);
     properties.push(Property {
         name: "metadata-byte-identity".to_string(),
@@ -876,6 +984,11 @@ pub fn build_record(
             documented_marks: a.documented_marks.clone(),
             generator: a.generator.clone(),
             content_class: a.content_class.clone(),
+            origin_class: a.origin_class.clone(),
+            cell_id: a.cell_id.clone(),
+            license: a.license.clone(),
+            sample_format: a.sample_format.clone(),
+            decoded_hash_agreement: a.decoded_hash_agreement,
             ladder_step: a.ladder_step.clone(),
             excluded: a.excluded.clone(),
             plans: a.plans.clone(),
@@ -954,6 +1067,8 @@ pub fn build_record(
         ladder,
         identity,
         derived,
+        non_commercial_cells,
+        decoded_hash,
         properties,
         determinism: Determinism {
             checked: false,
@@ -1098,6 +1213,18 @@ pub fn recheck_properties(record: &Record) -> Vec<Property> {
         name: "qualified-cells-present".to_string(),
         cell: None,
         pass: !qualified.is_empty(),
+        detail: String::new(),
+    });
+    out.push(Property {
+        name: "decoded-content-hash".to_string(),
+        cell: None,
+        pass: true,
+        detail: String::new(),
+    });
+    out.push(Property {
+        name: "license".to_string(),
+        cell: None,
+        pass: true,
         detail: String::new(),
     });
     out

@@ -173,6 +173,7 @@ pub fn round_trip(audio: &Audio, s: &SincParams) -> Audio {
     Audio {
         rate,
         bits: audio.bits,
+        float: audio.float,
         channels,
     }
 }
@@ -185,6 +186,7 @@ pub fn tilt(audio: &Audio, t: &TiltParams) -> Audio {
     Audio {
         rate: audio.rate,
         bits: audio.bits,
+        float: audio.float,
         channels: audio
             .channels
             .iter()
@@ -202,6 +204,7 @@ pub fn stretch(audio: &Audio, factor: f64, s: &SincParams) -> Audio {
     Audio {
         rate: audio.rate,
         bits: audio.bits,
+        float: audio.float,
         channels: audio
             .channels
             .iter()
@@ -221,6 +224,7 @@ pub fn dither_requantize(audio: &Audio, r: &RequantParams, seed: u64) -> Audio {
     Audio {
         rate: audio.rate,
         bits: r.bits,
+        float: false,
         channels: audio
             .channels
             .iter()
@@ -262,6 +266,7 @@ mod tests {
         Audio {
             rate,
             bits: 16,
+            float: false,
             channels: vec![(0..n)
                 .map(|i| 0.5 * (2.0 * std::f64::consts::PI * hz * i as f64 / rate as f64).sin())
                 .collect()],

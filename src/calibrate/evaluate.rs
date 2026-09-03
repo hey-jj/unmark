@@ -2,7 +2,7 @@
 //! perceptual hash, observed C2PA), and scoring every calibrated plan on it.
 
 use super::manifest::{
-    eligibility, format_name, identity_only_format, manifest_format, sha256_bytes, sha256_hex,
+    format_name, identity_only_format, manifest_format, sha256_bytes, sha256_hex, verdict,
     Eligibility, ManifestAsset,
 };
 use crate::asset::{self, Format, Media};
@@ -52,6 +52,21 @@ pub struct AssetResult {
     pub documented_marks: Vec<String>,
     pub generator: String,
     pub content_class: String,
+    /// `api-emitted`, `local-first-save`, `native-equivalent`, `lossless`,
+    /// or `unknown`.
+    #[serde(default)]
+    pub origin_class: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub cell_id: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub license: String,
+    /// The emitted sample format for audio: `int16`, `int24`, `float32`.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub sample_format: String,
+    /// Whether the corpus's decoded-content hash agreed with the harness's
+    /// own decode, when the manifest carried one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub decoded_hash_agreement: Option<bool>,
     /// `pixel-sha256` or `dhash` when the row is a near-duplicate.
     #[serde(default)]
     pub near_duplicate_rule: String,
@@ -226,18 +241,20 @@ pub struct Probe {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub claim_generator: Option<String>,
     pub strata: Vec<String>,
-    /// sha256 over the decoded pixel or sample stream with its geometry, the
-    /// key for the exact dedupe.
+    /// sha256 over the decoded content as pinned (RGBA8 row-major, or PCM
+    /// interleaved little-endian in the emitted sample format), the key for
+    /// the exact dedupe and the corpus cross-check.
     pub pixel_sha256: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sample_format: Option<String>,
 }
 
-/// The exact-dedupe key of an image: dimensions, channels, and pixels.
+/// The decoded-content hash of an image as pinned: RGBA8 row-major, alpha
+/// 255 when absent.
 pub fn image_pixel_sha256(img: &Image) -> String {
+    let rgba = img.with_alpha();
     let mut h = sha2::Sha256::new();
-    sha2::Digest::update(&mut h, (img.width as u64).to_be_bytes());
-    sha2::Digest::update(&mut h, (img.height as u64).to_be_bytes());
-    sha2::Digest::update(&mut h, [img.channels as u8]);
-    sha2::Digest::update(&mut h, &img.data);
+    sha2::Digest::update(&mut h, &rgba.data);
     format!("{:x}", sha2::Digest::finalize(h))
 }
 
@@ -402,6 +419,7 @@ pub fn probe(bytes: &[u8], a: &ManifestAsset, ctx: &Context<'_>) -> Result<Probe
                 claim_generator: claim,
                 strata,
                 pixel_sha256: image_pixel_sha256(&img),
+                sample_format: None,
             })
         }
         Media::Audio => probe_audio(bytes, format, ctx, c2pa_observed, claim),
@@ -447,14 +465,10 @@ fn probe_audio(
         strata,
         pixel_sha256: {
             let mut h = sha2::Sha256::new();
-            h.update(audio.rate.to_be_bytes());
-            h.update(audio.bits.to_be_bytes());
-            h.update([audio.channels.len() as u8]);
-            for s in audio.quantize(audio.bits) {
-                h.update(s.to_be_bytes());
-            }
+            h.update(audio.interleaved_le_bytes());
             format!("{:x}", h.finalize())
         },
+        sample_format: Some(audio.sample_format()),
     })
 }
 
@@ -472,7 +486,8 @@ fn probe_audio(
 // --- scoring --------------------------------------------------------------------------
 
 fn base_result(a: &ManifestAsset) -> AssetResult {
-    let (e, reason) = eligibility(a);
+    let v = verdict(a);
+    let (e, reason) = (v.eligibility, v.reason);
     AssetResult {
         doc_id: a.key(),
         sha256: a.sha256.clone(),
@@ -484,6 +499,11 @@ fn base_result(a: &ManifestAsset) -> AssetResult {
         documented_marks: a.documented_marks.clone(),
         generator: a.generator.clone(),
         content_class: a.content_class.clone(),
+        origin_class: v.origin_class,
+        cell_id: a.cell_id.clone(),
+        license: a.license.clone(),
+        sample_format: a.fields.get("sample_format").cloned().unwrap_or_default(),
+        decoded_hash_agreement: a.fields.get("decoded_hash_agreement").map(|s| s == "true"),
         near_duplicate_rule: a
             .fields
             .get("near_duplicate_rule")

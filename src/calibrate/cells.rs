@@ -108,6 +108,10 @@ pub struct CellRow {
     pub missing_classes: Vec<String>,
     /// Rows lost to the exact decoded-pixel dedupe.
     pub pixel_identical_collapsed: usize,
+    /// License tags of the lanes in the cell, with counts.
+    pub licenses: Vec<(String, usize)>,
+    /// True when any lane in the cell carries a non-commercial license tag.
+    pub non_commercial: bool,
     /// `qualified`, `count-qualified` (n_min met, a required class short),
     /// `unqualified`, `generator-cap`, `held`, or `informational`.
     pub status: String,
@@ -267,6 +271,16 @@ pub fn build_cell(
         .filter(|cl| classes.get(**cl).copied().unwrap_or(0) < c.class_min)
         .map(|cl| cl.to_string())
         .collect();
+    let mut licenses: BTreeMap<String, usize> = BTreeMap::new();
+    for a in input.assets.iter().filter(|a| scored(a, &input.plan)) {
+        let tag = if a.license.is_empty() {
+            "unstated".to_string()
+        } else {
+            a.license.clone()
+        };
+        *licenses.entry(tag).or_default() += 1;
+    }
+    let non_commercial = licenses.keys().any(|l| is_non_commercial(l));
     let qualified = !informational && count >= c.n_min && cap_ok && missing.is_empty();
     let status = if informational {
         "informational"
@@ -302,12 +316,23 @@ pub fn build_cell(
         classes: classes.into_iter().collect(),
         missing_classes: missing,
         pixel_identical_collapsed: input.pixel_collapsed,
+        licenses: licenses.into_iter().collect(),
+        non_commercial,
         status: status.to_string(),
         qualified,
         image,
         audio,
         next_tier,
     }
+}
+
+/// A license tag that forbids commercial use, by the usual spellings.
+pub fn is_non_commercial(tag: &str) -> bool {
+    let t = tag.to_ascii_lowercase();
+    t.contains("non-commercial")
+        || t.contains("noncommercial")
+        || t.split(|c: char| !c.is_ascii_alphanumeric())
+            .any(|tok| tok == "nc")
 }
 
 /// Group a plan's assets of one format into bands, merging a short band

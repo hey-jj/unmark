@@ -4,14 +4,16 @@ Generated from `calibration.json` by the calibration harness. Edits here are ove
 
 - date: 2026-09-03
 - policy version: 0.2.0
-- corpus manifest: manifest.json (sha256 816e735fc268d4cd83f53c982140a08a064cb20d5d3366e03b06ad13f1cb2529)
+- corpus manifest: manifest.json (sha256 b4fe1d820ed92d50ada94c0b3104a5eadf0a0479f94837c3ad45427b06d86362)
 - assets: 15 listed, 15 scored, 0 excluded
 - scored by eligibility: floor 15
-- encoder fingerprint: unmark 0.1.0; container-rewrite/no-reencode; png 0.18.1; jpeg-decoder 0.3.2; image-webp 0.2.4; claxon 0.4.3; flacenc 0.5.1; jpeg-encoder in-crate v1 baseline 4:4:4; resample in-crate lanczos3 and kaiser-sinc scalar; trig in-crate libm-free
+- encoder fingerprint: unmark 0.2.0; container-rewrite/no-reencode; png 0.18.1; jpeg-decoder 0.3.2; image-webp 0.2.4; claxon 0.4.3; flacenc 0.5.1; jpeg-encoder in-crate v1 baseline 4:4:4; resample in-crate lanczos3 and kaiser-sinc scalar; trig in-crate libm-free
 - base seed: 0x5eed202609020001
 - derivation: image floors at the 5th percentile rounded down to 0.5 dB and 0.005, audio ceiling at the 95th percentile rounded up to 0.05 dB, n_min 40, class_min 10, no generator over half a cell
 - separation: the next tier fails when either metric's median misses the number; the gate refuses on either
 - pixel-identical rows lost across the safe cells: 0
+- decoded-content hash cross-check: 0 rows checked, 0 agree, 0 decoder disagreements
+- cells resting on a non-commercial-licensed lane: none
 - accepted: no, a property failed or nothing qualified
 
 ## Derived numbers
@@ -212,8 +214,10 @@ None.
 |---|---|---|---|
 | qualified-cells-present | all | no | no cell reached n_min with every required class at class_min under the generator cap; every number stays provisional |
 | aggressive-never-stricter-than-safe | all | yes | holds for every format |
+| decoded-content-hash | all | yes | no row carried a corpus decoded-content hash |
+| license | all | yes | no cell rests on a non-commercial-licensed lane |
 | metadata-byte-identity | all | yes | 7 identity cells, every decoded stream identical |
-| encoder-fingerprint | all | yes | unmark 0.1.0; container-rewrite/no-reencode; png 0.18.1; jpeg-decoder 0.3.2; image-webp 0.2.4; claxon 0.4.3; flacenc 0.5.1; jpeg-encoder in-crate v1 baseline 4:4:4; resample in-crate lanczos3 and kaiser-sinc scalar; trig in-crate libm-free |
+| encoder-fingerprint | all | yes | unmark 0.2.0; container-rewrite/no-reencode; png 0.18.1; jpeg-decoder 0.3.2; image-webp 0.2.4; claxon 0.4.3; flacenc 0.5.1; jpeg-encoder in-crate v1 baseline 4:4:4; resample in-crate lanczos3 and kaiser-sinc scalar; trig in-crate libm-free |
 | determinism | all | yes | two passes over the manifest produced byte-identical records |
 
 ## Exclusions by reason

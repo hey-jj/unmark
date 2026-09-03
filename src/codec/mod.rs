@@ -93,12 +93,45 @@ impl Image {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Audio {
     pub rate: u32,
-    /// Bit depth of the container the samples came from or go to.
+    /// Bit depth of the container the samples came from or go to. 32 with
+    /// `float` set means IEEE float32.
     pub bits: u16,
+    /// True when the emitted sample format is float32 rather than integer
+    /// PCM. Recorded as emitted, never upconverted.
+    pub float: bool,
     pub channels: Vec<Vec<f64>>,
 }
 
 impl Audio {
+    /// The emitted sample format's name: `int16`, `int24`, or `float32`.
+    pub fn sample_format(&self) -> String {
+        if self.float {
+            "float32".to_string()
+        } else {
+            format!("int{}", self.bits)
+        }
+    }
+
+    /// The decoded content as pinned for hashing: PCM interleaved
+    /// little-endian in the emitted sample format.
+    pub fn interleaved_le_bytes(&self) -> Vec<u8> {
+        let n = self.frames();
+        let mut out = Vec::with_capacity(n * self.channels.len() * 4);
+        if self.float {
+            for i in 0..n {
+                for c in &self.channels {
+                    out.extend_from_slice(&(c[i] as f32).to_le_bytes());
+                }
+            }
+            return out;
+        }
+        let bytes_per = (self.bits as usize).div_ceil(8);
+        for s in self.quantize(self.bits) {
+            out.extend_from_slice(&s.to_le_bytes()[..bytes_per]);
+        }
+        out
+    }
+
     pub fn frames(&self) -> usize {
         self.channels.first().map(|c| c.len()).unwrap_or(0)
     }
@@ -144,6 +177,7 @@ impl Audio {
         Audio {
             rate,
             bits,
+            float: false,
             channels: chans,
         }
     }

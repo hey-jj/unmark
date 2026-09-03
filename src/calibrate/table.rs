@@ -248,6 +248,20 @@ pub fn render_markdown(r: &Record) -> String {
     );
     let _ = writeln!(
         w,
+        "- decoded-content hash cross-check: {} rows checked, {} agree, {} decoder disagreements",
+        r.decoded_hash.checked, r.decoded_hash.agree, r.decoded_hash.disagree
+    );
+    let _ = writeln!(
+        w,
+        "- cells resting on a non-commercial-licensed lane: {}",
+        if r.non_commercial_cells.is_empty() {
+            "none".to_string()
+        } else {
+            r.non_commercial_cells.join(", ")
+        }
+    );
+    let _ = writeln!(
+        w,
         "- accepted: {}",
         if r.accepted {
             "yes"

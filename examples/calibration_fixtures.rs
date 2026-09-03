@@ -73,6 +73,7 @@ fn audio(rate: u32, seconds: f64, channels: usize, bits: u16, seed: u64) -> Audi
     Audio {
         rate,
         bits,
+        float: false,
         channels: chans,
     }
 }
@@ -122,6 +123,11 @@ fn main() {
             // The generator wrote these at their native rate and container.
             native_rate: Some(true),
             native_origin: Some(true),
+            origin: String::new(),
+            transcode_chain: String::new(),
+            decoded_content_sha256: None,
+            cell_id: String::new(),
+            license: String::new(),
             source_quality: None,
             variance_ok: None,
             band: None,

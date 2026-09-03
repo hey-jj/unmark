@@ -1,11 +1,11 @@
 {
   "schema_version": "1.1.0",
-  "tool_version": "0.1.0",
+  "tool_version": "0.2.0",
   "policy_version": "0.2.0",
   "date": "2026-09-03",
   "corpus": {
     "manifest": "manifest.json",
-    "manifest_sha256": "816e735fc268d4cd83f53c982140a08a064cb20d5d3366e03b06ad13f1cb2529",
+    "manifest_sha256": "b4fe1d820ed92d50ada94c0b3104a5eadf0a0479f94837c3ad45427b06d86362",
     "filters": {
       "include_rounds": [],
       "exclude_rounds": [],
@@ -26,7 +26,7 @@
     "exclusion_counts": [],
     "exclusions": []
   },
-  "encoder_fingerprint": "unmark 0.1.0; container-rewrite/no-reencode; png 0.18.1; jpeg-decoder 0.3.2; image-webp 0.2.4; claxon 0.4.3; flacenc 0.5.1; jpeg-encoder in-crate v1 baseline 4:4:4; resample in-crate lanczos3 and kaiser-sinc scalar; trig in-crate libm-free",
+  "encoder_fingerprint": "unmark 0.2.0; container-rewrite/no-reencode; png 0.18.1; jpeg-decoder 0.3.2; image-webp 0.2.4; claxon 0.4.3; flacenc 0.5.1; jpeg-encoder in-crate v1 baseline 4:4:4; resample in-crate lanczos3 and kaiser-sinc scalar; trig in-crate libm-free",
   "base_seed": "0x5eed202609020001",
   "percentile_image": 5,
   "percentile_audio": 95,
@@ -281,6 +281,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "image": {
@@ -329,6 +336,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "image": {
@@ -380,6 +394,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "image": {
@@ -428,6 +449,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "image": {
@@ -479,6 +507,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -521,6 +556,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -566,6 +608,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -608,6 +657,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -653,6 +709,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -695,6 +758,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -740,6 +810,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -782,6 +859,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -827,6 +911,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -869,6 +960,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -914,6 +1012,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -956,6 +1061,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1001,6 +1113,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1043,6 +1162,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1088,6 +1214,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1130,6 +1263,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1175,6 +1315,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1217,6 +1364,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1262,6 +1416,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1304,6 +1465,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1349,6 +1517,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1391,6 +1566,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1436,6 +1618,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "image": {
@@ -1487,6 +1676,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "image": {
@@ -1538,6 +1734,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1583,6 +1786,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1628,6 +1838,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1673,6 +1890,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1718,6 +1942,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1763,6 +1994,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1808,6 +2046,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1853,6 +2098,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1898,6 +2150,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1943,6 +2202,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -1988,6 +2254,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -2033,6 +2306,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "image": {
@@ -2081,6 +2361,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "image": {
@@ -2132,6 +2419,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "image": {
@@ -2180,6 +2474,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "image": {
@@ -2231,6 +2532,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -2273,6 +2581,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -2318,6 +2633,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -2360,6 +2682,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -2405,6 +2734,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -2447,6 +2783,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -2492,6 +2835,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -2534,6 +2884,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -2579,6 +2936,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -2621,6 +2985,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -2666,6 +3037,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -2708,6 +3086,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -2753,6 +3138,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -2795,6 +3187,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -2840,6 +3239,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -2882,6 +3288,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -2927,6 +3340,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -2969,6 +3389,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -3014,6 +3441,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -3056,6 +3490,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -3101,6 +3542,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -3143,6 +3591,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -3188,6 +3643,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "image": {
@@ -3239,6 +3701,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "image": {
@@ -3290,6 +3759,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -3335,6 +3811,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -3380,6 +3863,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -3425,6 +3915,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -3470,6 +3967,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -3515,6 +4019,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -3560,6 +4071,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -3605,6 +4123,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -3650,6 +4175,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -3695,6 +4227,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -3740,6 +4279,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -3785,6 +4331,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "image": {
@@ -3836,6 +4389,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "image": {
@@ -3887,6 +4447,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -3932,6 +4499,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -3977,6 +4551,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -4022,6 +4603,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -4067,6 +4655,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -4112,6 +4707,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -4157,6 +4759,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -4202,6 +4811,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -4247,6 +4863,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -4292,6 +4915,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -4337,6 +4967,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -4382,6 +5019,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "audio": {
@@ -4424,6 +5068,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "audio": {
@@ -4469,6 +5120,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "audio": {
@@ -4511,6 +5169,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "audio": {
@@ -4556,6 +5221,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -4593,6 +5265,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -4633,6 +5312,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -4670,6 +5356,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -4710,6 +5403,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -4747,6 +5447,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -4787,6 +5494,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -4824,6 +5538,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -4864,6 +5585,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -4901,6 +5629,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -4936,6 +5671,8 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false
     },
@@ -4961,6 +5698,8 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false
     },
@@ -4994,6 +5733,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -5031,6 +5777,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -5071,6 +5824,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -5108,6 +5868,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -5148,6 +5915,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "audio": {
@@ -5190,6 +5964,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "audio": {
@@ -5235,6 +6016,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "audio": {
@@ -5277,6 +6065,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "unqualified",
       "qualified": false,
       "audio": {
@@ -5322,6 +6117,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -5359,6 +6161,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -5399,6 +6208,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -5436,6 +6252,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -5476,6 +6299,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -5513,6 +6343,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -5553,6 +6390,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -5590,6 +6434,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -5630,6 +6481,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -5667,6 +6525,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -5702,6 +6567,8 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false
     },
@@ -5727,6 +6594,8 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false
     },
@@ -5760,6 +6629,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -5797,6 +6673,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -5837,6 +6720,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -5874,6 +6764,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -5913,6 +6810,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -5961,6 +6865,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -6009,6 +6920,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -6057,6 +6975,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -6105,6 +7030,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -6153,6 +7085,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -6201,6 +7140,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -6249,6 +7195,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          2
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -6297,6 +7250,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -6345,6 +7305,13 @@
         "text-ui"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "image": {
@@ -6393,6 +7360,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -6435,6 +7409,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -6477,6 +7458,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -6519,6 +7507,13 @@
         "tonal-synthetic"
       ],
       "pixel_identical_collapsed": 0,
+      "licenses": [
+        [
+          "unstated",
+          1
+        ]
+      ],
+      "non_commercial": false,
       "status": "informational",
       "qualified": false,
       "audio": {
@@ -6624,6 +7619,13 @@
       "overrides": []
     }
   },
+  "non_commercial_cells": [],
+  "decoded_hash": {
+    "checked": 0,
+    "agree": 0,
+    "disagree": 0,
+    "disagreements": []
+  },
   "properties": [
     {
       "name": "qualified-cells-present",
@@ -6636,6 +7638,16 @@
       "detail": "holds for every format"
     },
     {
+      "name": "decoded-content-hash",
+      "pass": true,
+      "detail": "no row carried a corpus decoded-content hash"
+    },
+    {
+      "name": "license",
+      "pass": true,
+      "detail": "no cell rests on a non-commercial-licensed lane"
+    },
+    {
       "name": "metadata-byte-identity",
       "pass": true,
       "detail": "7 identity cells, every decoded stream identical"
@@ -6643,7 +7655,7 @@
     {
       "name": "encoder-fingerprint",
       "pass": true,
-      "detail": "unmark 0.1.0; container-rewrite/no-reencode; png 0.18.1; jpeg-decoder 0.3.2; image-webp 0.2.4; claxon 0.4.3; flacenc 0.5.1; jpeg-encoder in-crate v1 baseline 4:4:4; resample in-crate lanczos3 and kaiser-sinc scalar; trig in-crate libm-free"
+      "detail": "unmark 0.2.0; container-rewrite/no-reencode; png 0.18.1; jpeg-decoder 0.3.2; image-webp 0.2.4; claxon 0.4.3; flacenc 0.5.1; jpeg-encoder in-crate v1 baseline 4:4:4; resample in-crate lanczos3 and kaiser-sinc scalar; trig in-crate libm-free"
     },
     {
       "name": "determinism",
@@ -6667,6 +7679,7 @@
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
       "content_class": "dense texture",
+      "origin_class": "lossless",
       "plans": [
         {
           "plan": "image-metadata",
@@ -6764,6 +7777,7 @@
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
       "content_class": "dense texture",
+      "origin_class": "lossless",
       "plans": [
         {
           "plan": "image-metadata",
@@ -6861,6 +7875,7 @@
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
       "content_class": "dense texture",
+      "origin_class": "lossless",
       "plans": [
         {
           "plan": "image-metadata",
@@ -6958,6 +7973,7 @@
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
       "content_class": "dense texture",
+      "origin_class": "api-emitted",
       "plans": [
         {
           "plan": "image-metadata",
@@ -7055,6 +8071,7 @@
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
       "content_class": "dense texture",
+      "origin_class": "api-emitted",
       "plans": [
         {
           "plan": "image-metadata",
@@ -7152,6 +8169,7 @@
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
       "content_class": "dense texture",
+      "origin_class": "api-emitted",
       "plans": [
         {
           "plan": "image-metadata",
@@ -7249,6 +8267,7 @@
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
       "content_class": "dense texture",
+      "origin_class": "lossless",
       "plans": [
         {
           "plan": "image-metadata",
@@ -7346,6 +8365,7 @@
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
       "content_class": "dense texture",
+      "origin_class": "lossless",
       "plans": [
         {
           "plan": "image-metadata",
@@ -7443,6 +8463,7 @@
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
       "content_class": "dense texture",
+      "origin_class": "lossless",
       "plans": [
         {
           "plan": "image-metadata",
@@ -7540,6 +8561,7 @@
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
       "content_class": "tonal synthetic",
+      "origin_class": "lossless",
       "plans": [
         {
           "plan": "audio-metadata",
@@ -7609,6 +8631,7 @@
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
       "content_class": "tonal synthetic",
+      "origin_class": "lossless",
       "plans": [
         {
           "plan": "audio-metadata",
@@ -7678,6 +8701,7 @@
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
       "content_class": "tonal synthetic",
+      "origin_class": "lossless",
       "plans": [
         {
           "plan": "audio-metadata",
@@ -7747,6 +8771,7 @@
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
       "content_class": "tonal synthetic",
+      "origin_class": "lossless",
       "plans": [
         {
           "plan": "audio-metadata",
@@ -7816,6 +8841,7 @@
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
       "content_class": "tonal synthetic",
+      "origin_class": "lossless",
       "plans": [
         {
           "plan": "audio-metadata",
@@ -7885,6 +8911,7 @@
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
       "content_class": "tonal synthetic",
+      "origin_class": "lossless",
       "plans": [
         {
           "plan": "audio-metadata",

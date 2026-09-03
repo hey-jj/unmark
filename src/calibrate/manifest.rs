@@ -80,6 +80,24 @@ pub struct ManifestAsset {
     /// itself rather than a pipeline transcode.
     #[serde(default)]
     pub native_origin: Option<bool>,
+    /// The three-valued origin from the tranche manifest: `api-emitted` or
+    /// `local-first-save`; empty when the manifest carries the boolean only.
+    #[serde(default)]
+    pub origin: String,
+    /// The steps between the generator's output and this file, for a derived
+    /// row: lossless steps, one lossy step with its quality, resamples.
+    #[serde(default)]
+    pub transcode_chain: String,
+    /// The corpus's own hash of the decoded content, recomputed and compared
+    /// by the harness as a checked property.
+    #[serde(default)]
+    pub decoded_content_sha256: Option<String>,
+    /// The corpus cell identifier, carried for cross-reference only.
+    #[serde(default)]
+    pub cell_id: String,
+    /// The generator lane's license tag, carried verbatim.
+    #[serde(default)]
+    pub license: String,
     /// Lossy images only: the transcode quality when the pipeline wrote it.
     #[serde(default)]
     pub source_quality: Option<u32>,
@@ -132,6 +150,11 @@ impl ManifestAsset {
             "near_duplicate_of" => self.near_duplicate_of.clone(),
             "native_rate" => self.native_rate.map(|b| b.to_string()),
             "native_origin" => self.native_origin.map(|b| b.to_string()),
+            "origin" => Some(self.origin.clone()),
+            "transcode_chain" => Some(self.transcode_chain.clone()),
+            "decoded_content_sha256" => self.decoded_content_sha256.clone(),
+            "cell_id" => Some(self.cell_id.clone()),
+            "license" => Some(self.license.clone()),
             "source_quality" => self.source_quality.map(|q| q.to_string()),
             "variance_ok" => self.variance_ok.map(|b| b.to_string()),
             "documented_marks" => Some(self.documented_marks.join(";")),
@@ -152,7 +175,10 @@ impl ManifestAsset {
             }
         };
         match name {
-            "container" | "format" => self.container = v.to_string(),
+            "container" => self.container = normalize_format(v),
+            "format" => {
+                self.fields.insert("format".to_string(), v.to_string());
+            }
             "generator" | "generator_model" => self.generator = v.to_string(),
             "content_class" | "class" => self.content_class = v.to_string(),
             "round" => self.round = v.to_string(),
@@ -175,7 +201,24 @@ impl ManifestAsset {
                 }
             }
             "native_rate" => self.native_rate = opt_flag(v),
-            "native_origin" => self.native_origin = opt_flag(v),
+            "native_origin" => match v.to_ascii_lowercase().as_str() {
+                "api-emitted" | "local-first-save" => {
+                    self.origin = v.to_ascii_lowercase();
+                    self.native_origin = Some(true);
+                }
+                _ => self.native_origin = opt_flag(v),
+            },
+            "origin" => self.origin = v.to_ascii_lowercase(),
+            "transcode_chain" => self.transcode_chain = v.to_string(),
+            "decoded_content_sha256" => {
+                self.decoded_content_sha256 = if v.is_empty() {
+                    None
+                } else {
+                    Some(v.to_ascii_lowercase())
+                }
+            }
+            "cell_id" => self.cell_id = v.to_string(),
+            "license" => self.license = v.to_string(),
             "variance_ok" => self.variance_ok = opt_flag(v),
             "source_quality" => self.source_quality = v.parse().ok(),
             "documented_marks" => {
@@ -366,57 +409,158 @@ impl Eligibility {
     }
 }
 
-/// The eligibility of a row and the reason when it only reports. The rules
-/// are the corpus ruling's filter fields: `derived` in {none, container},
-/// `near_duplicate_of` null, `native_rate` true for audio, `source_quality`
-/// at or above 90 or a native origin for a lossy image, `variance_ok` true.
+/// The eligibility of a row and the reason when it only reports, with the
+/// origin class the record names: `api-emitted`, `local-first-save`,
+/// `native-equivalent` (one lossy step at quality 90 or above from a lossless
+/// source), `lossless`, or `unknown`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Verdict {
+    pub eligibility: Eligibility,
+    pub reason: Option<String>,
+    pub origin_class: String,
+}
+
+/// One parsed transcode chain: lossy steps with their qualities, and
+/// whether any step resampled.
+pub fn parse_transcode_chain(chain: &str) -> (Vec<Option<u32>>, bool) {
+    let mut lossy = Vec::new();
+    let mut resampled = false;
+    for step in chain.split([';', '>', ',']) {
+        let s = step.trim().to_ascii_lowercase();
+        if s.is_empty() {
+            continue;
+        }
+        if s.contains("resample") || s.contains("resize") || s.contains("scale") {
+            resampled = true;
+        }
+        let quality = s
+            .split(|c: char| !c.is_ascii_alphanumeric())
+            .find_map(|tok| tok.strip_prefix('q').and_then(|d| d.parse::<u32>().ok()))
+            .or_else(|| {
+                s.split_once("quality").and_then(|(_, rest)| {
+                    rest.trim_matches(|c: char| !c.is_ascii_digit())
+                        .parse()
+                        .ok()
+                })
+            });
+        let is_lossy = s.contains("lossy")
+            || s.contains("jpeg")
+            || s.contains("jpg")
+            || s.contains("webp lossy")
+            || quality.is_some();
+        if s.contains("lossless") {
+            continue;
+        }
+        if is_lossy {
+            lossy.push(quality);
+        }
+    }
+    (lossy, resampled)
+}
+
+/// The eligibility class only, for callers that need no reason.
 pub fn eligibility(a: &ManifestAsset) -> (Eligibility, Option<String>) {
-    if a.control {
-        return (Eligibility::Control, None);
-    }
-    if a.fields.get("identity_only").map(String::as_str) == Some("true") {
-        return (
-            Eligibility::ReportOnly,
-            Some("identity-only container".to_string()),
-        );
-    }
-    if let Some(rule) = a.fields.get("report_only") {
-        return (Eligibility::ReportOnly, Some(format!("rule {rule}")));
-    }
-    if a.post_processed {
-        return (Eligibility::Ladder, None);
-    }
-    let derived = match a.derived.as_str() {
-        "none" | "" => Eligibility::Floor,
-        "container" => Eligibility::Container,
-        other => return (Eligibility::ReportOnly, Some(format!("derived={other}"))),
+    let v = verdict(a);
+    (v.eligibility, v.reason)
+}
+
+/// The full verdict. The rules are the corpus rulings' filter fields:
+/// `derived` in {none, container} or a lossless-only transcode chain,
+/// `near_duplicate_of` null, `native_rate` true for audio, an emitted or
+/// native-equivalent origin for a lossy image, `variance_ok` true.
+pub fn verdict(a: &ManifestAsset) -> Verdict {
+    let report = |reason: &str, origin: &str| Verdict {
+        eligibility: Eligibility::ReportOnly,
+        reason: Some(reason.to_string()),
+        origin_class: origin.to_string(),
     };
-    if let Some(base) = &a.near_duplicate_of {
-        return (
-            Eligibility::ReportOnly,
-            Some(format!("near-duplicate of {base}")),
-        );
-    }
-    if a.variance_ok == Some(false) {
-        return (Eligibility::ReportOnly, Some("variance".to_string()));
-    }
-    let is_audio = matches!(a.container.as_str(), "wav" | "flac");
-    if is_audio && a.native_rate != Some(true) {
-        return (
-            Eligibility::ReportOnly,
-            Some("native_rate not true".to_string()),
-        );
-    }
     let lossy = a.container == "jpeg"
         || (a.container == "webp"
             && a.fields.get("webp_lossy").map(String::as_str) == Some("true"));
-    if lossy && a.native_origin != Some(true) && a.source_quality.is_none_or(|q| q < 90) {
-        return (
-            Eligibility::ReportOnly,
-            Some("source quality unknown or under 90".to_string()),
-        );
+    let origin_class = if !a.origin.is_empty() {
+        a.origin.clone()
+    } else if !lossy {
+        "lossless".to_string()
+    } else if a.native_origin == Some(true) {
+        "api-emitted".to_string()
+    } else if a.source_quality.is_some_and(|q| q >= 90) {
+        "native-equivalent".to_string()
+    } else {
+        "unknown".to_string()
+    };
+    if a.control {
+        return Verdict {
+            eligibility: Eligibility::Control,
+            reason: None,
+            origin_class,
+        };
     }
-    (derived, None)
+    if a.fields.get("identity_only").map(String::as_str) == Some("true") {
+        return report("identity-only container", &origin_class);
+    }
+    if let Some(rule) = a.fields.get("report_only") {
+        return report(&format!("rule {rule}"), &origin_class);
+    }
+    if a.post_processed {
+        return Verdict {
+            eligibility: Eligibility::Ladder,
+            reason: None,
+            origin_class,
+        };
+    }
+    let mut eligibility = match a.derived.as_str() {
+        "none" | "" => Eligibility::Floor,
+        "container" => Eligibility::Container,
+        other => return report(&format!("derived={other}"), &origin_class),
+    };
+    let mut origin_class = origin_class;
+    if !a.transcode_chain.is_empty() && a.derived != "none" && !a.derived.is_empty() {
+        let (lossy_steps, resampled) = parse_transcode_chain(&a.transcode_chain);
+        if resampled {
+            return report("resample in the transcode chain", &origin_class);
+        }
+        match lossy_steps.as_slice() {
+            [] => eligibility = Eligibility::Container,
+            [Some(q)] if *q >= 90 => {
+                eligibility = Eligibility::Floor;
+                origin_class = "native-equivalent".to_string();
+            }
+            [Some(q)] => return report(&format!("pre-compressed Q{q}"), &origin_class),
+            [None] => return report("lossy step of unknown quality", &origin_class),
+            steps => {
+                return report(
+                    &format!("{} lossy steps in the transcode chain", steps.len()),
+                    &origin_class,
+                )
+            }
+        }
+    }
+    if let Some(base) = &a.near_duplicate_of {
+        return report(&format!("near-duplicate of {base}"), &origin_class);
+    }
+    if a.variance_ok == Some(false) {
+        return report("variance", &origin_class);
+    }
+    let is_audio = matches!(a.container.as_str(), "wav" | "flac");
+    if is_audio && a.native_rate != Some(true) {
+        return report("native_rate not true", &origin_class);
+    }
+    if lossy && a.transcode_chain.is_empty() {
+        match origin_class.as_str() {
+            "api-emitted" | "local-first-save" | "native-equivalent" => {}
+            _ => {
+                return match a.source_quality {
+                    Some(q) => report(&format!("pre-compressed Q{q}"), &origin_class),
+                    None => report("source quality unknown", &origin_class),
+                }
+            }
+        }
+    }
+    Verdict {
+        eligibility,
+        reason: None,
+        origin_class,
+    }
 }
 
 // --- parsing --------------------------------------------------------------------------
@@ -610,6 +754,18 @@ pub fn parse_manifest_csv(text: &str) -> Result<Manifest, String> {
             near_duplicate_of: None,
             native_rate: None,
             native_origin: None,
+            origin: String::new(),
+            transcode_chain: get("transcode_chain"),
+            decoded_content_sha256: {
+                let v = get("decoded_content_sha256");
+                if v.is_empty() {
+                    None
+                } else {
+                    Some(v.to_ascii_lowercase())
+                }
+            },
+            cell_id: get("cell_id"),
+            license: get("license"),
             source_quality: None,
             variance_ok: None,
             band: None,
@@ -652,7 +808,7 @@ pub fn annotate(manifest: &mut Manifest, text: &str) -> Result<usize, String> {
         };
         for (h, v) in header.iter().zip(&row) {
             let name = h.trim();
-            if name == "doc_id" || name.is_empty() {
+            if matches!(name, "doc_id" | "path" | "sha256") || name.is_empty() {
                 continue;
             }
             manifest.assets[i].set_field(name, v);
@@ -891,13 +1047,41 @@ mod tests {
             .remove(0);
         let (e, r) = eligibility(&base);
         assert_eq!(e, Eligibility::ReportOnly);
-        assert!(r.unwrap().contains("source quality"));
+        assert!(r.unwrap().contains("source quality unknown"));
         let mut native = base.clone();
         native.native_origin = Some(true);
+        assert_eq!(verdict(&native).origin_class, "api-emitted");
         assert_eq!(eligibility(&native).0, Eligibility::Floor);
         let mut q = base.clone();
+        q.native_origin = Some(false);
         q.source_quality = Some(92);
-        assert_eq!(eligibility(&q).0, Eligibility::Floor);
+        let v = verdict(&q);
+        assert_eq!(
+            (v.eligibility, v.origin_class.as_str()),
+            (Eligibility::Floor, "native-equivalent")
+        );
+        let mut q75 = base.clone();
+        q75.native_origin = Some(false);
+        q75.source_quality = Some(75);
+        assert_eq!(eligibility(&q75).1.as_deref(), Some("pre-compressed Q75"));
+        let mut local = base.clone();
+        local.set_field("native_origin", "local-first-save");
+        let v = verdict(&local);
+        assert_eq!(
+            (v.eligibility, v.origin_class.as_str()),
+            (Eligibility::Floor, "local-first-save")
+        );
+        let mut chain = base.clone();
+        chain.container = "png".to_string();
+        chain.derived = "container".to_string();
+        chain.transcode_chain = "png->webp lossless".to_string();
+        assert_eq!(eligibility(&chain).0, Eligibility::Container);
+        chain.transcode_chain = "resample 0.5; png->webp lossless".to_string();
+        assert!(eligibility(&chain).1.unwrap().contains("resample"));
+        chain.transcode_chain = "png -> jpeg q92".to_string();
+        assert_eq!(verdict(&chain).origin_class, "native-equivalent");
+        chain.transcode_chain = "png -> jpeg q75".to_string();
+        assert_eq!(eligibility(&chain).1.as_deref(), Some("pre-compressed Q75"));
         let mut dup = native.clone();
         dup.near_duplicate_of = Some("d0".to_string());
         assert_eq!(eligibility(&dup).0, Eligibility::ReportOnly);

@@ -3,9 +3,9 @@
 All notable changes to this project are documented here. The format follows
 Keep a Changelog, and the project uses semantic versioning.
 
-## [Unreleased]
+## [0.2.0] - 2026-09-03
 
-Milestone 2 work toward 0.2.0. The image degrade profiles `image-safe` and
+The image degrade profiles `image-safe` and
 `image-aggressive` now run. The audio degrade profiles stay a usage error at
 exit 2 until the audio ceilings calibrate. Every ceiling is provisional until a
 calibration record with qualified cells lands.

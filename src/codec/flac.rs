@@ -39,8 +39,10 @@ pub fn decode(bytes: &[u8]) -> Result<Audio, CodecError> {
 pub fn encode(audio: &Audio, bits: u16) -> Result<Vec<u8>, CodecError> {
     use flacenc::component::BitRepr;
     use flacenc::error::Verify;
-    if !matches!(bits, 16 | 24) {
-        return Err(CodecError::Setting(format!("flac: {bits}-bit output")));
+    if !matches!(bits, 16 | 24) || (audio.float && bits == 32) {
+        return Err(CodecError::Setting(format!(
+            "flac: {bits}-bit output; FLAC carries integer PCM only"
+        )));
     }
     let channels = audio.channels.len();
     if channels == 0 || channels > 8 {
@@ -78,6 +80,7 @@ mod tests {
         let audio = Audio {
             rate: 8000,
             bits: 16,
+            float: false,
             channels: vec![
                 (0..9000)
                     .map(|i| ((i as f64 * 0.05).sin() * 12000.0).round() / full)

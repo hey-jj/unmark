@@ -1,7 +1,8 @@
-//! RIFF WAV PCM, read and written here without a dependency. Integer PCM at
-//! 8, 16, 24, and 32 bits is decoded, including the WAVE_FORMAT_EXTENSIBLE
-//! wrapper around PCM. Float WAV is refused. Encoding writes the canonical
-//! 44-byte header at 16 or 24 bits.
+//! RIFF WAV, read and written here without a dependency. Integer PCM at 8,
+//! 16, 24, and 32 bits and IEEE float32 (format tag 3) are decoded, including
+//! the WAVE_FORMAT_EXTENSIBLE wrapper around either. Encoding writes the
+//! canonical 44-byte header at 16 or 24 bits, or float32 when the samples
+//! came in as float32 and no requantization ran.
 
 use super::{Audio, CodecError};
 
@@ -51,15 +52,36 @@ pub fn decode(bytes: &[u8]) -> Result<Audio, CodecError> {
     let (tag, channels, rate, bits) =
         fmt.ok_or_else(|| CodecError::Malformed("wav: no fmt chunk".to_string()))?;
     let data = data.ok_or_else(|| CodecError::Malformed("wav: no data chunk".to_string()))?;
-    if tag != 1 {
-        return Err(CodecError::Unsupported(format!(
-            "wav: format tag {tag} is not integer PCM"
-        )));
-    }
     if channels == 0 || rate == 0 {
         return Err(CodecError::Malformed(
             "wav: zero channels or rate".to_string(),
         ));
+    }
+    if tag == 3 {
+        if bits != 32 {
+            return Err(CodecError::Unsupported(format!("wav: {bits}-bit float")));
+        }
+        let frame_bytes = 4 * channels as usize;
+        let frames = data.len() / frame_bytes;
+        let mut chans = vec![Vec::with_capacity(frames); channels as usize];
+        for f in 0..frames {
+            for (c, chan) in chans.iter_mut().enumerate() {
+                let at = f * frame_bytes + c * 4;
+                let v = f32::from_le_bytes([data[at], data[at + 1], data[at + 2], data[at + 3]]);
+                chan.push(v as f64);
+            }
+        }
+        return Ok(Audio {
+            rate,
+            bits: 32,
+            float: true,
+            channels: chans,
+        });
+    }
+    if tag != 1 {
+        return Err(CodecError::Unsupported(format!(
+            "wav: format tag {tag} is not integer PCM or float32"
+        )));
     }
     if !matches!(bits, 8 | 16 | 24 | 32) {
         return Err(CodecError::Unsupported(format!("wav: {bits}-bit PCM")));
@@ -90,16 +112,16 @@ pub fn decode(bytes: &[u8]) -> Result<Audio, CodecError> {
 }
 
 pub fn encode(audio: &Audio, bits: u16) -> Result<Vec<u8>, CodecError> {
-    if !matches!(bits, 16 | 24) {
+    let float = bits == 32 && audio.float;
+    if !(matches!(bits, 16 | 24) || float) {
         return Err(CodecError::Setting(format!("wav: {bits}-bit output")));
     }
     let channels = audio.channels.len() as u16;
     if channels == 0 {
         return Err(CodecError::Setting("wav: no channels".to_string()));
     }
-    let samples = audio.quantize(bits);
     let bytes_per = bits as usize / 8;
-    let data_len = samples.len() * bytes_per;
+    let data_len = audio.frames() * channels as usize * bytes_per;
     let mut out = Vec::with_capacity(44 + data_len + 1);
     out.extend_from_slice(b"RIFF");
     let riff_len = 36 + data_len + (data_len & 1);
@@ -107,7 +129,7 @@ pub fn encode(audio: &Audio, bits: u16) -> Result<Vec<u8>, CodecError> {
     out.extend_from_slice(b"WAVE");
     out.extend_from_slice(b"fmt ");
     out.extend_from_slice(&16u32.to_le_bytes());
-    out.extend_from_slice(&1u16.to_le_bytes());
+    out.extend_from_slice(&(if float { 3u16 } else { 1u16 }).to_le_bytes());
     out.extend_from_slice(&channels.to_le_bytes());
     out.extend_from_slice(&audio.rate.to_le_bytes());
     let block_align = channels as u32 * bytes_per as u32;
@@ -116,11 +138,20 @@ pub fn encode(audio: &Audio, bits: u16) -> Result<Vec<u8>, CodecError> {
     out.extend_from_slice(&bits.to_le_bytes());
     out.extend_from_slice(b"data");
     out.extend_from_slice(&(data_len as u32).to_le_bytes());
-    for s in samples {
-        let b = s.to_le_bytes();
-        match bits {
-            16 => out.extend_from_slice(&b[..2]),
-            _ => out.extend_from_slice(&b[..3]),
+    if float {
+        let n = audio.frames();
+        for i in 0..n {
+            for c in &audio.channels {
+                out.extend_from_slice(&(c[i] as f32).to_le_bytes());
+            }
+        }
+    } else {
+        for s in audio.quantize(bits) {
+            let b = s.to_le_bytes();
+            match bits {
+                16 => out.extend_from_slice(&b[..2]),
+                _ => out.extend_from_slice(&b[..3]),
+            }
         }
     }
     if data_len & 1 == 1 {
@@ -134,12 +165,41 @@ mod tests {
     use super::*;
 
     #[test]
+    fn float32_wav_round_trips_as_emitted() {
+        let audio = Audio {
+            rate: 44100,
+            bits: 32,
+            float: true,
+            channels: vec![
+                (0..300).map(|i| (i as f64 * 0.01).sin() * 0.7).collect(),
+                (0..300).map(|i| (i as f64 * 0.02).cos() * 0.3).collect(),
+            ],
+        };
+        let bytes = encode(&audio, 32).unwrap();
+        assert_eq!(
+            u16::from_le_bytes([bytes[20], bytes[21]]),
+            3,
+            "format tag 3"
+        );
+        let back = decode(&bytes).unwrap();
+        assert!(back.float && back.bits == 32);
+        assert_eq!(back.sample_format(), "float32");
+        for (a, b) in audio.channels.iter().zip(&back.channels) {
+            for (x, y) in a.iter().zip(b) {
+                assert_eq!(*x as f32, *y as f32);
+            }
+        }
+        assert_eq!(back.interleaved_le_bytes(), bytes[44..].to_vec());
+    }
+
+    #[test]
     fn wav_round_trips_at_16_and_24_bits() {
         for bits in [16u16, 24] {
             let full = (1i64 << (bits - 1)) as f64;
             let audio = Audio {
                 rate: 8000,
                 bits,
+                float: false,
                 channels: vec![
                     (0..50)
                         .map(|i| (i as f64 * 1000.0 - 25000.0) / full)
