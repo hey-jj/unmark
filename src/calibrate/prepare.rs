@@ -18,9 +18,13 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-/// The Hamming distance at or under which two difference hashes are one
-/// base image.
-pub const NEAR_DUPLICATE_BITS: u32 = 10;
+/// The default Hamming distance at or under which two difference hashes
+/// count as one base image: zero, so the hash collapse is off and
+/// `near_duplicate_of` comes from the manifest. A 64-bit difference hash
+/// cannot tell two document-style renders apart, so the automatic collapse
+/// is an opt-in with the distance stated, and every image row carries its
+/// hash and its distance to the nearest earlier base for the owner to read.
+pub const NEAR_DUPLICATE_BITS: u32 = 0;
 
 pub struct PrepareOptions {
     pub root: PathBuf,
@@ -34,6 +38,9 @@ pub struct PrepareOptions {
     pub derive_dir: Option<PathBuf>,
     /// Where synthetic clips are written; none to skip.
     pub synth_dir: Option<PathBuf>,
+    /// Hamming distance for the automatic near-duplicate collapse; zero
+    /// leaves the collapse to the manifest's `near_duplicate_of`.
+    pub near_duplicate_bits: u32,
     pub progress: Option<Progress>,
 }
 
@@ -218,6 +225,7 @@ pub fn prepare(
             row.fields.insert("claim_generator".to_string(), cg);
         }
         if let Some(h) = p.dhash {
+            row.fields.insert("dhash".to_string(), format!("{h:016x}"));
             if !row.post_processed && !row.control {
                 hashes.push((out_assets.len(), row.container.clone(), h));
             }
@@ -233,9 +241,22 @@ pub fn prepare(
         }
         let hit = bases
             .iter()
-            .find(|(c, bh, _)| c == container && (bh ^ h).count_ones() <= NEAR_DUPLICATE_BITS);
+            .filter(|(c, _, _)| c == container)
+            .map(|(_, bh, base)| ((bh ^ h).count_ones(), base))
+            .min_by_key(|(d, _)| *d);
         match hit {
-            Some((_, _, base)) => out_assets[*idx].near_duplicate_of = Some(base.clone()),
+            Some((d, base)) if opts.near_duplicate_bits > 0 && d <= opts.near_duplicate_bits => {
+                out_assets[*idx].near_duplicate_of = Some(base.clone());
+                out_assets[*idx]
+                    .fields
+                    .insert("near_duplicate_distance".to_string(), d.to_string());
+            }
+            Some((d, _)) => {
+                out_assets[*idx]
+                    .fields
+                    .insert("nearest_base_distance".to_string(), d.to_string());
+                bases.push((container.clone(), *h, out_assets[*idx].key()));
+            }
             None => bases.push((container.clone(), *h, out_assets[*idx].key())),
         }
     }
@@ -361,6 +382,9 @@ pub fn prepare(
                 }
             }
             Eligibility::Ladder => {
+                if a.fields.contains_key("identity_only") {
+                    continue;
+                }
                 *ladder
                     .entry(format!("{}/{}", a.container, a.ladder_step))
                     .or_default() += 1;

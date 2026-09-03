@@ -341,6 +341,12 @@ pub fn eligibility(a: &ManifestAsset) -> (Eligibility, Option<String>) {
     if a.control {
         return (Eligibility::Control, None);
     }
+    if a.fields.get("identity_only").map(String::as_str) == Some("true") {
+        return (
+            Eligibility::ReportOnly,
+            Some("identity-only container".to_string()),
+        );
+    }
     if a.post_processed {
         return (Eligibility::Ladder, None);
     }
