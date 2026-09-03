@@ -669,6 +669,7 @@ pub fn synth_clip(kind: &str, seconds: f64, seed: u64) -> Result<Vec<u8>, String
 }
 
 /// Wrap a phase into [-pi, pi].
+#[cfg(feature = "audio")]
 fn wrap(p: f64) -> f64 {
     if p > std::f64::consts::PI {
         p - 2.0 * std::f64::consts::PI

@@ -195,12 +195,12 @@ fn unknown_container_is_unsupported() {
 }
 
 #[test]
-fn non_v1_profile_is_rejected() {
+fn an_audio_degrade_profile_is_rejected_until_audio_calibrates() {
     let png = build_png(&PngOpts::default());
-    let err = inspect(&png, "image-safe", &pkg()).unwrap_err();
+    let err = inspect(&png, "audio-safe", &pkg()).unwrap_err();
     assert!(
         matches!(err, UnmarkError::Usage(_)),
-        "image-safe is milestone 2"
+        "audio-safe stays gated until the audio ceilings calibrate"
     );
 }
 
