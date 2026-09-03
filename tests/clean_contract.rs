@@ -463,3 +463,39 @@ fn the_usage_exit_is_distinct() {
     sorted.dedup();
     assert_eq!(sorted.len(), codes.len(), "every exit is distinct");
 }
+
+/// No natural input reaches the sanity floor, so the refusal path is
+/// exercised by raising the floor past any encode: the run must exit 50,
+/// write nothing, list nothing as stripped, and name the refusal.
+#[test]
+fn the_sanity_floor_refuses_with_exit_50_and_writes_nothing() {
+    let img = unmark::codec::Image {
+        width: 64,
+        height: 48,
+        channels: 3,
+        data: (0..64 * 48 * 3).map(|i| (i * 7 % 251) as u8).collect(),
+    };
+    let png = unmark::codec::png::encode(&img).unwrap();
+    let mut floor = pkg();
+    floor.sanity.psnr_floor_db = 200.0;
+    let out = clean(&png, &Options::default(), &floor).unwrap();
+    assert_eq!(out.report.exit_code, unmark::report::EXIT_SANITY);
+    assert!(out.output.is_none(), "the refusal wrote an output");
+    assert!(out.report.stripped_and_proven_gone.is_empty());
+    let sanity = out.report.sanity.as_ref().expect("the floor is reported");
+    assert!(!sanity.passed);
+    assert_eq!(sanity.psnr_floor_db, 200.0);
+    assert!(sanity.refusal.as_deref().unwrap_or("").contains("200"));
+    assert!(sanity.psnr_db.is_some_and(|p| p < 200.0));
+    // The SSIM floor alone refuses the same way, and a floor the encode
+    // clears runs at exit 0 with the same measurement.
+    let mut ssim_floor = pkg();
+    ssim_floor.sanity.ssim_floor = 1.5;
+    let out = clean(&png, &Options::default(), &ssim_floor).unwrap();
+    assert_eq!(out.report.exit_code, unmark::report::EXIT_SANITY);
+    assert!(out.output.is_none());
+    let out = clean(&png, &Options::default(), &pkg()).unwrap();
+    assert_eq!(out.report.exit_code, EXIT_OK);
+    assert!(out.report.sanity.as_ref().unwrap().passed);
+    assert!(out.output.is_some());
+}
