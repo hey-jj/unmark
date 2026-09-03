@@ -3,7 +3,7 @@
 Regenerate with `unmark policy snapshot` after any policy change. Edits here are overwritten.
 
 - policy version: 0.2.0
-- policy digest: sha256:b1542b769b066e6dc18394b9a34f1667d9d907e768077e3839772bc6564c95d9
+- policy digest: sha256:87195ab30a872688e091c5927935a77c9a4f4ec22d45c966c2c288d02924db2f
 
 ## What the tool may say about each mark
 
@@ -182,7 +182,7 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 - target: LSB marks and fragile high-frequency DCT structure
 - parameters: jpeg_chroma=4:4:4, jpeg_quality=92
-- Decode and encode once at the pinned quality. A JPEG input comes back as a baseline JPEG at quality 92 with 4:4:4 chroma from the crate's own encoder. A PNG or WebP input has no lossy pure Rust encoder in this build, so the emitted format on those inputs awaits the owner's ruling and the plan reports the transform as held.
+- Decode and encode once at the pinned quality with the crate's own baseline JPEG encoder, quality 92 and 4:4:4 chroma. A JPEG input always comes back as JPEG. A PNG or WebP input comes back as JPEG when the decoded image is opaque. When it carries alpha, the re-encode is skipped and the plan and report say so in one line, since no lossy encoder in this build keeps alpha and flattening it would invent a background. The output container is named in the report, and clean refuses an output path whose extension contradicts it.
 
 ### AU01 resample-round-trip (tier residual, fidelity mild, default true, milestone 2)
 
@@ -227,7 +227,7 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 ## Fidelity budgets
 
-Calibration status: provisional. Record: policy/calibration.json. Record sha256: 9a15eca069539de1ca6162af3d7e05fdec8f5f15db35b96ab271a28c3cfd71cb. Corpus manifest sha256: b4fe1d820ed92d50ada94c0b3104a5eadf0a0479f94837c3ad45427b06d86362. Date: 2026-09-03.
+Calibration status: provisional. Record: policy/calibration.json. Record sha256: 3d7b45e16b53ae39cfe0d30547a57a833e4b34cf31a159914f0b712a36be742d. Corpus manifest sha256: 2b2c8cd9c78f0d15ea20b43a173e0fdb391436ad3d5ffaa6ff2f9a23dc9a584f. Date: 2026-09-03.
 
 | Budget | Kind | Signal floor or ceiling | Geometry |
 |---|---|---|---|

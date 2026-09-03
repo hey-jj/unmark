@@ -165,6 +165,10 @@ fn the_cli_exits_2_when_the_out_extension_contradicts_the_emitted_container() {
     assert!(!wrong.exists(), "nothing is written on the contradiction");
     let stderr = String::from_utf8_lossy(&out.stderr);
     assert!(stderr.contains("emits jpeg"), "{stderr}");
+    // The report is still emitted, carrying the usage exit and the container.
+    let report: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(report["exit_code"], 2);
+    assert_eq!(report["output_format"], "jpeg");
     let right = dir.join("out.jpg");
     let out = Command::new(env!("CARGO_BIN_EXE_unmark"))
         .args([

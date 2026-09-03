@@ -11,9 +11,12 @@ use unmark::asset::{Format, SUPPORTED_CONTAINERS};
 use unmark::budget;
 use unmark::container;
 use unmark::detect;
+use unmark::policy;
+#[cfg(feature = "audio")]
 use unmark::report::EXIT_UNSUPPORTED;
 use unmark::scan::ScanState;
-use unmark::{clean, policy, Options};
+#[cfg(feature = "audio")]
+use unmark::{clean, Options};
 
 fn fixture(name: &str) -> Vec<u8> {
     let path: PathBuf = [env!("CARGO_MANIFEST_DIR"), "fixtures", name]
@@ -22,6 +25,7 @@ fn fixture(name: &str) -> Vec<u8> {
     std::fs::read(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()))
 }
 
+#[cfg(feature = "audio")]
 fn ack_opts() -> Options {
     Options {
         i_generated_this: true,

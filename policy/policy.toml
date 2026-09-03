@@ -313,7 +313,7 @@ default = true
 milestone = 2
 params = { jpeg_quality = 92, jpeg_chroma = "4:4:4" }
 target = "LSB marks and fragile high-frequency DCT structure"
-guard = "Decode and encode once at the pinned quality. A JPEG input comes back as a baseline JPEG at quality 92 with 4:4:4 chroma from the crate's own encoder. A PNG or WebP input has no lossy pure Rust encoder in this build, so the emitted format on those inputs awaits the owner's ruling and the plan reports the transform as held."
+guard = "Decode and encode once at the pinned quality with the crate's own baseline JPEG encoder, quality 92 and 4:4:4 chroma. A JPEG input always comes back as JPEG. A PNG or WebP input comes back as JPEG when the decoded image is opaque. When it carries alpha, the re-encode is skipped and the plan and report say so in one line, since no lossy encoder in this build keeps alpha and flattening it would invent a background. The output container is named in the report, and clean refuses an output path whose extension contradicts it."
 
 # --- audio degrade transforms, milestone 2, none confirmable ----------------
 
@@ -534,8 +534,8 @@ record = "policy/calibration.json"
 # calibrated. Every field below except base_seed and the percentile rules is
 # written by the harness.
 status = "provisional"
-record_sha256 = "9a15eca069539de1ca6162af3d7e05fdec8f5f15db35b96ab271a28c3cfd71cb"
-corpus_manifest_sha256 = "b4fe1d820ed92d50ada94c0b3104a5eadf0a0479f94837c3ad45427b06d86362"
+record_sha256 = "3d7b45e16b53ae39cfe0d30547a57a833e4b34cf31a159914f0b712a36be742d"
+corpus_manifest_sha256 = "2b2c8cd9c78f0d15ea20b43a173e0fdb391436ad3d5ffaa6ff2f9a23dc9a584f"
 date = "2026-09-03"
 # XORed with the first 8 bytes of sha256(input) to seed PX05 and AU02, so one
 # asset always gets the same noise and two assets never share a pattern.

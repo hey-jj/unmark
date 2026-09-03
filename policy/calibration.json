@@ -5,7 +5,7 @@
   "date": "2026-09-03",
   "corpus": {
     "manifest": "manifest.json",
-    "manifest_sha256": "b4fe1d820ed92d50ada94c0b3104a5eadf0a0479f94837c3ad45427b06d86362",
+    "manifest_sha256": "2b2c8cd9c78f0d15ea20b43a173e0fdb391436ad3d5ffaa6ff2f9a23dc9a584f",
     "filters": {
       "include_rounds": [],
       "exclude_rounds": [],
@@ -270,7 +270,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -325,7 +325,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -383,7 +383,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -438,7 +438,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -496,7 +496,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -545,7 +545,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -597,7 +597,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -646,7 +646,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -698,7 +698,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -747,7 +747,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -799,7 +799,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -848,7 +848,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -900,7 +900,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -949,7 +949,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -1001,7 +1001,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -1050,7 +1050,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -1102,7 +1102,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -1151,7 +1151,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -1203,7 +1203,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -1252,7 +1252,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -1304,7 +1304,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -1353,7 +1353,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -1405,7 +1405,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -1454,7 +1454,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -1506,7 +1506,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -1555,7 +1555,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -1607,7 +1607,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -1665,7 +1665,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -1723,7 +1723,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -1775,7 +1775,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -1827,7 +1827,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -1879,7 +1879,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -1931,7 +1931,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -1983,7 +1983,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -2035,7 +2035,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -2087,7 +2087,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -2139,7 +2139,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -2191,7 +2191,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -2243,7 +2243,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -2295,7 +2295,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -2350,7 +2350,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -2408,7 +2408,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -2463,7 +2463,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -2521,7 +2521,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -2570,7 +2570,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -2622,7 +2622,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -2671,7 +2671,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -2723,7 +2723,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -2772,7 +2772,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -2824,7 +2824,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -2873,7 +2873,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -2925,7 +2925,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -2974,7 +2974,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -3026,7 +3026,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -3075,7 +3075,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -3127,7 +3127,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -3176,7 +3176,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -3228,7 +3228,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -3277,7 +3277,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -3329,7 +3329,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -3378,7 +3378,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -3430,7 +3430,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -3479,7 +3479,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -3531,7 +3531,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -3580,7 +3580,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -3632,7 +3632,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -3690,7 +3690,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -3748,7 +3748,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -3800,7 +3800,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -3852,7 +3852,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -3904,7 +3904,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -3956,7 +3956,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -4008,7 +4008,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -4060,7 +4060,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -4112,7 +4112,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -4164,7 +4164,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -4216,7 +4216,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -4268,7 +4268,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -4320,7 +4320,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -4378,7 +4378,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -4436,7 +4436,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -4488,7 +4488,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -4540,7 +4540,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -4592,7 +4592,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -4644,7 +4644,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -4696,7 +4696,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -4748,7 +4748,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -4800,7 +4800,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -4852,7 +4852,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -4904,7 +4904,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -4956,7 +4956,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -5008,7 +5008,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           2
         ]
       ],
@@ -5057,7 +5057,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -5109,7 +5109,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           2
         ]
       ],
@@ -5158,7 +5158,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -5210,7 +5210,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           2
         ]
       ],
@@ -5254,7 +5254,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -5301,7 +5301,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           2
         ]
       ],
@@ -5345,7 +5345,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -5392,7 +5392,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           2
         ]
       ],
@@ -5436,7 +5436,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -5483,7 +5483,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           2
         ]
       ],
@@ -5527,7 +5527,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -5574,7 +5574,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           2
         ]
       ],
@@ -5618,7 +5618,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -5722,7 +5722,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           2
         ]
       ],
@@ -5766,7 +5766,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -5813,7 +5813,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           2
         ]
       ],
@@ -5857,7 +5857,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -5904,7 +5904,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           2
         ]
       ],
@@ -5953,7 +5953,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -6005,7 +6005,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           2
         ]
       ],
@@ -6054,7 +6054,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -6106,7 +6106,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           2
         ]
       ],
@@ -6150,7 +6150,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -6197,7 +6197,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           2
         ]
       ],
@@ -6241,7 +6241,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -6288,7 +6288,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           2
         ]
       ],
@@ -6332,7 +6332,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -6379,7 +6379,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           2
         ]
       ],
@@ -6423,7 +6423,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -6470,7 +6470,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           2
         ]
       ],
@@ -6514,7 +6514,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -6618,7 +6618,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           2
         ]
       ],
@@ -6662,7 +6662,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -6709,7 +6709,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           2
         ]
       ],
@@ -6753,7 +6753,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -6799,7 +6799,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -6854,7 +6854,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -6909,7 +6909,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -6964,7 +6964,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -7019,7 +7019,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -7074,7 +7074,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -7129,7 +7129,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -7184,7 +7184,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           2
         ]
       ],
@@ -7239,7 +7239,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -7294,7 +7294,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "dense texture",
+          "dense-texture",
           1
         ]
       ],
@@ -7349,7 +7349,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -7398,7 +7398,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -7447,7 +7447,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -7496,7 +7496,7 @@
       "generator_cap_ok": false,
       "classes": [
         [
-          "tonal synthetic",
+          "tonal-synthetic",
           1
         ]
       ],
@@ -7678,7 +7678,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
-      "content_class": "dense texture",
+      "content_class": "dense-texture",
       "origin_class": "lossless",
       "plans": [
         {
@@ -7776,7 +7776,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
-      "content_class": "dense texture",
+      "content_class": "dense-texture",
       "origin_class": "lossless",
       "plans": [
         {
@@ -7874,7 +7874,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
-      "content_class": "dense texture",
+      "content_class": "dense-texture",
       "origin_class": "lossless",
       "plans": [
         {
@@ -7972,7 +7972,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
-      "content_class": "dense texture",
+      "content_class": "dense-texture",
       "origin_class": "api-emitted",
       "plans": [
         {
@@ -8070,7 +8070,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
-      "content_class": "dense texture",
+      "content_class": "dense-texture",
       "origin_class": "api-emitted",
       "plans": [
         {
@@ -8168,7 +8168,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
-      "content_class": "dense texture",
+      "content_class": "dense-texture",
       "origin_class": "api-emitted",
       "plans": [
         {
@@ -8266,7 +8266,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
-      "content_class": "dense texture",
+      "content_class": "dense-texture",
       "origin_class": "lossless",
       "plans": [
         {
@@ -8364,7 +8364,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
-      "content_class": "dense texture",
+      "content_class": "dense-texture",
       "origin_class": "lossless",
       "plans": [
         {
@@ -8462,7 +8462,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
-      "content_class": "dense texture",
+      "content_class": "dense-texture",
       "origin_class": "lossless",
       "plans": [
         {
@@ -8560,7 +8560,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
-      "content_class": "tonal synthetic",
+      "content_class": "tonal-synthetic",
       "origin_class": "lossless",
       "plans": [
         {
@@ -8630,7 +8630,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
-      "content_class": "tonal synthetic",
+      "content_class": "tonal-synthetic",
       "origin_class": "lossless",
       "plans": [
         {
@@ -8700,7 +8700,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
-      "content_class": "tonal synthetic",
+      "content_class": "tonal-synthetic",
       "origin_class": "lossless",
       "plans": [
         {
@@ -8770,7 +8770,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
-      "content_class": "tonal synthetic",
+      "content_class": "tonal-synthetic",
       "origin_class": "lossless",
       "plans": [
         {
@@ -8840,7 +8840,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
-      "content_class": "tonal synthetic",
+      "content_class": "tonal-synthetic",
       "origin_class": "lossless",
       "plans": [
         {
@@ -8910,7 +8910,7 @@
       "eligibility": "floor",
       "documented_marks": [],
       "generator": "unmark calibration_fixtures (synthetic)",
-      "content_class": "tonal synthetic",
+      "content_class": "tonal-synthetic",
       "origin_class": "lossless",
       "plans": [
         {

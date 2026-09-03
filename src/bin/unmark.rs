@@ -249,6 +249,11 @@ fn cmd_clean(mut parser: lexopt::Parser) -> Result<i32, lexopt::Error> {
                             outcome.report.output_format,
                             expected.join(" or .")
                         );
+                        // The report still goes out, carrying the usage exit,
+                        // so the caller can read the emitted container.
+                        let mut refused = outcome.report.clone();
+                        refused.exit_code = EXIT_USAGE;
+                        emit(output_text, &refused);
                         return Ok(EXIT_USAGE);
                     }
                 }

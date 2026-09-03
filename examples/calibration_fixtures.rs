@@ -147,7 +147,7 @@ fn main() {
         None,
         None,
         None,
-        "dense texture",
+        "dense-texture",
     );
     let png_m = image(900, 40, 4, 2);
     add(
@@ -159,7 +159,7 @@ fn main() {
         None,
         None,
         None,
-        "dense texture",
+        "dense-texture",
     );
     let png_l = image(1400, 32, 3, 3);
     add(
@@ -171,7 +171,7 @@ fn main() {
         None,
         None,
         None,
-        "dense texture",
+        "dense-texture",
     );
 
     let jpg_s = image(320, 208, 3, 4);
@@ -184,7 +184,7 @@ fn main() {
         None,
         None,
         None,
-        "dense texture",
+        "dense-texture",
     );
     let jpg_m = image(904, 40, 3, 5);
     add(
@@ -196,7 +196,7 @@ fn main() {
         None,
         None,
         None,
-        "dense texture",
+        "dense-texture",
     );
     let jpg_l = image(1408, 32, 3, 6);
     add(
@@ -208,7 +208,7 @@ fn main() {
         None,
         None,
         None,
-        "dense texture",
+        "dense-texture",
     );
 
     let webp_s = image(320, 200, 4, 7);
@@ -221,7 +221,7 @@ fn main() {
         None,
         None,
         None,
-        "dense texture",
+        "dense-texture",
     );
     let webp_m = image(900, 40, 3, 8);
     add(
@@ -233,7 +233,7 @@ fn main() {
         None,
         None,
         None,
-        "dense texture",
+        "dense-texture",
     );
     let webp_l = image(1300, 32, 3, 9);
     add(
@@ -245,7 +245,7 @@ fn main() {
         None,
         None,
         None,
-        "dense texture",
+        "dense-texture",
     );
 
     // Audio: short at or under 10 s, medium to 60 s, long above. Lower rates
@@ -260,7 +260,7 @@ fn main() {
         Some(1.0),
         Some(44100),
         Some(2),
-        "tonal synthetic",
+        "tonal-synthetic",
     );
     let wav_m = audio(8000, 12.0, 1, 24, 12);
     add(
@@ -272,7 +272,7 @@ fn main() {
         Some(12.0),
         Some(8000),
         Some(1),
-        "tonal synthetic",
+        "tonal-synthetic",
     );
     let wav_l = audio(4000, 61.0, 1, 16, 13);
     add(
@@ -284,7 +284,7 @@ fn main() {
         Some(61.0),
         Some(4000),
         Some(1),
-        "tonal synthetic",
+        "tonal-synthetic",
     );
 
     let flac_s = audio(48000, 1.0, 2, 16, 14);
@@ -297,7 +297,7 @@ fn main() {
         Some(1.0),
         Some(48000),
         Some(2),
-        "tonal synthetic",
+        "tonal-synthetic",
     );
     let flac_m = audio(8000, 11.0, 1, 24, 15);
     add(
@@ -309,7 +309,7 @@ fn main() {
         Some(11.0),
         Some(8000),
         Some(1),
-        "tonal synthetic",
+        "tonal-synthetic",
     );
     let flac_l = audio(8000, 62.0, 1, 16, 16);
     add(
@@ -321,7 +321,7 @@ fn main() {
         Some(62.0),
         Some(8000),
         Some(1),
-        "tonal synthetic",
+        "tonal-synthetic",
     );
 
     let manifest = Manifest {

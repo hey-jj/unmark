@@ -543,6 +543,106 @@ mod tests {
         assert_eq!(ceil_to_step(0.75, 0.05), 0.75);
     }
 
+    fn image_row(i: usize, class: &str) -> AssetResult {
+        AssetResult {
+            doc_id: format!("d{i:03}"),
+            sha256: format!("{i:064x}"),
+            container: "png".to_string(),
+            band: "large".to_string(),
+            derived: "none".to_string(),
+            eligibility: Eligibility::Floor,
+            reason: None,
+            documented_marks: Vec::new(),
+            generator: format!("gen-{}", i % 3),
+            content_class: class.to_string(),
+            origin_class: "lossless".to_string(),
+            cell_id: String::new(),
+            license: String::new(),
+            sample_format: String::new(),
+            decoded_hash_agreement: None,
+            near_duplicate_rule: String::new(),
+            ladder_step: String::new(),
+            strata: Vec::new(),
+            fixture: false,
+            excluded: None,
+            plans: vec![
+                super::super::evaluate::PlanScore {
+                    plan: "image-safe".to_string(),
+                    score: Score::Image {
+                        psnr_db: 40.0 + i as f64 * 0.01,
+                        ssim: 0.99,
+                    },
+                },
+                super::super::evaluate::PlanScore {
+                    plan: "image-aggressive".to_string(),
+                    score: Score::Image {
+                        psnr_db: 33.0,
+                        ssim: 0.9,
+                    },
+                },
+            ],
+        }
+    }
+
+    #[test]
+    fn forty_single_class_rows_are_count_qualified_never_qualified() {
+        let pkg = crate::policy::load().unwrap();
+        let rows: Vec<AssetResult> = (0..40).map(|i| image_row(i, "text-ui")).collect();
+        let refs: Vec<&AssetResult> = rows.iter().collect();
+        let input = CellInput {
+            plan: "image-safe".to_string(),
+            format: "png".to_string(),
+            bands: vec!["large".to_string()],
+            derived: "none".to_string(),
+            assets: refs,
+            collapsed: 0,
+            pixel_collapsed: 0,
+        };
+        let cell = build_cell(&input, &pkg, false, Some("image-aggressive"));
+        assert_eq!(cell.count, 40);
+        assert!(cell.generator_cap_ok);
+        assert_eq!(cell.status, "count-qualified");
+        assert!(!cell.qualified);
+        assert_eq!(
+            cell.missing_classes,
+            vec!["photographic", "flat-illustration", "dense-texture"]
+        );
+        // Ten of each required class qualifies.
+        let classes = [
+            "photographic",
+            "flat-illustration",
+            "dense-texture",
+            "text-ui",
+        ];
+        let rows: Vec<AssetResult> = (0..40).map(|i| image_row(i, classes[i % 4])).collect();
+        let refs: Vec<&AssetResult> = rows.iter().collect();
+        let input = CellInput {
+            plan: "image-safe".to_string(),
+            format: "png".to_string(),
+            bands: vec!["large".to_string()],
+            derived: "none".to_string(),
+            assets: refs,
+            collapsed: 0,
+            pixel_collapsed: 0,
+        };
+        let cell = build_cell(&input, &pkg, false, Some("image-aggressive"));
+        assert_eq!(cell.status, "qualified");
+        assert!(cell.qualified && cell.missing_classes.is_empty());
+        // Thirty-nine rows never qualify, whatever the classes.
+        let rows: Vec<AssetResult> = (0..39).map(|i| image_row(i, classes[i % 4])).collect();
+        let refs: Vec<&AssetResult> = rows.iter().collect();
+        let input = CellInput {
+            plan: "image-safe".to_string(),
+            format: "png".to_string(),
+            bands: vec!["large".to_string()],
+            derived: "none".to_string(),
+            assets: refs,
+            collapsed: 0,
+            pixel_collapsed: 0,
+        };
+        assert_eq!(build_cell(&input, &pkg, false, None).status, "unqualified");
+    }
+
     #[test]
     fn passes_reads_the_budget_direction() {
         let img = Budget::Image {

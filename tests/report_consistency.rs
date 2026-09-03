@@ -4,12 +4,15 @@
 
 mod common;
 use common::*;
-use unmark::report::{EXIT_INSTRUMENTATION, EXIT_RESIDUAL};
+#[cfg(feature = "audio")]
+use unmark::report::EXIT_INSTRUMENTATION;
+use unmark::report::EXIT_RESIDUAL;
 use unmark::{clean, policy, Options};
 
 /// A WAV with a `fmt ` chunk and a LIST INFO chunk and no `data` chunk. The
 /// strip succeeds in memory, but the signal stream is empty on both sides, so
 /// the identity gate refuses at exit 30 and nothing is written.
+#[cfg(feature = "audio")]
 fn no_data_wav() -> Vec<u8> {
     let mut fmt = Vec::new();
     fmt.extend_from_slice(&1u16.to_le_bytes());
