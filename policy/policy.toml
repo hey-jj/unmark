@@ -383,12 +383,14 @@ keep = [
 # ---------------------------------------------------------------------------
 # Sanity floor. The one refusal in the run: an output whose signal fidelity
 # against the grid-matched reference falls below this is a broken encode, and
-# clean exits 50 with nothing written. The values are PROPOSED to the owner
-# with the fixture evidence in the release report.
+# clean exits 50 with nothing written. The values were proposed with the
+# fixture evidence in the milestone-one report and confirmed by the owner's
+# review of 2026-09-03, together with the resize ratio 0.95 and the dwtDct
+# agreement threshold 0.80 as the shipped pins.
 # ---------------------------------------------------------------------------
 
 [sanity]
-status = "proposed"
+status = "confirmed by owner review 2026-09-03"
 psnr_floor_db = 25.0
 ssim_floor = 0.6
 

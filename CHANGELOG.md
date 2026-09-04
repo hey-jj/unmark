@@ -39,7 +39,7 @@ gone, what was kept and why, and what survived.
   Vorbis comment strip.
 - A directory input, processed one file at a time with one report per file.
 - Exit 50, the sanity floor: an output whose PSNR or SSIM against its
-  grid-matched reference falls below the proposed floor is refused and nothing
+  grid-matched reference falls below the floor is refused and nothing
   is written.
 - Builder-rendered efficacy fixtures under `fixtures/efficacy/`, watermarked
   through the subprocess oracle, and `examples/metrics.rs` over a directory.

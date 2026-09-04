@@ -30,7 +30,7 @@ fn the_package_carries_the_default_run_and_the_held_list() {
     assert_eq!(pkg.guards.len(), 5);
     assert!(pkg.transform("PX02").unwrap().cited_effect.is_some());
     assert!(pkg.mark_class("dwtdct").is_some());
-    assert_eq!(pkg.sanity.status, "proposed");
+    assert_eq!(pkg.sanity.status, "confirmed by owner review 2026-09-03");
 }
 
 /// The vocabulary the redirect forbids in the shipped policy: run profiles,

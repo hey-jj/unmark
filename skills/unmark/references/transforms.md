@@ -3,7 +3,7 @@
 Regenerate with `unmark policy snapshot` after any policy change. Edits here are overwritten.
 
 - policy version: 0.2.0
-- policy digest: sha256:31736d3ac0528b055680de2cca4c5a7bd19f4593c53ba1685aa6543a8dd93085
+- policy digest: sha256:75cb18f5372a564cb467df9048adee58a9a3e44db66aaeb9281e23175fffcece
 
 ## What the tool may say about each mark
 
@@ -212,7 +212,7 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 ## Sanity floor
 
-Status proposed. An output scoring below PSNR 25.0 dB or SSIM 0.60 against its grid-matched reference is a broken encode: clean exits 50 and writes nothing.
+Status confirmed by owner review 2026-09-03. An output scoring below PSNR 25.0 dB or SSIM 0.60 against its grid-matched reference is a broken encode: clean exits 50 and writes nothing.
 
 ## Guardrails
 
