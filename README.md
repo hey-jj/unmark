@@ -1,15 +1,14 @@
 # unmark
 
-unmark strips every mark it can find by default and keeps a content credential only
-where a well-formed C2PA claim identifies a camera or sensor capture with no later
-generative action. Every policy flag turns a strip off. The report lists what was
-stripped and proven gone, what was kept and why, and what survived.
-
-unmark removes container metadata, C2PA content credentials, EXIF and XMP fields, PNG
-generation chunks, audio tags, RIFF ancillary chunks, MP4 `ilst` atoms, FLAC Vorbis
-comments, and invisible Unicode. It removes the dwtDct pixel mark by a mild resize and
-proves the removal with its own detector. It runs offline, it is deterministic, and it
-is pure Rust.
+unmark strips the marks it detects from an image, audio file, or text file: container
+metadata, C2PA content credentials, EXIF and XMP fields, PNG generation chunks, audio
+tags, RIFF ancillary chunks, MP4 `ilst` atoms, FLAC Vorbis comments, invisible Unicode,
+and the dwtDct pixel mark, which a mild resize removes and the built-in detector proves
+gone. A well-formed C2PA claim that identifies a camera or sensor capture with no later
+generative action is kept, and that output is byte-identical. Each flag preserves one
+thing. The report lists the marks removed and proven gone, the items kept with their
+reasons, and the marks that survive. It runs offline, it is deterministic, and it is
+pure Rust.
 
 ## Install
 
@@ -25,9 +24,7 @@ cargo install unmark --features audio
 
 ## Use
 
-unmark has no profiles. Each sniffed container receives one default run. Use `--keep
-<id|class>` or `--no-degrade` to preserve selected content. Use `--strip-capture` to
-override the certified-capture keep.
+One default run covers each file. The flags below preserve selected items.
 
 ```
 unmark inspect --output text asset.png
@@ -70,13 +67,12 @@ named mark.
 | MP3, MP4, M4A | Tag strips |
 | Text, SVG, HTML | Invisible Unicode and generator-header strips |
 
-The resize is the removal path for the dwtDct mark that Stable Diffusion pipelines
-write. The pin is the mildest ratio that changes both dimensions of every input and
-defeats every efficacy fixture. A sweep from 0.995 down to 0.5 found no ratio at which
-any fixture survived. At 0.95 the round-trip PSNR against the input is above 31 dB and
-the SSIM above 0.93 on every fixture. The highpass is cited against AudioSeal at
-accuracy 0.61 with a true-positive rate of 0.82 and a false-positive rate of 0.60, and
-the report carries that figure.
+The resize removes the dwtDct mark that Stable Diffusion pipelines write. Ratio 0.95
+is the mildest value in the sweep that changes both dimensions of every input and
+defeats every efficacy fixture. No ratio between 0.995 and 0.5 let any fixture
+survive. At 0.95 the round-trip PSNR against the input is above 31 dB and the SSIM
+above 0.93 on every fixture. For the highpass the report cites the AudioSeal figures:
+accuracy 0.61, true-positive rate 0.82, false-positive rate 0.60.
 
 ## Certified capture
 
@@ -98,16 +94,16 @@ manifest without a capture action, and `--keep c2pa` preserves it.
 - `survived`: the marks the run leaves in place, each with its evidence and a citation.
 - `actions`: every transform with its strength, outcome, and result.
 - `capture`: the capture status, the quoted claim or the named hint, and the line the run prints.
-- `scan_states`: one state per mark class. `confirmed_present` and `confirmed_absent` are exhaustive reads over a supported container. `unsupported_format` and `malformed` carry their evidence in `findings`. `not_attempted` marks a class this build reads from citations.
+- `scan_states`: one state per mark class. `confirmed_present` and `confirmed_absent` are exhaustive reads over a supported container. `unsupported_format` and `malformed` carry their evidence in `findings`. `not_attempted` marks a keyed mark class, whose row carries a citation in place of a decode.
 - `sanity`: the PSNR and SSIM of the output against its grid-matched reference and the floor they are held to.
 
 ## Fixtures and the oracle
 
-`fixtures/efficacy/` holds builder-rendered images watermarked with both documented
-dwtDct payloads through the invisible-watermark package, run as a subprocess oracle.
-CI installs the package and requires the oracle agreement checks. A local run without
-it skips them and says so. `examples/metrics.rs` reports the
-detector's decisions and the resize sweep with PSNR and SSIM over a directory.
+The efficacy fixtures under `fixtures/efficacy/` are builder-rendered images that the
+invisible-watermark subprocess oracle marks with both documented dwtDct payloads. CI
+installs the package and requires the oracle agreement checks. Install the package to
+run those checks locally. `examples/metrics.rs` reports the detector's decisions and
+the resize sweep with PSNR and SSIM over a directory.
 
 ## The skill
 

@@ -5,31 +5,28 @@ Keep a Changelog, and the project uses semantic versioning.
 
 ## [0.2.0] - 2026-09-04
 
-unmark strips every mark it can find by default and keeps a content
-credential only where a well-formed C2PA claim identifies a camera or sensor
-capture with no later generative action. Every policy flag turns a strip
-off. The report lists what was stripped and proven gone, what was kept and
-why, and what survived.
+0.2.0 replaces the profiles with one default run per file that strips every
+detected mark. A well-formed C2PA camera or sensor capture claim is the one
+default keep. Opt-out flags replace the opt-in flags, and the report
+separates proven removals, kept items with reasons, and survivors.
 
 ### Added
 
-- The dwtDct detector, an in-crate implementation of the reference decode over
-  the U channel, one Haar level, 4x4 blocks, and a quantization step of 36,
-  for both documented payloads. The presence rule is a Hamming agreement of
-  0.80 with a measured false-positive fraction of zero over 205 unmarked
-  images.
+- An in-crate dwtDct detector that decodes both documented payloads from
+  the U channel with one Haar level, 4x4 blocks, and quantization step 36.
+  The presence rule is a Hamming agreement of 0.80 with a measured
+  false-positive fraction of zero over 205 unmarked images.
 - `PX02`, a resize at ratio 0.95 with a Lanczos3 filter, the measured removal
-  path for the dwtDct mark. `PX01`, a same-container re-encode at quality 92
-  with 4:4:4 chroma on JPEG input. `AU06`, a 1500 Hz highpass cited against
-  AudioSeal.
+  path for the dwtDct mark. `PX01`, a quality-92, 4:4:4 JPEG write of JPEG
+  input. `AU06`, a 1500 Hz highpass cited against AudioSeal.
 - Certified capture: a well-formed C2PA capture claim with no later generative
   action is kept byte-identical and reported with its quoted claim and
   signature status. `--strip-capture` strips it. Well-formed is structural:
   in-crate JUMBF and CBOR readers parse the store, the claim, its assertion
   references, the actions assertion, and the signer certificate names.
 - The capture-uncertain hint for camera EXIF without a claim.
-- Kept metadata rides through every re-encode: PNG chunks, JPEG segments,
-  WebP EXIF, XMP, and ICC, FLAC metadata blocks, and WAV chunks.
+- Every re-encode preserves the kept PNG chunks, JPEG segments, WebP EXIF,
+  XMP, and ICC data, FLAC metadata blocks, and WAV chunks.
 - A chroma-subsampled JPEG reports its dwtDct row as `unsupported_format`
   with the measured note in `findings`.
 - `--keep <id|class>`, repeatable, and `--no-degrade`. Every preserved item is
@@ -42,15 +39,13 @@ why, and what survived.
   written.
 - Builder-rendered efficacy fixtures under `fixtures/efficacy/`, watermarked
   through the subprocess oracle, and `examples/metrics.rs` over a directory.
-- Pure-Rust codecs behind the transforms, PNG, JPEG with an in-crate baseline
-  encoder, WebP with a lossless write, WAV, and FLAC, and libm-free sine,
-  cosine, logarithm, and exponential in `dsp`.
+- Pure-Rust codecs for PNG, baseline JPEG, lossless WebP, WAV, and FLAC, and
+  libm-free sine, cosine, logarithm, and exponential in `dsp`.
 
 ### Changed
 
-- unmark has no profiles. Each sniffed container receives one default run.
-  Use `--keep <id|class>` or `--no-degrade` to preserve selected content. Use
-  `--strip-capture` to override the certified-capture keep.
+- Profiles are gone. Each file gets the default run, and `--keep`,
+  `--no-degrade`, and `--strip-capture` are the policy flags.
 - A publisher manifest without a capture action is stripped by default.
 - Survivors are named with evidence and a citation.
 - The report schema is 2.0.0.
