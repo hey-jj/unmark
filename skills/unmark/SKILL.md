@@ -6,9 +6,9 @@ allowed-tools: Bash(unmark *)
 
 # unmark
 
-unmark strips every mark it can find by default and keeps provenance only where a
+unmark strips every mark it can find by default and keeps a content credential only where a
 well-formed C2PA claim identifies a camera or sensor capture with no later generative
-action. Capture claims are read, not signature-verified. Every policy flag turns a
+action. Capture claims are read. Their signatures are not checked. Every policy flag turns a
 strip off. The report lists what was stripped and proven gone, what was kept and why,
 and what survived. The CLI is the gate. This document is the judgment.
 
