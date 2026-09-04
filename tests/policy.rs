@@ -117,8 +117,8 @@ fn the_snapshot_generates_and_names_the_digest() {
     let snap = skill::generate(&pkg);
     assert!(snap.contains(&pkg.digest));
     assert!(snap.contains("MC04"));
-    assert!(snap.contains("Held, not runnable"));
-    assert!(snap.contains("never emits a clean verdict"));
+    assert!(snap.contains("Held transforms"));
+    assert!(snap.contains("the one state that reads as absent"));
 }
 
 #[test]

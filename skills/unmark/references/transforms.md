@@ -3,14 +3,14 @@
 Regenerate with `unmark policy snapshot` after any policy change. Edits here are overwritten.
 
 - policy version: 0.2.0
-- policy digest: sha256:75cb18f5372a564cb467df9048adee58a9a3e44db66aaeb9281e23175fffcece
+- policy digest: sha256:ccd95cb964e65426de2aad49d2f3199ca8803f4bdc7cb5f4f90b8604054bbe3e
 
-## What the tool may say about each mark
+## What each mark kind means
 
 - A confirmable mark has a structural address or a public decoder. The tool removes it and re-inspection proves it gone.
-- A blind mark is a keyed statistical signal this offline build cannot see. The default run is applied to the asset anyway, and the report names the mark as surviving with its citation.
-- An unaddressed mark is one the tool knows and does nothing to, named so its absence from the action list is not read as its absence from the asset.
-- Only confirmed_absent over the enumerated supported set licenses the word absent. The build never emits a clean verdict and never renders no marks found as human authorship.
+- A blind mark is a keyed statistical signal. The default run is applied to the asset, and the report names the mark as surviving with its citation.
+- An unaddressed mark is one the tool knows and leaves in place, and the report names it.
+- confirmed_absent over the enumerated supported set is the one state that reads as absent.
 
 ## Supported containers
 
@@ -30,7 +30,7 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 ### c2pa (confirmable)
 
-- C2PA manifest: A Content Credentials manifest. The parse reads the JUMBF box and the claim's content. It does not verify the signature. A manifest is stripped by default. It is kept only under the certified-capture rule or under --keep c2pa.
+- C2PA manifest: A Content Credentials manifest. The parse reads the JUMBF box and the claim's content. A manifest is stripped by default and kept under the certified-capture rule or under --keep c2pa.
 
 ### png_text (confirmable)
 
@@ -75,37 +75,37 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 ### synthid_image (blind)
 
-- SynthID-Image: A keyed statistical mark in the pixel data of every image the Gemini API generates, vendor-stated. This offline build carries no authorized detector, so it cannot report presence or absence. The default run is applied and the mark is reported as surviving.
-- survival: applied, survives. The vendor states every Gemini API image carries it. Conventional-transform survival figures exist only for the external SynthID-O variant: worst-category detection 99.99 percent under quality, 99.97 under spatial, and 99.96 under noise transforms at 0.1 percent false positives. Production figures are not stated.
+- SynthID-Image: A keyed statistical mark in the pixel data of every image the Gemini API generates, vendor-stated. The default run is applied and the mark is reported as surviving.
+- survival: applied, survives. The vendor states every Gemini API image carries it. Conventional-transform survival figures exist only for the external SynthID-O variant: worst-category detection 99.99 percent under quality, 99.97 under spatial, and 99.96 under noise transforms at 0.1 percent false positives.
 - citation: https://ai.google.dev/gemini-api/docs/image-generation and https://arxiv.org/html/2510.09263
 
 ### tree_ring (blind)
 
-- Tree-Ring: A keyed mark in the low-frequency Fourier structure of the initial noise. This build cannot see it.
-- survival: survives the default run. The cited figures show an effect only from rotation and blur, at average detection 0.375 and 0.563 at 0.1 percent false positives, and their tested strengths are not stated, so neither is runnable.
+- Tree-Ring: A keyed mark in the low-frequency Fourier structure of the initial noise. It survives the default run.
+- survival: survives the default run. The cited rotation and blur figures, average detection 0.375 and 0.563 at 0.1 percent false positives, come without a tested strength, so both transforms are held.
 - citation: https://arxiv.org/html/2401.08573
 
 ### stable_signature (blind)
 
-- Stable Signature: A keyed mark decoded from the pixels. This build cannot see it.
-- survival: survives the default run. It detects in 84 percent of images after a crop that keeps a tenth of the pixels at a false-positive rate of one in a billion, which is survival, not an effect.
+- Stable Signature: A keyed mark decoded from the pixels. It survives the default run.
+- survival: survives the default run. It detects in 84 percent of images after a crop that keeps a tenth of the pixels at a false-positive rate of one in a billion.
 - citation: https://arxiv.org/html/2303.15435
 
 ### synthid_audio (blind)
 
-- SynthID-Audio: A keyed mark in the audio samples. This build cannot see it.
+- SynthID-Audio: A keyed mark in the audio samples. It survives the default run.
 - survival: survives the default run. The vendor states it survives added noise, MP3 compression, and speed changes.
 - citation: https://deepmind.google/models/synthid/
 
 ### audioseal (blind)
 
-- AudioSeal: A neural audio mark. This build cannot see it.
-- survival: the 1500 Hz highpass is the one cited transform with an effect: detection accuracy 0.61, true and false positive rates 0.82 and 0.60. The mark is reported as applied against with that figure, never as removed.
+- AudioSeal: A neural audio mark. It survives the default run.
+- survival: the 1500 Hz highpass is the one cited transform with an effect: detection accuracy 0.61, true and false positive rates 0.82 and 0.60. The report carries that figure.
 - citation: https://arxiv.org/html/2401.17264
 
 ### visible_overlay (unaddressed)
 
-- visible overlay: A visible logo or a corner mark. Removing it needs inpainting, which is model-based work. No transform here touches it.
+- visible overlay: A visible logo or a corner mark. Removing it needs inpainting, which is model-based work.
 
 ### c2pa_soft_binding (unaddressed)
 
@@ -113,7 +113,7 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 ### generative_fingerprint (unaddressed)
 
-- generative fingerprint: Frequency artifacts and upsampling traces that let a detector flag a generated image with no watermark involved. No transform here touches them.
+- generative fingerprint: Frequency artifacts and upsampling traces that let a detector flag a generated image with no watermark involved.
 
 ## Transforms in the default run
 
@@ -181,8 +181,8 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 - target: The container write for a JPEG input
 - parameters: jpeg_chroma=4:4:4, jpeg_quality=92
 - strength: quality 92, 4:4:4 chroma, the crate's own baseline encoder
-- cited effect: none claimed. A JPEG has no lossless write, so this is the same-container path for a JPEG input and the pin is reported in the result.
-- Write a JPEG input back as a baseline JPEG at the pinned quality. No removal is claimed for the encode itself. A PNG or WebP input is written losslessly in its own container.
+- cited effect: the same-container write for a JPEG input. The pin is reported in the result.
+- Write a JPEG input back as a baseline JPEG at the pinned quality. A PNG or WebP input is written losslessly in its own container.
 
 ### AU06 highpass (audio, on riff-wav flac)
 
@@ -191,9 +191,9 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 - strength: second-order highpass at 1500 Hz
 - cited effect: AudioSeal detection accuracy falls to 0.61 under a 1500 Hz highpass, true and false positive rates 0.82 and 0.60.
 - citation: https://arxiv.org/html/2401.17264
-- Apply the highpass on the scalar path and write the samples back as emitted, integer or float32. The report names the cited figure and never says the mark was removed. Use --no-degrade or --keep AU06 to skip it.
+- Apply the highpass on the scalar path and write the samples back as emitted, integer or float32. The report names the cited figure. Use --no-degrade or --keep AU06 to skip it.
 
-## Held, not runnable
+## Held transforms
 
 | Id | Transform | Reason |
 |---|---|---|
@@ -218,7 +218,7 @@ Status confirmed by owner review 2026-09-03. An output scoring below PSNR 25.0 d
 
 ### G2 certified-capture
 
-- An asset is certified capture when its active, well-formed C2PA manifest carries a c2pa.created action whose digital source type is digitalCapture, or a signer naming a camera vendor, and no later action naming a generative tool. The default run is a no-op on it and exits 0, and the report quotes the claim and says it is not signature-verified. --strip-capture overrides the keep and is recorded. A captured image with a later generative action is stripped by default.
+- An asset is certified capture when its active, well-formed C2PA manifest carries a c2pa.created action whose digital source type is digitalCapture, or a signer naming a camera vendor, and no later action naming a generative tool. The default run is a no-op on it and exits 0, and the report quotes the claim with its signature status. --strip-capture overrides the keep and is recorded. A captured image with a later generative action is stripped by default.
 
 ### G3 capture-uncertain
 
@@ -226,13 +226,13 @@ Status confirmed by owner review 2026-09-03. An output scoring below PSNR 25.0 d
 
 ### G5 safety-hashes-out-of-scope
 
-- Perceptual hashes used for abuse-material matching are not generative watermarks. No transform targets them, none is tuned against them, and none would help. This boundary is permanent, and no flag reaches it. A future transform proposed because it degrades such a hash is rejected on that basis alone.
+- Perceptual hashes used for abuse-material matching are out of scope. No transform targets them, no flag reaches them, and a transform proposed because it degrades such a hash is rejected on that basis alone.
 
 ### G6 no-keyed-mark-scorer
 
-- This build ships no estimator that scores how likely a keyed mark is present. A blind class is reported as applied and surviving with its citation, never with a number that would read as a detection. The dwtDct detector is different in kind: the mark is keyless and its decoder is public, so presence is a declared agreement rule with a measured false-positive fraction.
+- A blind class is reported as applied and surviving with its citation. The dwtDct detector is different in kind: the mark is keyless and its decoder is public, so presence is a declared agreement rule with a measured false-positive fraction.
 
 ### G7 never-fabricate-provenance
 
-- Remove marks and never write them. Never synthesize a manifest, forge a claim generator, backdate a timestamp, or write camera EXIF onto an asset. Removing a record is in scope. Manufacturing a false one has no code path.
+- Remove marks and never write them. Never synthesize a manifest, forge a claim generator, backdate a timestamp, or write camera EXIF onto an asset.
 

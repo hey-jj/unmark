@@ -19,12 +19,15 @@ pub fn generate(pkg: &PolicyPackage) -> String {
     let _ = writeln!(w, "- policy digest: {}", pkg.digest);
     let _ = writeln!(w);
 
-    let _ = writeln!(w, "## What the tool may say about each mark");
+    let _ = writeln!(w, "## What each mark kind means");
     let _ = writeln!(w);
     let _ = writeln!(w, "- A confirmable mark has a structural address or a public decoder. The tool removes it and re-inspection proves it gone.");
-    let _ = writeln!(w, "- A blind mark is a keyed statistical signal this offline build cannot see. The default run is applied to the asset anyway, and the report names the mark as surviving with its citation.");
-    let _ = writeln!(w, "- An unaddressed mark is one the tool knows and does nothing to, named so its absence from the action list is not read as its absence from the asset.");
-    let _ = writeln!(w, "- Only confirmed_absent over the enumerated supported set licenses the word absent. The build never emits a clean verdict and never renders no marks found as human authorship.");
+    let _ = writeln!(w, "- A blind mark is a keyed statistical signal. The default run is applied to the asset, and the report names the mark as surviving with its citation.");
+    let _ = writeln!(
+        w,
+        "- An unaddressed mark is one the tool knows and leaves in place, and the report names it."
+    );
+    let _ = writeln!(w, "- confirmed_absent over the enumerated supported set is the one state that reads as absent.");
     let _ = writeln!(w);
 
     let _ = writeln!(w, "## Supported containers");
@@ -80,7 +83,7 @@ pub fn generate(pkg: &PolicyPackage) -> String {
         let _ = writeln!(w);
     }
 
-    let _ = writeln!(w, "## Held, not runnable");
+    let _ = writeln!(w, "## Held transforms");
     let _ = writeln!(w);
     let _ = writeln!(w, "| Id | Transform | Reason |");
     let _ = writeln!(w, "|---|---|---|");

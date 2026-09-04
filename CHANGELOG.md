@@ -5,12 +5,11 @@ Keep a Changelog, and the project uses semantic versioning.
 
 ## [0.2.0] - 2026-09-04
 
-unmark strips every mark it can find by default and keeps a content credential only where
-a well-formed C2PA claim identifies a camera or sensor capture with no later
-generative action. Capture claims are read. Their signatures are not checked. Every
-policy flag turns a strip off. The report lists what was stripped and proven
-gone, what was kept and why, and what survived. Measured results over the
-synthetic corpus follow in an evidence note.
+unmark strips every mark it can find by default and keeps a content
+credential only where a well-formed C2PA claim identifies a camera or sensor
+capture with no later generative action. Every policy flag turns a strip
+off. The report lists what was stripped and proven gone, what was kept and
+why, and what survived.
 
 ### Added
 
@@ -24,24 +23,23 @@ synthetic corpus follow in an evidence note.
   with 4:4:4 chroma on JPEG input. `AU06`, a 1500 Hz highpass cited against
   AudioSeal.
 - Certified capture: a well-formed C2PA capture claim with no later generative
-  action is kept byte-identical and reported with its quoted claim and the
+  action is kept byte-identical and reported with its quoted claim and
   signature status. `--strip-capture` strips it. Well-formed is structural:
   in-crate JUMBF and CBOR readers parse the store, the claim, its assertion
   references, the actions assertion, and the signer certificate names.
-  Keyword text in an unparseable payload is not a claim.
 - The capture-uncertain hint for camera EXIF without a claim.
 - Kept metadata rides through every re-encode: PNG chunks, JPEG segments,
   WebP EXIF, XMP, and ICC, FLAC metadata blocks, and WAV chunks.
-- The dwtDct row on a chroma-subsampled JPEG reads unsupported with the
-  measured note, and the resize claims no removal there.
+- A chroma-subsampled JPEG reports its dwtDct row as `unsupported_format`
+  with the measured note in `findings`.
 - `--keep <id|class>`, repeatable, and `--no-degrade`. Every preserved item is
   reported as kept by flag.
 - MP4 `ilst` removal with `stco` and `co64` correction, and `MC10`, the FLAC
   Vorbis comment strip.
 - A directory input, processed one file at a time with one report per file.
 - Exit 50, the sanity floor: an output whose PSNR or SSIM against its
-  grid-matched reference falls below the floor is refused and nothing
-  is written.
+  grid-matched reference falls below the floor is refused and nothing is
+  written.
 - Builder-rendered efficacy fixtures under `fixtures/efficacy/`, watermarked
   through the subprocess oracle, and `examples/metrics.rs` over a directory.
 - Pure-Rust codecs behind the transforms, PNG, JPEG with an in-crate baseline
@@ -54,8 +52,7 @@ synthetic corpus follow in an evidence note.
   Use `--keep <id|class>` or `--no-degrade` to preserve selected content. Use
   `--strip-capture` to override the certified-capture keep.
 - A publisher manifest without a capture action is stripped by default.
-- Survivors are named with evidence and a citation. SynthID reads as applied
-  and surviving.
+- Survivors are named with evidence and a citation.
 - The report schema is 2.0.0.
 
 ### Removed
@@ -65,8 +62,8 @@ synthetic corpus follow in an evidence note.
   limit.
 - The fidelity-ceiling calibration harness, its record, its bands and cells,
   and the CI pins.
-- `PX03` through `PX08` and `AU01` through `AU05` are held and not runnable.
-  Only `PX01`, `PX02`, and `AU06` run, and `PX01` runs only on JPEG input.
+- `PX03` through `PX08` and `AU01` through `AU05`. `PX01`, `PX02`, and `AU06`
+  run, and `PX01` runs on JPEG input.
 
 ## [0.1.0] - 2026-08-21
 

@@ -39,7 +39,7 @@ supported_containers = ["jpeg", "png", "webp", "riff-wav", "isobmff", "flac", "s
 id = "c2pa"
 honesty = "confirmable"
 label = "C2PA manifest"
-guard = "A Content Credentials manifest. The parse reads the JUMBF box and the claim's content. It does not verify the signature. A manifest is stripped by default. It is kept only under the certified-capture rule or under --keep c2pa."
+guard = "A Content Credentials manifest. The parse reads the JUMBF box and the claim's content. A manifest is stripped by default and kept under the certified-capture rule or under --keep c2pa."
 
 [[mark_class]]
 id = "png_text"
@@ -106,31 +106,31 @@ citation = "https://github.com/CompVis/stable-diffusion/blob/main/scripts/txt2im
 id = "synthid_image"
 honesty = "blind"
 label = "SynthID-Image"
-guard = "A keyed statistical mark in the pixel data of every image the Gemini API generates, vendor-stated. This offline build carries no authorized detector, so it cannot report presence or absence. The default run is applied and the mark is reported as surviving."
-survives = "applied, survives. The vendor states every Gemini API image carries it. Conventional-transform survival figures exist only for the external SynthID-O variant: worst-category detection 99.99 percent under quality, 99.97 under spatial, and 99.96 under noise transforms at 0.1 percent false positives. Production figures are not stated."
+guard = "A keyed statistical mark in the pixel data of every image the Gemini API generates, vendor-stated. The default run is applied and the mark is reported as surviving."
+survives = "applied, survives. The vendor states every Gemini API image carries it. Conventional-transform survival figures exist only for the external SynthID-O variant: worst-category detection 99.99 percent under quality, 99.97 under spatial, and 99.96 under noise transforms at 0.1 percent false positives."
 citation = "https://ai.google.dev/gemini-api/docs/image-generation and https://arxiv.org/html/2510.09263"
 
 [[mark_class]]
 id = "tree_ring"
 honesty = "blind"
 label = "Tree-Ring"
-guard = "A keyed mark in the low-frequency Fourier structure of the initial noise. This build cannot see it."
-survives = "survives the default run. The cited figures show an effect only from rotation and blur, at average detection 0.375 and 0.563 at 0.1 percent false positives, and their tested strengths are not stated, so neither is runnable."
+guard = "A keyed mark in the low-frequency Fourier structure of the initial noise. It survives the default run."
+survives = "survives the default run. The cited rotation and blur figures, average detection 0.375 and 0.563 at 0.1 percent false positives, come without a tested strength, so both transforms are held."
 citation = "https://arxiv.org/html/2401.08573"
 
 [[mark_class]]
 id = "stable_signature"
 honesty = "blind"
 label = "Stable Signature"
-guard = "A keyed mark decoded from the pixels. This build cannot see it."
-survives = "survives the default run. It detects in 84 percent of images after a crop that keeps a tenth of the pixels at a false-positive rate of one in a billion, which is survival, not an effect."
+guard = "A keyed mark decoded from the pixels. It survives the default run."
+survives = "survives the default run. It detects in 84 percent of images after a crop that keeps a tenth of the pixels at a false-positive rate of one in a billion."
 citation = "https://arxiv.org/html/2303.15435"
 
 [[mark_class]]
 id = "synthid_audio"
 honesty = "blind"
 label = "SynthID-Audio"
-guard = "A keyed mark in the audio samples. This build cannot see it."
+guard = "A keyed mark in the audio samples. It survives the default run."
 survives = "survives the default run. The vendor states it survives added noise, MP3 compression, and speed changes."
 citation = "https://deepmind.google/models/synthid/"
 
@@ -138,15 +138,15 @@ citation = "https://deepmind.google/models/synthid/"
 id = "audioseal"
 honesty = "blind"
 label = "AudioSeal"
-guard = "A neural audio mark. This build cannot see it."
-survives = "the 1500 Hz highpass is the one cited transform with an effect: detection accuracy 0.61, true and false positive rates 0.82 and 0.60. The mark is reported as applied against with that figure, never as removed."
+guard = "A neural audio mark. It survives the default run."
+survives = "the 1500 Hz highpass is the one cited transform with an effect: detection accuracy 0.61, true and false positive rates 0.82 and 0.60. The report carries that figure."
 citation = "https://arxiv.org/html/2401.17264"
 
 [[mark_class]]
 id = "visible_overlay"
 honesty = "unaddressed"
 label = "visible overlay"
-guard = "A visible logo or a corner mark. Removing it needs inpainting, which is model-based work. No transform here touches it."
+guard = "A visible logo or a corner mark. Removing it needs inpainting, which is model-based work."
 
 [[mark_class]]
 id = "c2pa_soft_binding"
@@ -158,7 +158,7 @@ guard = "A soft binding registered with an external service. The specification a
 id = "generative_fingerprint"
 honesty = "unaddressed"
 label = "generative fingerprint"
-guard = "Frequency artifacts and upsampling traces that let a detector flag a generated image with no watermark involved. No transform here touches them."
+guard = "Frequency artifacts and upsampling traces that let a detector flag a generated image with no watermark involved."
 
 # ---------------------------------------------------------------------------
 # Transform catalog. Every entry here runs by default on the containers it
@@ -278,9 +278,9 @@ kind = "pixel"
 applies = ["jpeg"]
 params = { jpeg_quality = 92, jpeg_chroma = "4:4:4" }
 strength = "quality 92, 4:4:4 chroma, the crate's own baseline encoder"
-cited_effect = "none claimed. A JPEG has no lossless write, so this is the same-container path for a JPEG input and the pin is reported in the result."
+cited_effect = "the same-container write for a JPEG input. The pin is reported in the result."
 target = "The container write for a JPEG input"
-guard = "Write a JPEG input back as a baseline JPEG at the pinned quality. No removal is claimed for the encode itself. A PNG or WebP input is written losslessly in its own container."
+guard = "Write a JPEG input back as a baseline JPEG at the pinned quality. A PNG or WebP input is written losslessly in its own container."
 
 [[transform]]
 id = "AU06"
@@ -293,7 +293,7 @@ strength = "second-order highpass at 1500 Hz"
 cited_effect = "AudioSeal detection accuracy falls to 0.61 under a 1500 Hz highpass, true and false positive rates 0.82 and 0.60."
 citation = "https://arxiv.org/html/2401.17264"
 target = "AudioSeal"
-guard = "Apply the highpass on the scalar path and write the samples back as emitted, integer or float32. The report names the cited figure and never says the mark was removed. Use --no-degrade or --keep AU06 to skip it."
+guard = "Apply the highpass on the scalar path and write the samples back as emitted, integer or float32. The report names the cited figure. Use --no-degrade or --keep AU06 to skip it."
 
 # ---------------------------------------------------------------------------
 # Held transforms. Each has no flag, does not run, and appears under "cannot
@@ -401,7 +401,7 @@ ssim_floor = 0.6
 [[guard]]
 id = "G2"
 name = "certified-capture"
-guard = "An asset is certified capture when its active, well-formed C2PA manifest carries a c2pa.created action whose digital source type is digitalCapture, or a signer naming a camera vendor, and no later action naming a generative tool. The default run is a no-op on it and exits 0, and the report quotes the claim and says it is not signature-verified. --strip-capture overrides the keep and is recorded. A captured image with a later generative action is stripped by default."
+guard = "An asset is certified capture when its active, well-formed C2PA manifest carries a c2pa.created action whose digital source type is digitalCapture, or a signer naming a camera vendor, and no later action naming a generative tool. The default run is a no-op on it and exits 0, and the report quotes the claim with its signature status. --strip-capture overrides the keep and is recorded. A captured image with a later generative action is stripped by default."
 
 [[guard]]
 id = "G3"
@@ -411,14 +411,14 @@ guard = "Camera-style EXIF without a qualifying C2PA claim is uncertain. The ass
 [[guard]]
 id = "G5"
 name = "safety-hashes-out-of-scope"
-guard = "Perceptual hashes used for abuse-material matching are not generative watermarks. No transform targets them, none is tuned against them, and none would help. This boundary is permanent, and no flag reaches it. A future transform proposed because it degrades such a hash is rejected on that basis alone."
+guard = "Perceptual hashes used for abuse-material matching are out of scope. No transform targets them, no flag reaches them, and a transform proposed because it degrades such a hash is rejected on that basis alone."
 
 [[guard]]
 id = "G6"
 name = "no-keyed-mark-scorer"
-guard = "This build ships no estimator that scores how likely a keyed mark is present. A blind class is reported as applied and surviving with its citation, never with a number that would read as a detection. The dwtDct detector is different in kind: the mark is keyless and its decoder is public, so presence is a declared agreement rule with a measured false-positive fraction."
+guard = "A blind class is reported as applied and surviving with its citation. The dwtDct detector is different in kind: the mark is keyless and its decoder is public, so presence is a declared agreement rule with a measured false-positive fraction."
 
 [[guard]]
 id = "G7"
 name = "never-fabricate-provenance"
-guard = "Remove marks and never write them. Never synthesize a manifest, forge a claim generator, backdate a timestamp, or write camera EXIF onto an asset. Removing a record is in scope. Manufacturing a false one has no code path."
+guard = "Remove marks and never write them. Never synthesize a manifest, forge a claim generator, backdate a timestamp, or write camera EXIF onto an asset."
