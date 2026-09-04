@@ -44,8 +44,6 @@ separates proven removals, kept items with reasons, and survivors.
 
 ### Changed
 
-- Profiles are gone. Each file gets the default run, and `--keep`,
-  `--no-degrade`, and `--strip-capture` are the policy flags.
 - A publisher manifest without a capture action is stripped by default.
 - Survivors are named with evidence and a citation.
 - The report schema is 2.0.0.

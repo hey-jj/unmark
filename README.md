@@ -5,8 +5,8 @@ metadata, C2PA content credentials, EXIF and XMP fields, PNG generation chunks, 
 tags, RIFF ancillary chunks, MP4 `ilst` atoms, FLAC Vorbis comments, invisible Unicode,
 and the dwtDct pixel mark, which a mild resize removes and the built-in detector proves
 gone. A well-formed C2PA claim that identifies a camera or sensor capture with no later
-generative action is kept, and that output is byte-identical. Each flag preserves one
-thing. The report lists the marks removed and proven gone, the items kept with their
+generative action is kept, and that output is byte-identical. Flags only turn strips
+off. The report lists the marks removed and proven gone, the items kept with their
 reasons, and the marks that survive. It runs offline, it is deterministic, and it is
 pure Rust.
 
@@ -76,14 +76,14 @@ accuracy 0.61, true-positive rate 0.82, false-positive rate 0.60.
 
 ## Certified capture
 
-A well-formed C2PA manifest whose `c2pa.created` action carries the `digitalCapture`
-source type, or whose signer certificate names a camera vendor, with no later generative
-action, is a certified capture. Well-formed means the JUMBF boxes, the claim CBOR, the
+A certified capture is a well-formed C2PA manifest with no later generative action and
+either a `c2pa.created` action carrying the `digitalCapture` source type or a signer
+certificate naming a camera vendor. Well-formed means the JUMBF boxes, the claim CBOR, the
 assertion references, and the actions assertion all parse. The default run keeps it and
 the output is byte-identical. The report quotes the claim and its signature status.
 Pass `--strip-capture` to strip it.
 
-Camera EXIF without a claim is uncertain. The report names the hint, the default run
+Camera EXIF without a claim counts as a hint. The report names the hint, the default run
 strips the EXIF, and `--keep exif` preserves it. The default run also strips a publisher
 manifest without a capture action, and `--keep c2pa` preserves it.
 

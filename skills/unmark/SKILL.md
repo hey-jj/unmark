@@ -30,8 +30,8 @@ This document says how to read its result.
    strength and cited effect.
 5. Apply with `unmark clean`, writing to a new file or directory. Keeping the input is
    the backup.
-6. `clean` re-inspects the output itself. Read the three lists.
-7. Report in three parts, always all three.
+6. `clean` re-inspects the output itself.
+7. Relay the three lists.
 
 ## Running the tool
 
