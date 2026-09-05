@@ -37,7 +37,12 @@ use policy::PolicyPackage;
 use report::{Action, Capture, Finding, Kept, Report, ScanRow, Survivor};
 use scan::{Detection, Detections, Honesty, ScanState};
 
-pub const SCHEMA_VERSION: &str = "2.0.0";
+pub const SCHEMA_VERSION: &str = "2.1.0";
+
+/// The smallest image edge the pixel path accepts. The SSIM window is eight
+/// pixels and the resize must leave a scorable grid, so an image narrower or
+/// shorter than this is refused as unsupported input.
+pub const MIN_IMAGE_EDGE: usize = 8;
 pub const TOOL_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// The codec and resampler crates behind every encode, with their versions,
@@ -396,8 +401,33 @@ fn base_report(pkg: &PolicyPackage, verb: Verb, format: Format, capture: Capture
         kept: Vec::new(),
         survived: Vec::new(),
         sanity: None,
+        no_op: false,
+        input: None,
+        output: None,
+        error: None,
         exit_code: report::EXIT_OK,
     }
+}
+
+/// A report for a run that did not complete: the verb, the sniffed format,
+/// the failure message, and the exit code, so a batch carries one report per
+/// input whatever happened to it.
+pub fn failure_report(
+    pkg: &PolicyPackage,
+    verb: Verb,
+    bytes: &[u8],
+    message: &str,
+    exit_code: i32,
+) -> Report {
+    let none = CaptureReading {
+        status: CaptureStatus::None,
+        claim: None,
+        hint: None,
+    };
+    let mut r = base_report(pkg, verb, asset::sniff(bytes), capture_report(&none, false));
+    r.error = Some(message.to_string());
+    r.exit_code = exit_code;
+    r
 }
 
 fn action_for(pkg: &PolicyPackage, id: &str, outcome: &str, result: &str) -> Action {
@@ -433,6 +463,9 @@ fn survey(
     pkg: &PolicyPackage,
     verb: Verb,
 ) -> Result<Report, UnmarkError> {
+    if bytes.is_empty() {
+        return Err(UnmarkError::Unsupported("the input is empty".to_string()));
+    }
     let det = full_inspect(bytes);
     let format = det.format;
     let reading = capture::read_capture(bytes, &det, format);
@@ -489,6 +522,15 @@ fn survey(
         }
     }
     r.survived = survivors(pkg, &det, &run);
+    // A walker that did not complete leaves a confirmable class malformed,
+    // so the inspection failed and the verb says so.
+    if det
+        .items
+        .iter()
+        .any(|d| d.honesty == Honesty::Confirmable && d.state == ScanState::Malformed)
+    {
+        r.exit_code = report::EXIT_INSTRUMENTATION;
+    }
     if format == Format::Unknown {
         r.exit_code = report::EXIT_UNSUPPORTED;
     }
@@ -504,6 +546,9 @@ pub fn clean(
     pkg: &PolicyPackage,
 ) -> Result<CleanOutcome, UnmarkError> {
     validate_keeps(pkg, opts)?;
+    if bytes.is_empty() {
+        return Err(UnmarkError::Unsupported("the input is empty".to_string()));
+    }
     let det = full_inspect(bytes);
     let format = det.format;
     if format == Format::Unknown {
@@ -617,6 +662,12 @@ pub fn clean(
         if !pixel_ids.is_empty() && !uncarried {
             let img = codec::decode_image(&out_bytes, format)
                 .map_err(|e| UnmarkError::Inspection(format!("the image would not decode: {e}")))?;
+            if img.width < MIN_IMAGE_EDGE || img.height < MIN_IMAGE_EDGE {
+                return Err(UnmarkError::Unsupported(format!(
+                    "the image is {}x{}, under the {MIN_IMAGE_EDGE}-pixel minimum edge the fidelity metrics need",
+                    img.width, img.height
+                )));
+            }
             let p = transform::pixel::PixelParams::from_policy(pkg, &pixel_ids)
                 .map_err(|e| UnmarkError::Inspection(format!("pixel plan: {e}")))?;
             let outcome = transform::pixel::apply(&img, format, &p)
@@ -635,8 +686,15 @@ pub fn clean(
                 reference.height,
                 reference.channels,
             );
-            let passed = psnr.is_none_or(|p| p >= pkg.sanity.psnr_floor_db)
-                && ssim.is_none_or(|s| s >= pkg.sanity.ssim_floor);
+            // A fidelity check that did not run is a failed measurement, so
+            // it can never pass.
+            if psnr.is_none() || ssim.is_none() {
+                return Err(UnmarkError::Inspection(
+                    "the fidelity measurement did not run over the output".to_string(),
+                ));
+            }
+            let passed = psnr.is_some_and(|p| p >= pkg.sanity.psnr_floor_db)
+                && ssim.is_some_and(|s| s >= pkg.sanity.ssim_floor);
             r.sanity = Some(report::Sanity {
                 psnr_db: psnr,
                 ssim,
@@ -736,6 +794,11 @@ pub fn clean(
     if matches!(format, Format::RiffWav | Format::Flac) && run.iter().any(|t| t == "AU06") {
         let audio = codec::decode_audio(&out_bytes, format)
             .map_err(|e| UnmarkError::Inspection(format!("the audio would not decode: {e}")))?;
+        if audio.frames() == 0 {
+            return Err(UnmarkError::Unsupported(
+                "the audio carries no samples".to_string(),
+            ));
+        }
         let p = transform::audio::AudioParams::from_policy(pkg, &run)
             .map_err(|e| UnmarkError::Inspection(format!("audio plan: {e}")))?;
         let processed = transform::audio::apply(&audio, &p);
@@ -788,7 +851,7 @@ pub fn clean(
             r.stripped_and_proven_gone.push(label);
         }
     }
-    if dwtdct_before == Some(true) {
+    if dwtdct_before == Some(true) && run.iter().any(|t| t == "PX02") {
         match dwtdct_after {
             Some(false) => r
                 .stripped_and_proven_gone
@@ -818,6 +881,15 @@ pub fn clean(
             report: r,
             output: None,
         });
+    }
+    if out_bytes == bytes {
+        r.no_op = true;
+        for a in r.actions.iter_mut() {
+            if a.outcome == "applied" {
+                a.outcome = "no-op".to_string();
+                a.result = "the output equals the input, nothing changed".to_string();
+            }
+        }
     }
     Ok(CleanOutcome {
         report: r,
@@ -889,6 +961,25 @@ pub fn verify(output: &[u8], report_json: &str, pkg: &PolicyPackage) -> VerifyOu
         problems.push("policy digest does not match this build".to_string());
     }
     let det = full_inspect(output);
+    if det.format == Format::Unknown || !det.format.is_supported_container() {
+        problems.push(format!(
+            "the output is {}, which this build does not verify",
+            det.format.as_str()
+        ));
+    }
+    if let Some(emitted) = parsed.get("output_format").and_then(|v| v.as_str()) {
+        if emitted != det.format.as_str() {
+            problems.push(format!(
+                "the output is {} and the report emitted {emitted}",
+                det.format.as_str()
+            ));
+        }
+    }
+    for d in &det.items {
+        if d.state == ScanState::Malformed {
+            problems.push(format!("{} is malformed in the output", d.label));
+        }
+    }
     if let Some(list) = parsed
         .get("stripped_and_proven_gone")
         .and_then(|v| v.as_array())

@@ -121,26 +121,74 @@ fn parse_common(parser: &mut lexopt::Parser) -> Result<Common, lexopt::Error> {
     Ok(c)
 }
 
-/// Expand directory arguments into their regular files, sorted, so a batch
-/// runs in a fixed order.
-fn expand_inputs(paths: &[String]) -> Result<Vec<PathBuf>, String> {
+/// One input: its path and, for a file found under a directory argument,
+/// its path relative to that directory, so a batch mirrors the tree under
+/// --out and two files with one name in different directories never
+/// collide.
+struct Input {
+    path: PathBuf,
+    relative: Option<PathBuf>,
+}
+
+fn walk_dir(
+    dir: &Path,
+    root: &Path,
+    prefix: Option<&Path>,
+    out: &mut Vec<Input>,
+) -> Result<(), String> {
+    let mut entries: Vec<PathBuf> = std::fs::read_dir(dir)
+        .map_err(|e| format!("{}: {e}", dir.display()))?
+        .filter_map(|e| e.ok().map(|e| e.path()))
+        .collect();
+    entries.sort();
+    for entry in entries {
+        if entry.is_dir() {
+            walk_dir(&entry, root, prefix, out)?;
+        } else if entry.is_file() {
+            let relative = entry.strip_prefix(root).ok().map(|r| match prefix {
+                Some(p) => p.join(r),
+                None => r.to_path_buf(),
+            });
+            out.push(Input {
+                path: entry,
+                relative,
+            });
+        }
+    }
+    Ok(())
+}
+
+/// Expand directory arguments into their files, recursively and sorted, so
+/// a batch runs in a fixed order. One directory mirrors its tree straight
+/// under --out; several mirror under their own names so equal paths in two
+/// trees never collide. Returns the inputs and whether any argument was a
+/// directory.
+fn expand_inputs(paths: &[String]) -> Result<(Vec<Input>, bool), String> {
     let mut out = Vec::new();
+    let mut any_dir = false;
+    let dir_count = paths.iter().filter(|p| Path::new(p).is_dir()).count();
     for p in paths {
         if p == "-" {
-            out.push(PathBuf::from("-"));
+            out.push(Input {
+                path: PathBuf::from("-"),
+                relative: None,
+            });
             continue;
         }
         let path = Path::new(p);
         if path.is_dir() {
-            let mut files: Vec<PathBuf> = std::fs::read_dir(path)
-                .map_err(|e| format!("{p}: {e}"))?
-                .filter_map(|e| e.ok().map(|e| e.path()))
-                .filter(|f| f.is_file())
-                .collect();
-            files.sort();
-            out.extend(files);
+            any_dir = true;
+            let prefix = if dir_count > 1 {
+                path.file_name().map(Path::new)
+            } else {
+                None
+            };
+            walk_dir(path, path, prefix, &mut out)?;
         } else if path.is_file() {
-            out.push(path.to_path_buf());
+            out.push(Input {
+                path: path.to_path_buf(),
+                relative: None,
+            });
         } else {
             return Err(format!("{p}: no such file or directory"));
         }
@@ -148,7 +196,7 @@ fn expand_inputs(paths: &[String]) -> Result<Vec<PathBuf>, String> {
     if out.is_empty() {
         return Err("no input path given".to_string());
     }
-    Ok(out)
+    Ok((out, any_dir))
 }
 
 fn read_input(path: &Path, max: usize) -> Result<Vec<u8>, String> {
@@ -208,9 +256,34 @@ fn load_policy() -> Result<policy::PolicyPackage, i32> {
     })
 }
 
+/// A failed run still yields one report for its input, with the message
+/// and the exit code, so a batch never loses a file's outcome.
+fn emit_failure(
+    text: bool,
+    pkg: &policy::PolicyPackage,
+    verb: unmark::Verb,
+    path: &Path,
+    bytes: &[u8],
+    message: &str,
+    code: i32,
+) {
+    eprintln!("unmark: {}: {message}", path.display());
+    let mut r = unmark::failure_report(pkg, verb, bytes, message, code);
+    r.input = Some(path.display().to_string());
+    emit(text, &r);
+}
+
+fn error_message(e: &UnmarkError) -> (String, i32) {
+    match e {
+        UnmarkError::Usage(m) => (m.clone(), EXIT_USAGE),
+        UnmarkError::Unsupported(m) => (format!("unsupported_input: {m}"), EXIT_UNSUPPORTED),
+        UnmarkError::Inspection(m) => (format!("inspection_failed: {m}"), EXIT_INSTRUMENTATION),
+    }
+}
+
 fn cmd_survey(mut parser: lexopt::Parser, is_plan: bool) -> Result<i32, lexopt::Error> {
     let c = parse_common(&mut parser)?;
-    let inputs = match expand_inputs(&c.paths) {
+    let (inputs, _) = match expand_inputs(&c.paths) {
         Ok(i) => i,
         Err(e) => {
             eprintln!("unmark: {e}");
@@ -221,27 +294,38 @@ fn cmd_survey(mut parser: lexopt::Parser, is_plan: bool) -> Result<i32, lexopt::
         Ok(p) => p,
         Err(code) => return Ok(code),
     };
+    let verb = if is_plan {
+        unmark::Verb::Plan
+    } else {
+        unmark::Verb::Inspect
+    };
     let mut exit = EXIT_OK;
-    for path in inputs {
-        let input = match read_input(&path, c.max_bytes) {
+    for input in inputs {
+        let path = &input.path;
+        let bytes = match read_input(path, c.max_bytes) {
             Ok(b) => b,
             Err(e) => {
-                eprintln!("unmark: {e}");
+                emit_failure(c.output_text, &pkg, verb, path, &[], &e, EXIT_UNSUPPORTED);
                 exit = worst(exit, EXIT_UNSUPPORTED);
                 continue;
             }
         };
         let result = if is_plan {
-            plan(&input, &c.opts, &pkg)
+            plan(&bytes, &c.opts, &pkg)
         } else {
-            inspect(&input, &c.opts, &pkg)
+            inspect(&bytes, &c.opts, &pkg)
         };
         match result {
-            Ok(r) => {
+            Ok(mut r) => {
+                r.input = Some(path.display().to_string());
                 emit(c.output_text, &r);
                 exit = worst(exit, r.exit_code);
             }
-            Err(e) => exit = worst(exit, report_error(&path, e)),
+            Err(e) => {
+                let (m, code) = error_message(&e);
+                emit_failure(c.output_text, &pkg, verb, path, &bytes, &m, code);
+                exit = worst(exit, code);
+            }
         }
     }
     Ok(exit)
@@ -261,13 +345,57 @@ fn extensions_for_output(format: &str) -> Option<&'static [&'static str]> {
     }
 }
 
+/// True when two paths name one file: the same canonical path, or on Unix
+/// the same device and inode, which covers a symlink and a hard link.
+fn same_file(a: &Path, b: &Path) -> bool {
+    if let (Ok(ca), Ok(cb)) = (a.canonicalize(), b.canonicalize()) {
+        if ca == cb {
+            return true;
+        }
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        if let (Ok(ma), Ok(mb)) = (std::fs::metadata(a), std::fs::metadata(b)) {
+            return ma.dev() == mb.dev() && ma.ino() == mb.ino();
+        }
+    }
+    false
+}
+
+/// Write through a temporary file beside the destination and rename it into
+/// place, so a failed write leaves no partial output and a replacement is
+/// one atomic step.
+fn write_atomic(dest: &Path, bytes: &[u8]) -> std::io::Result<()> {
+    let dir = dest
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or(Path::new("."));
+    let name = dest
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| "output".to_string());
+    let tmp = dir.join(format!(".{name}.unmark-{}.tmp", std::process::id()));
+    let result = (|| {
+        let mut f = std::fs::File::create(&tmp)?;
+        f.write_all(bytes)?;
+        f.sync_all()?;
+        drop(f);
+        std::fs::rename(&tmp, dest)
+    })();
+    if result.is_err() {
+        let _ = std::fs::remove_file(&tmp);
+    }
+    result
+}
+
 fn cmd_clean(mut parser: lexopt::Parser) -> Result<i32, lexopt::Error> {
     let c = parse_common(&mut parser)?;
     let Some(out) = c.out.clone() else {
         eprintln!("unmark: clean requires --out PATH or --out DIR. Keeping the input is the backup, so there is no in-place mode.");
         return Ok(EXIT_USAGE);
     };
-    let inputs = match expand_inputs(&c.paths) {
+    let (inputs, any_dir) = match expand_inputs(&c.paths) {
         Ok(i) => i,
         Err(e) => {
             eprintln!("unmark: {e}");
@@ -275,7 +403,7 @@ fn cmd_clean(mut parser: lexopt::Parser) -> Result<i32, lexopt::Error> {
         }
     };
     let out_path = Path::new(&out);
-    let batch = inputs.len() > 1 || out_path.is_dir();
+    let batch = any_dir || inputs.len() > 1 || out_path.is_dir() || out.ends_with('/');
     if batch && out_path.exists() && !out_path.is_dir() {
         eprintln!("unmark: several inputs need --out to be a directory");
         return Ok(EXIT_USAGE);
@@ -291,46 +419,74 @@ fn cmd_clean(mut parser: lexopt::Parser) -> Result<i32, lexopt::Error> {
         Err(code) => return Ok(code),
     };
     let mut exit = EXIT_OK;
-    for path in inputs {
-        let input = match read_input(&path, c.max_bytes) {
+    let mut written: Vec<PathBuf> = Vec::new();
+    for input in inputs {
+        let path = &input.path;
+        // The input is never the output. A single --out that names the
+        // input, through a symlink or a hard link too, is refused before
+        // any work.
+        if !batch && same_file(path, out_path) {
+            eprintln!(
+                "unmark: --out {} names the input {}. Keeping the input is the backup, so nothing is written.",
+                out_path.display(),
+                path.display()
+            );
+            return Ok(EXIT_USAGE);
+        }
+        let bytes = match read_input(path, c.max_bytes) {
             Ok(b) => b,
             Err(e) => {
-                eprintln!("unmark: {e}");
+                emit_failure(
+                    c.output_text,
+                    &pkg,
+                    unmark::Verb::Clean,
+                    path,
+                    &[],
+                    &e,
+                    EXIT_UNSUPPORTED,
+                );
                 exit = worst(exit, EXIT_UNSUPPORTED);
                 continue;
             }
         };
-        let outcome = match clean(&input, &c.opts, &pkg) {
+        let outcome = match clean(&bytes, &c.opts, &pkg) {
             Ok(o) => o,
             Err(e) => {
-                exit = worst(exit, report_error(&path, e));
+                let (m, code) = error_message(&e);
+                emit_failure(
+                    c.output_text,
+                    &pkg,
+                    unmark::Verb::Clean,
+                    path,
+                    &bytes,
+                    &m,
+                    code,
+                );
+                exit = worst(exit, code);
                 continue;
             }
         };
         let mut r = outcome.report;
-        let Some(bytes) = outcome.output else {
+        r.input = Some(path.display().to_string());
+        let Some(out_bytes) = outcome.output else {
             emit(c.output_text, &r);
             exit = worst(exit, r.exit_code);
             continue;
         };
-        // The destination: a file for one input, or the input's stem under
-        // the directory with the emitted container's extension.
+        // The destination: the file for one input, or the input's relative
+        // path under the directory with the emitted container's extension.
         let expected = extensions_for_output(&r.output_format);
         let dest: PathBuf = if batch {
-            let stem = path
-                .file_stem()
-                .map(|s| s.to_string_lossy().to_string())
-                .unwrap_or_else(|| "output".to_string());
-            // The emitted container's extension, or the input's own for a
-            // text file.
-            let ext = expected
-                .and_then(|e| e.first())
-                .map(|e| e.to_string())
-                .or_else(|| path.extension().map(|e| e.to_string_lossy().to_string()));
-            match ext {
-                Some(e) => out_path.join(format!("{stem}.{e}")),
-                None => out_path.join(stem),
+            let relative = input
+                .relative
+                .clone()
+                .or_else(|| path.file_name().map(PathBuf::from))
+                .unwrap_or_else(|| PathBuf::from("output"));
+            let mut dest = out_path.join(relative);
+            if let Some(e) = expected.and_then(|e| e.first()) {
+                dest.set_extension(e);
             }
+            dest
         } else {
             out_path.to_path_buf()
         };
@@ -352,6 +508,28 @@ fn cmd_clean(mut parser: lexopt::Parser) -> Result<i32, lexopt::Error> {
                 continue;
             }
         }
+        if same_file(path, &dest) {
+            eprintln!(
+                "unmark: {} names the input {}. Keeping the input is the backup, so nothing is written.",
+                dest.display(),
+                path.display()
+            );
+            r.exit_code = EXIT_USAGE;
+            emit(c.output_text, &r);
+            exit = worst(exit, EXIT_USAGE);
+            continue;
+        }
+        if written.iter().any(|w| w == &dest) {
+            eprintln!(
+                "unmark: {} was already written for another input in this run. Nothing written for {}.",
+                dest.display(),
+                path.display()
+            );
+            r.exit_code = EXIT_USAGE;
+            emit(c.output_text, &r);
+            exit = worst(exit, EXIT_USAGE);
+            continue;
+        }
         if dest.exists() && !c.overwrite {
             eprintln!(
                 "unmark: {} exists. Pass --overwrite to replace it.",
@@ -362,13 +540,42 @@ fn cmd_clean(mut parser: lexopt::Parser) -> Result<i32, lexopt::Error> {
             exit = worst(exit, EXIT_USAGE);
             continue;
         }
-        if let Err(e) = std::fs::write(&dest, &bytes) {
-            eprintln!("unmark: {}: {e}", dest.display());
+        // A no-op in a batch writes nothing; a single --out asks for a
+        // file and gets one.
+        if r.no_op && batch {
+            eprintln!(
+                "unmark: {}: no-op, the output equals the input, nothing written",
+                path.display()
+            );
+            emit(c.output_text, &r);
+            exit = worst(exit, r.exit_code);
+            continue;
+        }
+        if let Some(parent) = dest.parent() {
+            if !parent.as_os_str().is_empty() && !parent.exists() {
+                if let Err(e) = std::fs::create_dir_all(parent) {
+                    eprintln!("unmark: {}: {e}", parent.display());
+                    exit = worst(exit, EXIT_INSTRUMENTATION);
+                    continue;
+                }
+            }
+        }
+        if let Err(e) = write_atomic(&dest, &out_bytes) {
+            eprintln!("unmark: {}: {e}. Nothing written.", dest.display());
+            r.error = Some(format!("write failed: {e}"));
+            r.exit_code = EXIT_INSTRUMENTATION;
+            emit(c.output_text, &r);
             exit = worst(exit, EXIT_INSTRUMENTATION);
             continue;
         }
+        r.output = Some(dest.display().to_string());
+        written.push(dest.clone());
         emit(c.output_text, &r);
-        eprintln!("unmark: wrote {} ({} bytes)", dest.display(), bytes.len());
+        eprintln!(
+            "unmark: wrote {} ({} bytes)",
+            dest.display(),
+            out_bytes.len()
+        );
         exit = worst(exit, r.exit_code);
     }
     Ok(exit)
@@ -471,23 +678,6 @@ fn cmd_policy(mut parser: lexopt::Parser) -> Result<i32, lexopt::Error> {
         _ => {
             eprintln!("unmark: policy expects digest, show, or snapshot");
             Ok(EXIT_USAGE)
-        }
-    }
-}
-
-fn report_error(path: &Path, e: UnmarkError) -> i32 {
-    match e {
-        UnmarkError::Usage(m) => {
-            eprintln!("unmark: {}: {m}", path.display());
-            EXIT_USAGE
-        }
-        UnmarkError::Unsupported(m) => {
-            eprintln!("unmark: {}: unsupported_input: {m}", path.display());
-            EXIT_UNSUPPORTED
-        }
-        UnmarkError::Inspection(m) => {
-            eprintln!("unmark: {}: inspection_failed: {m}", path.display());
-            EXIT_INSTRUMENTATION
         }
     }
 }

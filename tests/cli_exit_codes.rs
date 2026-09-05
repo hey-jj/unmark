@@ -115,7 +115,10 @@ fn a_directory_argument_processes_every_supported_file_independently() {
     assert!(outputs.join("b.txt").exists());
     assert!(!outputs.join("c.bin").exists());
     let reports = out.lines().count();
-    assert_eq!(reports, 2, "one JSON object per completed asset: {out}");
+    assert_eq!(
+        reports, 3,
+        "one JSON object per input, failures included: {out}"
+    );
 }
 
 #[test]

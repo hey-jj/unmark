@@ -3,7 +3,7 @@
 Regenerate with `unmark policy snapshot` after any policy change. Edits here are overwritten.
 
 - policy version: 0.2.0
-- policy digest: sha256:ccd95cb964e65426de2aad49d2f3199ca8803f4bdc7cb5f4f90b8604054bbe3e
+- policy digest: sha256:049e94c0a3ce08a7d706c11613b923277a9552c68de9ed29ae16e6585f8825c1
 
 ## What each mark kind means
 
@@ -152,7 +152,7 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 - target: The FLAC Vorbis comment block, encoder tag included
 - Remove the whole Vorbis comment block and rebuild the last-block flag. Use --keep vorbis to preserve credits and chapters.
 
-### MC06 strip-unlisted-chunks (metadata, on png webp riff-wav flac)
+### MC06 strip-unlisted-chunks (metadata, on jpeg png webp riff-wav flac)
 
 - target: Any ancillary chunk not required for decoding and valid output
 - Drop every ancillary chunk the keep list does not name. The keep list holds only what decoding and valid output require, so an ICC color-profile chunk and a colorimetry chunk stay and everything else goes.

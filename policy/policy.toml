@@ -235,7 +235,7 @@ id = "MC06"
 name = "strip-unlisted-chunks"
 order = 70
 kind = "metadata"
-applies = ["png", "webp", "riff-wav", "flac"]
+applies = ["jpeg", "png", "webp", "riff-wav", "flac"]
 target = "Any ancillary chunk not required for decoding and valid output"
 guard = "Drop every ancillary chunk the keep list does not name. The keep list holds only what decoding and valid output require, so an ICC color-profile chunk and a colorimetry chunk stay and everything else goes."
 

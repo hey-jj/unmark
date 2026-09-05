@@ -107,6 +107,14 @@ pub struct Report {
     pub kept: Vec<Kept>,
     pub survived: Vec<Survivor>,
     pub sanity: Option<Sanity>,
+    /// True when the output bytes equal the input bytes, so nothing changed.
+    pub no_op: bool,
+    /// The input path, set by the command line.
+    pub input: Option<String>,
+    /// The path the output was written to, set by the command line.
+    pub output: Option<String>,
+    /// The failure message when the run did not complete.
+    pub error: Option<String>,
     pub exit_code: i32,
 }
 
@@ -131,6 +139,18 @@ pub fn render_text(r: &Report) -> String {
     );
     let _ = writeln!(o, "digest: {}", r.policy_digest);
     let _ = writeln!(o, "capture: {}", r.capture.line);
+    if let Some(i) = &r.input {
+        let _ = writeln!(o, "input: {i}");
+    }
+    if let Some(p) = &r.output {
+        let _ = writeln!(o, "written: {p}");
+    }
+    if r.no_op {
+        let _ = writeln!(o, "no-op: the output equals the input");
+    }
+    if let Some(e) = &r.error {
+        let _ = writeln!(o, "error: {e}");
+    }
     let _ = writeln!(o);
 
     let _ = writeln!(o, "scan states:");
