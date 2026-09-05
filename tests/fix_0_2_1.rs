@@ -129,6 +129,52 @@ fn audio_without_samples_is_refused() {
     assert!(matches!(err, UnmarkError::Unsupported(_)), "{err}");
 }
 
+/// Under --no-degrade no metric is taken, so the metadata strips proceed on
+/// an image under the minimum edge and the run writes at exit 0.
+#[test]
+fn no_degrade_strips_metadata_from_an_image_under_the_minimum_edge() {
+    // A 4x4 image with a text chunk, built from the crate's own encoder.
+    let tiny = unmark::codec::Image {
+        width: 4,
+        height: 4,
+        channels: 3,
+        data: vec![90; 4 * 4 * 3],
+    };
+    let mut bytes = unmark::codec::png::encode(&tiny).unwrap();
+    let chunk = png_chunk(b"tEXt", b"parameters\0prompt: a cat");
+    bytes.splice(33..33, chunk);
+    let p = pkg();
+    assert!(matches!(
+        clean(&bytes, &Options::default(), &p),
+        Err(UnmarkError::Unsupported(_))
+    ));
+    let out = clean(
+        &bytes,
+        &Options {
+            no_degrade: true,
+            ..Default::default()
+        },
+        &p,
+    )
+    .unwrap();
+    assert_eq!(out.report.exit_code, EXIT_OK, "{:?}", out.report.actions);
+    let written = out.output.expect("the metadata strip writes");
+    let after = unmark::detect::inspect(&written);
+    assert_eq!(
+        after.get("png_text").map(|d| d.state),
+        Some(ScanState::ConfirmedAbsent)
+    );
+    assert!(out
+        .report
+        .stripped_and_proven_gone
+        .iter()
+        .any(|l| l == "PNG text chunk"));
+    assert!(
+        out.report.sanity.is_none(),
+        "no metric is taken under --no-degrade"
+    );
+}
+
 // --- S4: a walker that did not complete fails inspect and plan --------------
 
 #[test]

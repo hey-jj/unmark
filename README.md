@@ -25,7 +25,8 @@ cargo install unmark --features audio
 
 ## Use
 
-One default run covers each file. The flags below preserve selected items.
+One default run covers each file, applied once per asset. The flags below preserve
+selected items.
 
 ```
 unmark inspect --output text asset.png
