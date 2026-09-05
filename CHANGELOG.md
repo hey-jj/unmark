@@ -3,6 +3,40 @@
 All notable changes to this project are documented here. The format follows
 Keep a Changelog, and the project uses semantic versioning.
 
+## [0.2.1] - 2026-09-05
+
+### Added
+
+- One report per input in a batch, failures included, with `input`,
+  `output`, and `error` fields. Report schema 2.1.0.
+- `no_op` in the report: an output equal to its input is a no-op, written
+  only when a single `--out` names a file.
+- Directory inputs expand recursively and mirror their trees under `--out`.
+  Several directory arguments mirror under their own names.
+- Unlisted JPEG segments strip by default: COM and every APPn outside JFIF,
+  the ICC profile, and the Adobe transform.
+- Generator `<meta>` elements and comments are cut as spans in either
+  quoting. Only banner lines are dropped whole.
+
+### Changed
+
+- `--out` that names the input, through a symlink or a hard link too, is a
+  usage error and the input is never opened for writing.
+- Output is written through a temporary file and renamed into place. A
+  failed write leaves nothing behind.
+- Empty input, an image narrower or shorter than eight pixels, and audio
+  without samples exit 40. A fidelity check that did not run exits 30.
+- `inspect` and `plan` exit 30 when a walker left a confirmable class
+  malformed.
+- The WAV `bext`, `iXML`, `aXML`, `_PMX`, `cue `, `smpl`, and `inst` chunks
+  are unlisted and strip by default.
+- A WebP VP8X header drops the flags of the metadata chunks the run removed,
+  so the output decodes.
+- An opt-out of the dwtDct removal (`--keep dwtdct`, `--keep PX02`, or
+  `--no-degrade`) writes the file with the other strips applied.
+- A colliding output in a batch is refused, never overwritten.
+- `verify` refuses an unsupported, malformed, or wrong-format output.
+
 ## [0.2.0] - 2026-09-04
 
 0.2.0 replaces the profiles with one default run per file that strips every

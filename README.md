@@ -35,8 +35,13 @@ unmark verify  --report report.json clean.png
 ```
 
 `clean` requires `--out` and writes to a new file, or to a directory when the input is
-a directory. Keeping the input is the backup. The output extension matches the
-container the run emits.
+a directory. Keeping the input is the backup, so an `--out` that names the input,
+through a symlink or a hard link too, is a usage error. Output goes through a temporary
+file and is renamed into place. The output extension matches the container the run
+emits. A directory input expands recursively and its tree is mirrored under `--out`,
+one report per input with failures included, and a second input that would land on a
+written output is refused. A run whose output equals its input is a no-op: a single
+`--out` file still gets its copy, and a batch writes nothing for it.
 
 | Flag | Effect |
 |---|---|
@@ -50,8 +55,8 @@ container the run emits.
 | 0 | The run completed |
 | 2 | Usage error |
 | 10 | A confirmable mark is still present in the output |
-| 30 | Measurement, decoding, or a required inspection failed |
-| 40 | Unsupported input |
+| 30 | Measurement, decoding, or a required inspection failed, including a walker that left a class malformed |
+| 40 | Unsupported input, including an empty file, an image under eight pixels on an edge, and audio without samples |
 | 50 | The sanity floor refused the operation and nothing was written |
 
 ## The default run
@@ -61,7 +66,7 @@ named mark.
 
 | Container | Transforms |
 |---|---|
-| JPEG | C2PA, XMP, and EXIF strips, then a resize at ratio 0.95 and a re-encode at quality 92 with 4:4:4 chroma |
+| JPEG | C2PA, XMP, EXIF, and unlisted-segment strips, then a resize at ratio 0.95 and a re-encode at quality 92 with 4:4:4 chroma |
 | PNG, WebP | C2PA, XMP, EXIF, text-chunk, and unlisted-chunk strips, then the same resize and a lossless write |
 | WAV, FLAC | Tag, RIFF ancillary, Vorbis comment, and unlisted-chunk strips, then a 1500 Hz highpass |
 | MP3, MP4, M4A | Tag strips |
@@ -96,6 +101,7 @@ manifest without a capture action, and `--keep c2pa` preserves it.
 - `capture`: the capture status, the quoted claim or the named hint, and the line the run prints.
 - `scan_states`: one state per mark class. `confirmed_present` and `confirmed_absent` are exhaustive reads over a supported container. `unsupported_format` and `malformed` carry their evidence in `findings`. `not_attempted` marks a keyed mark class, whose row carries a citation in place of a decode.
 - `sanity`: the PSNR and SSIM of the output against its grid-matched reference and the floor they are held to.
+- `no_op`, `input`, `output`, `error`: whether the output equals the input, the paths the command line used, and the failure message when a run did not complete.
 
 ## Fixtures and the oracle
 
