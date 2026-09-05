@@ -4,7 +4,7 @@
 //! false-positive fraction of the rule on unmarked builder-rendered images is
 //! measured and pinned; the pinned resize ratio is the measured one.
 //!
-//! The oracle is the invisible-watermark Python package, run as a subprocess
+//! The oracle is the reference embedding package, run as a subprocess
 //! through `tools/oracle.py`, never linked. CI installs it and sets
 //! `UNMARK_ORACLE_REQUIRED=1`, so the oracle checks fail there when it is
 //! absent; a local run without it skips those checks and says so.
@@ -158,14 +158,20 @@ fn every_marked_fixture_reads_present_before_and_absent_after_the_default_run() 
                 agree_before >= 0.9,
                 "{name}: in-crate and oracle bits disagree before cleaning ({agree_before:.3})"
             );
-            let out_path = scratch.join(name);
-            std::fs::write(&out_path, &written).unwrap();
-            let o_after = oracle_bits(py, &out_path, expected.len());
-            let o_agreement = dwtdct::agreement(&o_after, &expected);
-            assert!(
-                o_agreement < dwtdct::AGREEMENT_THRESHOLD,
-                "{name}: the oracle still recovers the payload after cleaning ({o_agreement:.3})"
-            );
+            // The oracle refuses an image under 256 pixels on an edge, so
+            // an output the crop and resize took below that is read in-crate
+            // only, and that read matches the oracle's arithmetic.
+            let out_img = decode(&written);
+            if out_img.width >= 256 && out_img.height >= 256 {
+                let out_path = scratch.join(name);
+                std::fs::write(&out_path, &written).unwrap();
+                let o_after = oracle_bits(py, &out_path, expected.len());
+                let o_agreement = dwtdct::agreement(&o_after, &expected);
+                assert!(
+                    o_agreement < dwtdct::AGREEMENT_THRESHOLD,
+                    "{name}: the oracle still recovers the payload after cleaning ({o_agreement:.3})"
+                );
+            }
         }
     }
     let _ = std::fs::remove_dir_all(&scratch);
@@ -175,7 +181,7 @@ fn every_marked_fixture_reads_present_before_and_absent_after_the_default_run() 
 /// reference decoder fails on such input as well, so the row reads
 /// unsupported with the measured note, and the resize claims no removal.
 #[test]
-fn a_chroma_subsampled_jpeg_marks_dwtdct_detection_unreliable_and_claims_nothing() {
+fn a_chroma_subsampled_jpeg_reads_unsupported_and_the_resize_claims_no_removal() {
     let path: PathBuf = [
         env!("CARGO_MANIFEST_DIR"),
         "fixtures",
@@ -189,11 +195,10 @@ fn a_chroma_subsampled_jpeg_marks_dwtdct_detection_unreliable_and_claims_nothing
     let r = unmark::inspect(&bytes, &Options::default(), &pkg).unwrap();
     let row = r.scan_states.iter().find(|s| s.class == "dwtdct").unwrap();
     assert_eq!(row.state, unmark::scan::ScanState::UnsupportedFormat);
-    let finding = r.findings.iter().find(|f| f.class == "dwtdct").unwrap();
-    assert!(finding
-        .evidence
-        .iter()
-        .any(|e| e == unmark::DWTDCT_SUBSAMPLED_NOTE));
+    assert!(
+        r.findings.iter().all(|f| f.class != "dwtdct"),
+        "an unsupported row carries no finding sentence"
+    );
     let out = clean(&bytes, &Options::default(), &pkg).unwrap();
     assert_eq!(out.report.exit_code, 0, "{:?}", out.report.actions);
     let px02 = out
@@ -203,7 +208,7 @@ fn a_chroma_subsampled_jpeg_marks_dwtdct_detection_unreliable_and_claims_nothing
         .find(|a| a.transform == "PX02")
         .unwrap();
     assert!(
-        px02.result.contains("no removal is claimed"),
+        px02.result.contains("no dwtDct payload decoded"),
         "{}",
         px02.result
     );
@@ -340,4 +345,64 @@ fn the_pinned_resize_ratio_is_the_measured_one_and_bounded_by_the_citation() {
             d.agreement
         );
     }
+}
+
+/// Flat content is the decoder-parity boundary: the embed lands every carrier
+/// on a multiple of the step, the reference decoder reads chance, and the
+/// in-crate rule reads the same chance. Both decoders say absent, and the
+/// in-crate bits match the oracle's on a PNG.
+#[test]
+fn flat_content_reads_absent_in_both_decoders_and_the_reads_agree() {
+    let Some(py) = oracle() else {
+        return;
+    };
+    let scratch = std::env::temp_dir().join(format!("unmark-flat-{}", std::process::id()));
+    std::fs::create_dir_all(&scratch).unwrap();
+    let flat = Image {
+        width: 288,
+        height: 256,
+        channels: 3,
+        data: [184u8, 146, 93]
+            .iter()
+            .copied()
+            .cycle()
+            .take(288 * 256 * 3)
+            .collect(),
+    };
+    let base = scratch.join("flat.png");
+    std::fs::write(&base, codec::png::encode(&flat).unwrap()).unwrap();
+    let script: PathBuf = [env!("CARGO_MANIFEST_DIR"), "tools", "oracle.py"]
+        .iter()
+        .collect();
+    for (name, spec, payload) in [
+        ("flat-sdxl.png", "hex:B3EC907BB19E:48", "sdxl-48"),
+        ("flat-compvis.png", "text:StableDiffusionV1", "compvis-136"),
+    ] {
+        let marked = scratch.join(name);
+        let status = Command::new(&py)
+            .arg(&script)
+            .arg("encode")
+            .arg(&base)
+            .arg(&marked)
+            .arg(spec)
+            .status()
+            .unwrap();
+        assert!(status.success());
+        let img = decode(&std::fs::read(&marked).unwrap());
+        let expected = dwtdct::payload_bits(payload).unwrap();
+        let (mine, _) = dwtdct::decode(&img, expected.len());
+        let theirs = oracle_bits(&py, &marked, expected.len());
+        assert_eq!(
+            mine, theirs,
+            "{name}: the in-crate bits differ from the oracle's"
+        );
+        let d = dwtdct::detect(&img);
+        let d = d.iter().find(|d| d.payload == payload).unwrap();
+        assert!(
+            !d.present,
+            "{name}: flat content read present at {}",
+            d.agreement
+        );
+    }
+    let _ = std::fs::remove_dir_all(&scratch);
 }

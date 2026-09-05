@@ -54,6 +54,10 @@ path = "src/bin/unmark.rs"
 name = "metrics"
 required-features = ["image"]
 
+[[example]]
+name = "degrade"
+required-features = ["image"]
+
 [profile.release]
 lto = true
 

@@ -146,7 +146,7 @@ citation = "https://arxiv.org/html/2401.17264"
 id = "visible_overlay"
 honesty = "unaddressed"
 label = "visible overlay"
-guard = "A visible logo or a corner mark. Removing it needs inpainting, which is model-based work."
+guard = "A visible logo or a corner mark. PX03 crops the border it sits in."
 
 [[mark_class]]
 id = "c2pa_soft_binding"
@@ -222,6 +222,15 @@ target = "LIST INFO and an embedded id3 chunk in WAV, WebP, and AVI"
 guard = "Remove the named RIFF ancillary chunks and rebuild the enclosing sizes and even-boundary padding."
 
 [[transform]]
+id = "MC12"
+name = "strip-wav-production-metadata"
+order = 62
+kind = "metadata"
+applies = ["riff-wav"]
+target = "bext, iXML, aXML, _PMX, cue, smpl, and inst chunks"
+guard = "Drop the production metadata chunks a WAV carries beyond its format and data. Use --keep MC12 to keep them."
+
+[[transform]]
 id = "MC10"
 name = "strip-vorbis-comment"
 order = 65
@@ -235,9 +244,18 @@ id = "MC06"
 name = "strip-unlisted-chunks"
 order = 70
 kind = "metadata"
-applies = ["jpeg", "png", "webp", "riff-wav", "flac"]
+applies = ["png", "webp", "riff-wav", "flac"]
 target = "Any ancillary chunk not required for decoding and valid output"
 guard = "Drop every ancillary chunk the keep list does not name. The keep list holds only what decoding and valid output require, so an ICC color-profile chunk and a colorimetry chunk stay and everything else goes."
+
+[[transform]]
+id = "MC11"
+name = "strip-jpeg-segments"
+order = 72
+kind = "metadata"
+applies = ["jpeg"]
+target = "COM segments and application segments decoding does not need: every APPn other than APP0 JFIF, APP2 ICC, and APP14 Adobe"
+guard = "Drop every JPEG COM segment and every application segment outside the three decoding needs. EXIF, XMP, IPTC, and C2PA segments answer to their own transforms. Use --keep MC11 to keep them."
 
 [[transform]]
 id = "MC07"
@@ -256,6 +274,19 @@ kind = "text"
 applies = ["text", "svg", "html"]
 target = "SVG metadata, HTML X-Generator, PDF Producer and Creator, comment banners"
 guard = "Remove generator identity headers from text and document files."
+
+[[transform]]
+id = "PX03"
+name = "border-crop"
+order = 100
+kind = "pixel"
+applies = ["png", "jpeg", "webp"]
+params = { pixels = 32, cap = 0.1 }
+strength = "32 pixels off every edge, capped at a tenth of the edge"
+cited_effect = "A 32-pixel border crop removed all 858 pixels of a 32-pixel corner stamp on a 512 by 384 image that the metadata strips and the resize had left in place, and kept 73 percent of the area with its pixels unchanged."
+citation = "the corner-stamp probe of the 2026-09-05 efficacy audit, reproduced in tests/fix_0_2_1.rs"
+target = "A visible stamp or logo in the border"
+guard = "Cut the pinned pixels from every edge, capped at a tenth of the edge. The pixels inside the crop are unchanged. Use --no-degrade or --keep PX03 to skip it."
 
 [[transform]]
 id = "PX02"
@@ -304,11 +335,6 @@ guard = "Apply the highpass on the scalar path and write the samples back as emi
 id = "PX01-lossy"
 name = "re-encode as a degrade on lossy input"
 reason = "no cited effect on any mark"
-
-[[held]]
-id = "PX03"
-name = "border-crop"
-reason = "no cited figure shows an effect at a stated strength. A crop keeping a tenth of the pixels leaves Stable Signature at 84 percent detection."
 
 [[held]]
 id = "PX04"

@@ -11,11 +11,11 @@ This document says how to read its result.
 
 ## Rules
 
-- Relay the three lists as the tool prints them. Never say the asset is clean.
-- Refuse the authorship question. If asked whether an asset is AI-generated or
-  human-made, offer the mark inventory instead.
+- Relay the three lists as the tool prints them.
+- If a user asks whether an asset is AI-made, answer that the tool inventories marks
+  and does not judge origin.
 - Describe what the file now contains.
-- Use the tool's own words for each transform. Never say "weakened".
+- Use the tool's own words for each transform.
 
 ## The loop
 
@@ -67,12 +67,9 @@ and `malformed` as warnings and read their evidence in `findings`.
 preserved item and why: a flag, a certified capture, or `--no-degrade`. `survived`
 names each mark left in place with its evidence and citation.
 
-## When to refuse
+## Scope
 
-- The user wants a mark presented as absent that the tool reports as surviving.
-- The user wants the output described as unmarked, human-authored, or safe to pass off
-  as an original.
-- The request targets a safety hash or a visible copyright or broadcast mark.
+A safety hash and a mark a person or broadcaster placed are outside the tool.
 
 ## Files
 

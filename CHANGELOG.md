@@ -7,14 +7,21 @@ Keep a Changelog, and the project uses semantic versioning.
 
 ### Added
 
+- `PX03`, a 32-pixel border crop capped at a tenth of each edge, in the
+  default run for PNG, JPEG, and WebP. It removes a corner stamp and leaves
+  the pixels inside unchanged. `--keep PX03` turns it off.
+- `MC11`, the JPEG COM and application segment strip, and `MC12`, the WAV
+  production metadata strip, each with its own `--keep` id.
+- The in-crate dwtDct read matches the reference decoder to the bit on PNG
+  and 4:4:4 JPEG input: the colour conversion uses its fixed-point
+  arithmetic and the wavelet its double-precision tap order.
 - One report per input in a batch, failures included, with `input`,
   `output`, and `error` fields. Report schema 2.1.0.
 - `no_op` in the report: an output equal to its input is a no-op, written
   only when a single `--out` names a file.
 - Directory inputs expand recursively and mirror their trees under `--out`.
   Several directory arguments mirror under their own names.
-- Unlisted JPEG segments strip by default: COM and every APPn outside JFIF,
-  the ICC profile, and the Adobe transform.
+- `survived` rows carry the class, the transforms applied, and the citation.
 - Generator `<meta>` elements and comments are cut as spans in either
   quoting. Only banner lines are dropped whole.
 
@@ -29,7 +36,10 @@ Keep a Changelog, and the project uses semantic versioning.
 - `inspect` and `plan` exit 30 when a walker left a confirmable class
   malformed.
 - The WAV `bext`, `iXML`, `aXML`, `_PMX`, `cue `, `smpl`, and `inst` chunks
-  are unlisted and strip by default.
+  strip by default under `MC12`. JPEG COM and every APPn outside JFIF, the
+  ICC profile, and the Adobe transform strip by default under `MC11`.
+- The text report drops the warning label, the empty capture line, and the
+  removal disclaimers on actions.
 - A WebP VP8X header drops the flags of the metadata chunks the run removed,
   so the output decodes.
 - An opt-out of the dwtDct removal (`--keep dwtdct`, `--keep PX02`, or

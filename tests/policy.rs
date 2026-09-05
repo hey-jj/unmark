@@ -18,8 +18,8 @@ fn the_digest_is_deterministic_and_embedded() {
 fn the_package_carries_the_default_run_and_the_held_list() {
     let pkg = policy::load().unwrap();
     for id in [
-        "MC01", "MC02", "MC03", "MC04", "MC05", "MC06", "MC07", "MC08", "MC09", "MC10", "PX01",
-        "PX02", "AU06",
+        "MC01", "MC02", "MC03", "MC04", "MC05", "MC06", "MC07", "MC08", "MC09", "MC10", "MC11",
+        "MC12", "PX01", "PX02", "PX03", "AU06",
     ] {
         assert!(pkg.transform(id).is_some(), "missing transform {id}");
     }

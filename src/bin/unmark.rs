@@ -67,9 +67,9 @@ fn usage() -> &'static str {
      unmark policy  digest | show | snapshot [--out FILE]\n  \
      unmark --version | -V | --help | -h\n\
      \n\
-     There are no profiles. Each sniffed container receives one default run that strips every\n\
-     mark it can find. A directory PATH processes every supported file in it. --out names a file\n\
-     for one input, or a directory for several; the extension must match the emitted container.\n\
+     Each file receives one default run that strips every mark it finds. A directory PATH\n\
+     processes every file under it. --out names a file for one input, or a directory for\n\
+     several; the extension must match the emitted container.\n\
      \n\
      exit codes:\n  \
      0   the run completed\n  \

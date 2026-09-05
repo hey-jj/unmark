@@ -7,6 +7,11 @@ use super::{DropSpec, RewriteError};
 use crate::detect::c2pa;
 use crate::detect::riff::chunks;
 
+/// WAV production metadata: MC12 drops these, and --keep MC12 keeps them.
+const PRODUCTION: &[&[u8; 4]] = &[
+    b"bext", b"iXML", b"aXML", b"_PMX", b"cue ", b"smpl", b"inst",
+];
+
 /// The chunks decoding and valid output require, kept regardless of MC06.
 /// Everything else is an unlisted chunk and goes under the default run.
 const KEEP: &[&[u8; 4]] = &[
@@ -27,6 +32,7 @@ fn should_drop(id: &[u8; 4], data: &[u8], spec: &DropSpec) -> bool {
         b"XMP " => spec.xmp,
         b"EXIF" => spec.exif,
         b"LIST" => spec.riff_ancillary && data.get(0..4) == Some(b"INFO"),
+        k if PRODUCTION.contains(&k) => spec.riff_production,
         k if KEEP.contains(&k) => false,
         _ => {
             // A stray C2PA payload in an unusual chunk still comes off when the

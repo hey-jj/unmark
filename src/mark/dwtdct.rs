@@ -66,12 +66,29 @@ pub fn u_plane(img: &Image) -> (Vec<f64>, usize, usize) {
     let c = img.channels;
     let mut u = Vec::with_capacity(img.width * img.height);
     for p in img.data.chunks_exact(c) {
-        let (r, g, b) = (p[0] as f64, p[1] as f64, p[2] as f64);
-        let y = 0.299 * r + 0.587 * g + 0.114 * b;
-        let uu = (b - y) * 0.492 + 128.0;
-        u.push(uu.round().clamp(0.0, 255.0));
+        u.push(u_of(p[0], p[1], p[2]) as f64);
     }
     (u, img.width, img.height)
+}
+
+/// The 8-bit U value of one pixel, in the fixed-point arithmetic the
+/// reference decoder's colour conversion uses: 14-bit coefficients, Y
+/// rounded to an integer first, then U from the blue difference against
+/// that rounded Y. A float conversion lands one level off on some pixels,
+/// and one level decides the carrier in a nearly flat block, so the integer
+/// path is what makes the in-crate read agree with the oracle.
+pub fn u_of(r: u8, g: u8, b: u8) -> u8 {
+    const SHIFT: i64 = 14;
+    const HALF_STEP: i64 = 1 << (SHIFT - 1);
+    const R2Y: i64 = 4899;
+    const G2Y: i64 = 9617;
+    const B2Y: i64 = 1868;
+    const B2U: i64 = 8061;
+    const DELTA: i64 = 128 << SHIFT;
+    let (r, g, b) = (r as i64, g as i64, b as i64);
+    let y = (r * R2Y + g * G2Y + b * B2Y + HALF_STEP) >> SHIFT;
+    let u = ((b - y) * B2U + DELTA + HALF_STEP) >> SHIFT;
+    u.clamp(0, 255) as u8
 }
 
 /// One level of the Haar wavelet on a plane cropped to multiples of four,
@@ -87,7 +104,16 @@ pub fn haar_low_low(plane: &[f64], width: usize, height: usize) -> (Vec<f64>, us
             let b = plane[(2 * y) * width + 2 * x + 1];
             let c = plane[(2 * y + 1) * width + 2 * x];
             let d = plane[(2 * y + 1) * width + 2 * x + 1];
-            ll.push((a + b + c + d) / 2.0);
+            // The reference decoder's wavelet library filters with two
+            // taps of 1/sqrt(2) in double precision, rows first, then
+            // columns, each tap product summed later element first. The
+            // exact (a+b+c+d)/2 differs from that in the last bit, and a
+            // carrier that lands on a multiple of the step reads on the
+            // wrong side of the half step, so the arithmetic is mirrored.
+            const S: f64 = std::f64::consts::FRAC_1_SQRT_2;
+            let left = c * S + a * S;
+            let right = d * S + b * S;
+            ll.push(right * S + left * S);
         }
     }
     (ll, lw, lh)
@@ -226,7 +252,9 @@ mod tests {
         let plane: Vec<f64> = (0..64).map(|i| i as f64).collect();
         let (ll, w, h) = haar_low_low(&plane, 8, 8);
         assert_eq!((w, h), (4, 4));
-        assert_eq!(ll[0], (0.0 + 1.0 + 8.0 + 9.0) / 2.0);
+        // Mirrors the reference wavelet's tap order, so the sum over two
+        // holds to floating precision rather than exactly.
+        assert!((ll[0] - (0.0 + 1.0 + 8.0 + 9.0) / 2.0).abs() < 1e-9);
         let (_, w, h) = haar_low_low(&vec![0.0; 10 * 6], 10, 6);
         assert_eq!((w, h), (4, 2), "crops to multiples of four first");
     }

@@ -35,7 +35,7 @@ fn should_drop(marker: u8, data: &[u8], spec: &DropSpec) -> bool {
         0xED => spec.iptc && data.starts_with(IPTC_ID),
         _ => false,
     };
-    owned || (spec.unlisted && is_unlisted(marker, data))
+    owned || (spec.jpeg_segments && is_unlisted(marker, data))
 }
 
 pub fn rewrite(bytes: &[u8], spec: &DropSpec) -> Vec<u8> {

@@ -56,7 +56,7 @@ fn wav_default_run_strips_tags_and_applies_the_highpass() {
         .report
         .survived
         .iter()
-        .any(|s| s.mark == "AudioSeal" && s.evidence.contains("0.61")));
+        .any(|s| s.class == "audioseal" && s.transform == "AU06" && s.citation.is_some()));
 }
 
 #[test]

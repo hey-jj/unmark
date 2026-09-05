@@ -28,6 +28,11 @@ pub struct DropSpec {
     pub unlisted: bool,
     /// MC10: drop the FLAC Vorbis comment block whole.
     pub vorbis: bool,
+    /// MC11: drop JPEG COM and application segments decoding does not need.
+    pub jpeg_segments: bool,
+    /// MC12: drop WAV production metadata chunks (bext, iXML, aXML, _PMX,
+    /// cue, smpl, inst).
+    pub riff_production: bool,
 }
 
 /// The reason a rewrite could not be completed for a container in this build.

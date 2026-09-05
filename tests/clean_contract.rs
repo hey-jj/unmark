@@ -377,13 +377,15 @@ fn the_report_never_says_clean_or_weakened_and_names_every_survivor() {
         "blind classes are named as surviving"
     );
     for s in &out.report.survived {
-        assert!(!s.evidence.is_empty(), "{} has no evidence", s.mark);
+        assert!(!s.class.is_empty() && !s.transform.is_empty());
     }
     assert!(out
         .report
         .survived
         .iter()
-        .any(|s| s.mark == "SynthID-Image" && s.evidence.starts_with("applied, survives")));
+        .any(|s| s.class == "synthid_image"
+            && s.transform.contains("PX02")
+            && s.citation.is_some()));
 }
 
 #[test]

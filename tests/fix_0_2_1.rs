@@ -217,10 +217,10 @@ fn a_bext_description_strips_by_default_and_stays_under_keep() {
         );
         assert!(!contains(&bytes, b"bext"));
     }
-    let out = clean(&wav, &keep(&["MC06"]), &p).unwrap();
+    let out = clean(&wav, &keep(&["MC12"]), &p).unwrap();
     let bytes = out.output.unwrap();
-    assert!(contains(&bytes, mark), "--keep MC06 dropped the chunk");
-    assert!(out.report.kept.iter().any(|k| k.item.starts_with("MC06")));
+    assert!(contains(&bytes, mark), "--keep MC12 dropped the chunk");
+    assert!(out.report.kept.iter().any(|k| k.item.starts_with("MC12")));
 }
 
 fn jpeg_with_segments(extra: &[(u8, &[u8])]) -> Vec<u8> {
@@ -262,7 +262,7 @@ fn jpeg_comment_and_app15_generator_marks_strip_by_default() {
         unmark::container::signal_stream(&bytes, Format::Jpeg),
         unmark::container::signal_stream(&jpg, Format::Jpeg)
     );
-    let out = clean(&jpg, &keep(&["MC06", "PX02", "PX01"]), &p).unwrap();
+    let out = clean(&jpg, &keep(&["MC11", "PX02", "PX03", "PX01"]), &p).unwrap();
     assert!(contains(&out.output.unwrap(), b"AI-MARK-JPEG-COM"));
 }
 
@@ -557,4 +557,78 @@ fn colliding_outputs_are_refused_and_the_first_survives() {
     assert_eq!(code, EXIT_OK, "{err}");
     assert_eq!(std::fs::read(outputs.join("a/same.txt")).unwrap(), b"ab\n");
     assert_eq!(std::fs::read(outputs.join("b/same.txt")).unwrap(), b"cd\n");
+}
+
+// --- PX03: the border crop runs by default and removes a corner stamp -----
+
+#[cfg(feature = "image")]
+#[test]
+fn the_border_crop_runs_by_default_removes_a_corner_stamp_and_keeps_off_under_the_flag() {
+    // A 512x384 field with a 32-pixel magenta corner stamp.
+    let (w, h) = (512usize, 384usize);
+    let mut data = Vec::with_capacity(w * h * 3);
+    for y in 0..h {
+        for x in 0..w {
+            if x < 32 && y < 32 {
+                data.extend_from_slice(&[255, 0, 255]);
+            } else {
+                data.extend_from_slice(&[
+                    ((x * 3 + y) % 200) as u8 + 20,
+                    ((x + y * 2) % 180) as u8 + 30,
+                    ((x * y) % 150) as u8 + 40,
+                ]);
+            }
+        }
+    }
+    let img = unmark::codec::Image {
+        width: w,
+        height: h,
+        channels: 3,
+        data,
+    };
+    let magenta = |i: &unmark::codec::Image| {
+        i.data
+            .chunks_exact(3)
+            .filter(|p| p[0] > 235 && p[1] < 20 && p[2] > 235)
+            .count()
+    };
+    assert_eq!(magenta(&img), 32 * 32);
+    let png = unmark::codec::png::encode(&img).unwrap();
+    let p = pkg();
+    let out = clean(&png, &Options::default(), &p).unwrap();
+    assert_eq!(out.report.exit_code, EXIT_OK, "{:?}", out.report.actions);
+    let written = unmark::codec::decode_image(&out.output.unwrap(), Format::Png).unwrap();
+    assert_eq!(magenta(&written), 0, "the stamp survived the default run");
+    // 32 off each edge, then the resize: 448x320 at 0.95 is 426x304.
+    assert_eq!((written.width, written.height), (426, 304));
+    let px03 = out
+        .report
+        .actions
+        .iter()
+        .find(|a| a.transform == "PX03")
+        .expect("PX03 reported");
+    assert_eq!(px03.outcome, "applied");
+    assert!(px03.result.contains("448x320 kept"), "{}", px03.result);
+    // --keep PX03 turns the crop off and the stamp stays.
+    let out = clean(&png, &keep(&["PX03"]), &p).unwrap();
+    assert_eq!(out.report.exit_code, EXIT_OK);
+    assert!(out.report.kept.iter().any(|k| k.item.starts_with("PX03")));
+    let written = unmark::codec::decode_image(&out.output.unwrap(), Format::Png).unwrap();
+    assert_eq!((written.width, written.height), (486, 365));
+    assert!(magenta(&written) > 0);
+    // The crop is capped at a tenth of a small edge.
+    let small = unmark::codec::Image {
+        width: 100,
+        height: 60,
+        channels: 3,
+        data: (0..100 * 60 * 3).map(|i| (i * 7 % 251) as u8).collect(),
+    };
+    let out = clean(
+        &unmark::codec::png::encode(&small).unwrap(),
+        &keep(&["PX02"]),
+        &p,
+    )
+    .unwrap();
+    let written = unmark::codec::decode_image(&out.output.unwrap(), Format::Png).unwrap();
+    assert_eq!((written.width, written.height), (80, 48));
 }

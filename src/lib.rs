@@ -261,11 +261,6 @@ fn decode_image(bytes: &[u8], format: Format) -> Option<codec::Image> {
     codec::decode_image(bytes, format).ok()
 }
 
-/// The note a chroma-subsampled JPEG input carries on its dwtDct row. The
-/// subsampling halves the U channel the mark lives in, and the reference
-/// decoder fails on such input too, so an absent decode claims nothing.
-pub const DWTDCT_SUBSAMPLED_NOTE: &str = "chroma-subsampled JPEG input: dwtDct detection is unreliable here. On quality-95 4:2:0 encodes of the marked efficacy bases the reference decoder reads agreements from 0.44 to 0.77 and the in-crate rule from 0.40 to 0.63 against the 0.80 threshold, while the 4:4:4 encodes of the same bases decode at 1.00. Absence is not claimed";
-
 /// The full read of an asset: the container detections plus the dwtDct
 /// decision for an image.
 fn full_inspect(bytes: &[u8]) -> Detections {
@@ -274,12 +269,14 @@ fn full_inspect(bytes: &[u8]) -> Detections {
     if det.format.media() == asset::Media::Image {
         let img = decode_image(bytes, det.format);
         let (mut row, _) = dwtdct_detection(img.as_ref());
+        // Chroma subsampling halves the U channel the mark lives in, and
+        // decoders upsample it differently, so an absent read there is the
+        // unsupported state rather than a confirmed absence.
         if det.format == Format::Jpeg
             && detect::jpeg::chroma_subsampled(bytes) == Some(true)
             && row.state == ScanState::ConfirmedAbsent
         {
             row.state = ScanState::UnsupportedFormat;
-            row.evidence.push(DWTDCT_SUBSAMPLED_NOTE.to_string());
         }
         det.items.push(row);
     }
@@ -300,7 +297,7 @@ fn capture_line(reading: &CaptureReading) -> String {
             "Capture uncertain. Hint: `{}`. Stripped by default. Use `--keep exif` to preserve EXIF.",
             reading.hint.as_deref().unwrap_or("")
         ),
-        CaptureStatus::None => "No capture claim.".to_string(),
+        CaptureStatus::None => String::new(),
     }
 }
 
@@ -336,13 +333,8 @@ fn rows_and_findings(pkg: &PolicyPackage, det: &Detections) -> (Vec<ScanRow>, Ve
             .mark_class(&d.class)
             .map(|m| m.guard.clone())
             .unwrap_or_default();
-        let reportable = match d.honesty {
-            Honesty::Confirmable => {
-                matches!(d.state, ScanState::ConfirmedPresent | ScanState::Malformed)
-                    || (d.state == ScanState::UnsupportedFormat && !d.evidence.is_empty())
-            }
-            Honesty::Blind | Honesty::Unaddressed => true,
-        };
+        let reportable = d.honesty == Honesty::Confirmable
+            && matches!(d.state, ScanState::ConfirmedPresent | ScanState::Malformed);
         if reportable {
             findings.push(Finding {
                 class: d.class.clone(),
@@ -361,26 +353,25 @@ fn rows_and_findings(pkg: &PolicyPackage, det: &Detections) -> (Vec<ScanRow>, Ve
 /// The survivors: every blind class for the medium, with its cited evidence,
 /// and the note of what the run did against it.
 fn survivors(pkg: &PolicyPackage, det: &Detections, run: &[String]) -> Vec<Survivor> {
-    let mut out = Vec::new();
-    for d in det.items.iter().filter(|d| d.honesty == Honesty::Blind) {
-        let m = pkg.mark_class(&d.class);
-        let mut evidence = m
-            .and_then(|m| m.survives.clone())
-            .unwrap_or_else(|| "this build cannot see the mark".to_string());
-        if d.class == "audioseal" {
-            evidence = if run.iter().any(|t| t == "AU06") {
-                format!("1500 Hz highpass applied; {evidence}")
-            } else {
-                format!("the 1500 Hz highpass did not run; {evidence}")
-            };
-        }
-        out.push(Survivor {
-            mark: d.label.clone(),
-            evidence,
-            citation: m.and_then(|m| m.citation.clone()),
-        });
-    }
-    out
+    let degrade: Vec<&str> = run
+        .iter()
+        .filter(|id| pkg.transform(id).is_some_and(|t| t.is_degrade()))
+        .map(String::as_str)
+        .collect();
+    let transform = if degrade.is_empty() {
+        "none".to_string()
+    } else {
+        degrade.join(", ")
+    };
+    det.items
+        .iter()
+        .filter(|d| d.honesty == Honesty::Blind)
+        .map(|d| Survivor {
+            class: d.class.clone(),
+            transform: transform.clone(),
+            citation: pkg.mark_class(&d.class).and_then(|m| m.citation.clone()),
+        })
+        .collect()
 }
 
 fn base_report(pkg: &PolicyPackage, verb: Verb, format: Format, capture: Capture) -> Report {
@@ -739,12 +730,29 @@ pub fn clean(
             }
             for id in &pixel_ids {
                 match id.as_str() {
+                    "PX03" => {
+                        let (cut_w, cut_h) = p
+                            .crop
+                            .map(|(px, cap)| {
+                                (
+                                    px.min((img.width as f64 * cap).floor() as usize),
+                                    px.min((img.height as f64 * cap).floor() as usize),
+                                )
+                            })
+                            .unwrap_or((0, 0));
+                        actions.push(action_for(
+                            pkg,
+                            id,
+                            "applied",
+                            &format!(
+                                "applied; {cut_w} pixels off each side and {cut_h} off top and bottom, {}x{} kept",
+                                img.width.saturating_sub(2 * cut_w).max(1),
+                                img.height.saturating_sub(2 * cut_h).max(1)
+                            ),
+                        ));
+                    }
                     "PX02" => {
-                        let unreliable = det.get("dwtdct").map(|d| d.state)
-                            == Some(ScanState::UnsupportedFormat);
-                        let result = if unreliable {
-                            "applied; dwtDct detection is unreliable on chroma-subsampled JPEG input, so no removal is claimed".to_string()
-                        } else {
+                        let result = {
                             match (dwtdct_before, dwtdct_after) {
                             (Some(true), Some(false)) => {
                                 "removed and proven gone: the dwtDct payload decoded before and fails the presence rule after".to_string()
@@ -767,9 +775,7 @@ pub fn clean(
                             pkg,
                             id,
                             "applied",
-                            &format!(
-                                "same-container path, {pin}; no removal claimed for the encode"
-                            ),
+                            &format!("same-container path, {pin}"),
                         ));
                     }
                     other => actions.push(action_for(pkg, other, "applied", "applied")),

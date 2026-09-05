@@ -5,10 +5,11 @@ metadata, C2PA content credentials, EXIF and XMP fields, PNG generation chunks, 
 tags, RIFF ancillary chunks, MP4 `ilst` atoms, FLAC Vorbis comments, invisible Unicode,
 and the dwtDct pixel mark, which a mild resize removes and the built-in detector proves
 gone. A well-formed C2PA claim that identifies a camera or sensor capture with no later
-generative action is kept, and that output is byte-identical. Flags only turn strips
-off. The report lists the marks removed and proven gone, the items kept with their
-reasons, and the marks that survive. It runs offline, it is deterministic, and it is
-pure Rust.
+generative action is kept, and that output is byte-identical. `--keep` and
+`--no-degrade` turn strips off, and `--strip-capture` strips that kept claim. The report
+lists the marks removed and proven gone, the items kept with their reasons, and the marks
+that survive. Keyed marks such as SynthID survive the run. The report names them. It runs
+offline, it is deterministic, and it is pure Rust.
 
 ## Install
 
@@ -66,13 +67,15 @@ named mark.
 
 | Container | Transforms |
 |---|---|
-| JPEG | C2PA, XMP, EXIF, and unlisted-segment strips, then a resize at ratio 0.95 and a re-encode at quality 92 with 4:4:4 chroma |
-| PNG, WebP | C2PA, XMP, EXIF, text-chunk, and unlisted-chunk strips, then the same resize and a lossless write |
-| WAV, FLAC | Tag, RIFF ancillary, Vorbis comment, and unlisted-chunk strips, then a 1500 Hz highpass |
+| JPEG | C2PA, XMP, EXIF, and comment and application segment strips, then a 32-pixel border crop, a resize at ratio 0.95, and a re-encode at quality 92 with 4:4:4 chroma |
+| PNG, WebP | C2PA, XMP, EXIF, text-chunk, and unlisted-chunk strips, then the same crop and resize and a lossless write |
+| WAV, FLAC | Tag, RIFF ancillary, production metadata, Vorbis comment, and unlisted-chunk strips, then a 1500 Hz highpass |
 | MP3, MP4, M4A | Tag strips |
 | Text, SVG, HTML | Invisible Unicode and generator-header strips |
 
-The resize removes the dwtDct mark that Stable Diffusion pipelines write. Ratio 0.95
+The border crop cuts 32 pixels from every edge, capped at a tenth of the edge, and
+removes a corner stamp. The pixels inside are unchanged. The resize removes the dwtDct
+mark that Stable Diffusion pipelines write. Ratio 0.95
 is the mildest value in the sweep that changes both dimensions of every input and
 defeats every efficacy fixture. No ratio between 0.995 and 0.5 let any fixture
 survive. At 0.95 the round-trip PSNR against the input is above 31 dB and the SSIM
@@ -96,10 +99,10 @@ manifest without a capture action, and `--keep c2pa` preserves it.
 
 - `stripped_and_proven_gone`: the marks the run removed and re-inspection found absent.
 - `kept`: every preserved item with its reason: kept by flag, kept as a certified capture, or kept under `--no-degrade`.
-- `survived`: the marks the run leaves in place, each with its evidence and a citation.
+- `survived`: one row per keyed mark class with the transforms applied and a citation.
 - `actions`: every transform with its strength, outcome, and result.
 - `capture`: the capture status, the quoted claim or the named hint, and the line the run prints.
-- `scan_states`: one state per mark class. `confirmed_present` and `confirmed_absent` are exhaustive reads over a supported container. `unsupported_format` and `malformed` carry their evidence in `findings`. `not_attempted` marks a keyed mark class, whose row carries a citation in place of a decode.
+- `scan_states`: one state per mark class: `confirmed_present`, `confirmed_absent`, `unsupported_format`, `malformed`, or `not_attempted`. `findings` carries the located and malformed marks with their evidence.
 - `sanity`: the PSNR and SSIM of the output against its grid-matched reference and the floor they are held to.
 - `no_op`, `input`, `output`, `error`: whether the output equals the input, the paths the command line used, and the failure message when a run did not complete.
 

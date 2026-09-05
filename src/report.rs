@@ -70,8 +70,11 @@ pub struct Kept {
 /// A mark the run cannot remove, with its evidence.
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct Survivor {
-    pub mark: String,
-    pub evidence: String,
+    /// The mark class id.
+    pub class: String,
+    /// The degrade transforms of the run that touched the signal, or
+    /// "none".
+    pub transform: String,
     pub citation: Option<String>,
 }
 
@@ -138,7 +141,9 @@ pub fn render_text(r: &Report) -> String {
         r.verb, r.format, r.output_format
     );
     let _ = writeln!(o, "digest: {}", r.policy_digest);
-    let _ = writeln!(o, "capture: {}", r.capture.line);
+    if !r.capture.line.is_empty() {
+        let _ = writeln!(o, "capture: {}", r.capture.line);
+    }
     if let Some(i) = &r.input {
         let _ = writeln!(o, "input: {i}");
     }
@@ -155,11 +160,7 @@ pub fn render_text(r: &Report) -> String {
 
     let _ = writeln!(o, "scan states:");
     for s in &r.scan_states {
-        let flag = match s.state {
-            ScanState::UnsupportedFormat | ScanState::Malformed => "  (warning) ",
-            _ => "  ",
-        };
-        let _ = writeln!(o, "{}{}: {}", flag, s.label, s.state.as_str());
+        let _ = writeln!(o, "  {}: {}", s.label, s.state.as_str());
     }
     let _ = writeln!(o);
 
@@ -202,9 +203,9 @@ pub fn render_text(r: &Report) -> String {
         let cite = s
             .citation
             .as_ref()
-            .map(|c| format!(" ({c})"))
+            .map(|c| format!(" | {c}"))
             .unwrap_or_default();
-        let _ = writeln!(o, "  {}: {}{cite}", s.mark, s.evidence);
+        let _ = writeln!(o, "  {} | {}{cite}", s.class, s.transform);
     }
     let _ = writeln!(o);
     if let Some(s) = &r.sanity {

@@ -16,6 +16,13 @@ use crate::policy::PolicyPackage;
 /// The pinned parameters of the pixel run, read from the policy package.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PixelParams {
+    /// PX03 border crop: pixels per edge and the cap as a fraction of the
+    /// edge, when the plan carries it.
+    pub crop: Option<(usize, f64)>,
+    /// PX06 rotation in degrees, when the plan carries it.
+    pub rotate_degrees: Option<f64>,
+    /// PX07 Gaussian blur sigma in pixels, when the plan carries it.
+    pub blur_sigma: Option<f64>,
     /// PX02 edge ratio, when the plan carries it.
     pub resize_ratio: Option<f64>,
     pub jpeg_quality: u32,
@@ -36,7 +43,31 @@ impl PixelParams {
         } else {
             None
         };
+        let crop = if ids.iter().any(|i| i == "PX03") {
+            let t = pkg.transform("PX03").ok_or("policy has no PX03")?;
+            Some((
+                t.param_i64("pixels").ok_or("PX03 pixels")? as usize,
+                t.param_f64("cap").ok_or("PX03 cap")?,
+            ))
+        } else {
+            None
+        };
+        let rotate_degrees = if ids.iter().any(|i| i == "PX06") {
+            let t = pkg.transform("PX06").ok_or("policy has no PX06")?;
+            Some(t.param_f64("degrees").ok_or("PX06 degrees")?)
+        } else {
+            None
+        };
+        let blur_sigma = if ids.iter().any(|i| i == "PX07") {
+            let t = pkg.transform("PX07").ok_or("policy has no PX07")?;
+            Some(t.param_f64("sigma").ok_or("PX07 sigma")?)
+        } else {
+            None
+        };
         Ok(PixelParams {
+            crop,
+            rotate_degrees,
+            blur_sigma,
             resize_ratio,
             jpeg_quality,
             jpeg_chroma,
@@ -62,6 +93,125 @@ impl std::fmt::Display for PixelError {
 impl From<CodecError> for PixelError {
     fn from(e: CodecError) -> Self {
         PixelError::Codec(e)
+    }
+}
+
+/// PX03: cut `pixels` from every edge, capped at `cap` of that edge, so a
+/// small image keeps most of itself. Never below one pixel on an edge.
+pub fn crop_border(img: &Image, pixels: usize, cap: f64) -> Image {
+    let cut_w = pixels.min((img.width as f64 * cap).floor() as usize);
+    let cut_h = pixels.min((img.height as f64 * cap).floor() as usize);
+    let nw = img.width.saturating_sub(2 * cut_w).max(1);
+    let nh = img.height.saturating_sub(2 * cut_h).max(1);
+    let c = img.channels;
+    let mut data = Vec::with_capacity(nw * nh * c);
+    for y in 0..nh {
+        let row = (y + cut_h) * img.width;
+        let start = (row + cut_w) * c;
+        data.extend_from_slice(&img.data[start..start + nw * c]);
+    }
+    Image {
+        width: nw,
+        height: nh,
+        channels: c,
+        data,
+    }
+}
+
+fn sample_bilinear(img: &Image, x: f64, y: f64, ch: usize) -> f64 {
+    let xf = x.clamp(0.0, (img.width - 1) as f64);
+    let yf = y.clamp(0.0, (img.height - 1) as f64);
+    let x0 = xf.floor() as usize;
+    let y0 = yf.floor() as usize;
+    let x1 = (x0 + 1).min(img.width - 1);
+    let y1 = (y0 + 1).min(img.height - 1);
+    let fx = xf - x0 as f64;
+    let fy = yf - y0 as f64;
+    let c = img.channels;
+    let at = |xx: usize, yy: usize| img.data[(yy * img.width + xx) * c + ch] as f64;
+    let top = at(x0, y0) * (1.0 - fx) + at(x1, y0) * fx;
+    let bottom = at(x0, y1) * (1.0 - fx) + at(x1, y1) * fx;
+    top * (1.0 - fy) + bottom * fy
+}
+
+/// PX06: rotate about the centre by `degrees` on the same canvas, bilinear
+/// sampling, the edge clamped where the source falls outside the frame.
+pub fn rotate(img: &Image, degrees: f64) -> Image {
+    let theta = degrees * std::f64::consts::PI / 180.0;
+    let (s, co) = (dsp::sin(theta), dsp::cos(theta));
+    let cx = (img.width as f64 - 1.0) / 2.0;
+    let cy = (img.height as f64 - 1.0) / 2.0;
+    let c = img.channels;
+    let mut data = Vec::with_capacity(img.data.len());
+    for y in 0..img.height {
+        for x in 0..img.width {
+            let dx = x as f64 - cx;
+            let dy = y as f64 - cy;
+            // The inverse rotation finds the source of this output pixel.
+            let sx = co * dx + s * dy + cx;
+            let sy = -s * dx + co * dy + cy;
+            for ch in 0..c {
+                let v = sample_bilinear(img, sx, sy, ch);
+                data.push(v.round().clamp(0.0, 255.0) as u8);
+            }
+        }
+    }
+    Image {
+        width: img.width,
+        height: img.height,
+        channels: c,
+        data,
+    }
+}
+
+/// PX07: a separable Gaussian blur of standard deviation `sigma` pixels,
+/// kernel radius three sigma, edges clamped.
+pub fn blur(img: &Image, sigma: f64) -> Image {
+    if sigma <= 0.0 {
+        return img.clone();
+    }
+    let radius = (3.0 * sigma).ceil() as usize;
+    let kernel: Vec<f64> = (0..=2 * radius)
+        .map(|i| {
+            let d = i as f64 - radius as f64;
+            dsp::exp(-(d * d) / (2.0 * sigma * sigma))
+        })
+        .collect();
+    let sum: f64 = kernel.iter().sum();
+    let kernel: Vec<f64> = kernel.iter().map(|k| k / sum).collect();
+    let (w, h, c) = (img.width, img.height, img.channels);
+    let src: Vec<f64> = img.data.iter().map(|&v| v as f64).collect();
+    let mut horizontal = vec![0.0f64; src.len()];
+    for y in 0..h {
+        for x in 0..w {
+            for ch in 0..c {
+                let mut acc = 0.0;
+                for (i, k) in kernel.iter().enumerate() {
+                    let sx = (x as i64 + i as i64 - radius as i64).clamp(0, w as i64 - 1) as usize;
+                    acc += k * src[(y * w + sx) * c + ch];
+                }
+                horizontal[(y * w + x) * c + ch] = acc;
+            }
+        }
+    }
+    let mut data = Vec::with_capacity(src.len());
+    for y in 0..h {
+        for x in 0..w {
+            for ch in 0..c {
+                let mut acc = 0.0;
+                for (i, k) in kernel.iter().enumerate() {
+                    let sy = (y as i64 + i as i64 - radius as i64).clamp(0, h as i64 - 1) as usize;
+                    acc += k * horizontal[(sy * w + x) * c + ch];
+                }
+                data.push(acc.round().clamp(0.0, 255.0) as u8);
+            }
+        }
+    }
+    Image {
+        width: w,
+        height: h,
+        channels: c,
+        data,
     }
 }
 
@@ -147,11 +297,28 @@ pub struct PixelOutcome {
     pub output: Image,
 }
 
+/// The geometric and filtering steps of the run in their order: crop,
+/// rotate, blur, resize. The result is the grid-matched reference the
+/// encode is measured against.
+pub fn degrade(input: &Image, p: &PixelParams) -> Image {
+    let mut img = input.clone();
+    if let Some((pixels, cap)) = p.crop {
+        img = crop_border(&img, pixels, cap);
+    }
+    if let Some(d) = p.rotate_degrees {
+        img = rotate(&img, d);
+    }
+    if let Some(s) = p.blur_sigma {
+        img = blur(&img, s);
+    }
+    if let Some(r) = p.resize_ratio {
+        img = resize(&img, r);
+    }
+    img
+}
+
 pub fn apply(input: &Image, format: Format, p: &PixelParams) -> Result<PixelOutcome, PixelError> {
-    let reference = match p.resize_ratio {
-        Some(r) => resize(input, r),
-        None => input.clone(),
-    };
+    let reference = degrade(input, p);
     let emitted = encode_output(&reference, format, p)?;
     let output = codec::decode_image(&emitted.bytes, emitted.format)?;
     Ok(PixelOutcome {
@@ -176,10 +343,43 @@ mod tests {
 
     fn params(ratio: Option<f64>) -> PixelParams {
         PixelParams {
+            crop: None,
+            rotate_degrees: None,
+            blur_sigma: None,
             resize_ratio: ratio,
             jpeg_quality: 92,
             jpeg_chroma: "4:4:4".to_string(),
         }
+    }
+
+    #[test]
+    fn crop_rotate_and_blur_keep_the_channel_count_and_bounds() {
+        let a = img(100, 60, 3);
+        let c = crop_border(&a, 32, 0.1);
+        assert_eq!(
+            (c.width, c.height),
+            (80, 48),
+            "capped at a tenth of each edge"
+        );
+        let c = crop_border(&a, 4, 0.5);
+        assert_eq!((c.width, c.height), (92, 52));
+        let r = rotate(&a, 75.0);
+        assert_eq!((r.width, r.height, r.channels), (100, 60, 3));
+        let r0 = rotate(&a, 0.0);
+        assert_eq!(r0.data, a.data, "a zero rotation is the identity");
+        let b = blur(&a, 4.0);
+        assert_eq!(b.data.len(), a.data.len());
+        let flat = Image {
+            width: 20,
+            height: 20,
+            channels: 3,
+            data: vec![77; 20 * 20 * 3],
+        };
+        assert_eq!(
+            blur(&flat, 2.0).data,
+            flat.data,
+            "a flat image blurs to itself"
+        );
     }
 
     #[test]

@@ -3,7 +3,7 @@
 Regenerate with `unmark policy snapshot` after any policy change. Edits here are overwritten.
 
 - policy version: 0.2.1
-- policy digest: sha256:c9c6ee960af610e5b430ab61b9d6f299a8a9ab0f52b17048743103081e0fab11
+- policy digest: sha256:9f8c958fb808f8cd2a731fd2083e524a3bd4b4b316635ff0cd3bbe8d57c1f14e
 
 ## What each mark kind means
 
@@ -105,7 +105,7 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 ### visible_overlay (unaddressed)
 
-- visible overlay: A visible logo or a corner mark. Removing it needs inpainting, which is model-based work.
+- visible overlay: A visible logo or a corner mark. PX03 crops the border it sits in.
 
 ### c2pa_soft_binding (unaddressed)
 
@@ -147,15 +147,25 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 - target: LIST INFO and an embedded id3 chunk in WAV, WebP, and AVI
 - Remove the named RIFF ancillary chunks and rebuild the enclosing sizes and even-boundary padding.
 
+### MC12 strip-wav-production-metadata (metadata, on riff-wav)
+
+- target: bext, iXML, aXML, _PMX, cue, smpl, and inst chunks
+- Drop the production metadata chunks a WAV carries beyond its format and data. Use --keep MC12 to keep them.
+
 ### MC10 strip-vorbis-comment (metadata, on flac)
 
 - target: The FLAC Vorbis comment block, encoder tag included
 - Remove the whole Vorbis comment block and rebuild the last-block flag. Use --keep vorbis to preserve credits and chapters.
 
-### MC06 strip-unlisted-chunks (metadata, on jpeg png webp riff-wav flac)
+### MC06 strip-unlisted-chunks (metadata, on png webp riff-wav flac)
 
 - target: Any ancillary chunk not required for decoding and valid output
 - Drop every ancillary chunk the keep list does not name. The keep list holds only what decoding and valid output require, so an ICC color-profile chunk and a colorimetry chunk stay and everything else goes.
+
+### MC11 strip-jpeg-segments (metadata, on jpeg)
+
+- target: COM segments and application segments decoding does not need: every APPn other than APP0 JFIF, APP2 ICC, and APP14 Adobe
+- Drop every JPEG COM segment and every application segment outside the three decoding needs. EXIF, XMP, IPTC, and C2PA segments answer to their own transforms. Use --keep MC11 to keep them.
 
 ### MC07 strip-invisible-unicode (text, on text svg html)
 
@@ -166,6 +176,15 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 - target: SVG metadata, HTML X-Generator, PDF Producer and Creator, comment banners
 - Remove generator identity headers from text and document files.
+
+### PX03 border-crop (pixel, on png jpeg webp)
+
+- target: A visible stamp or logo in the border
+- parameters: cap=0.1, pixels=32
+- strength: 32 pixels off every edge, capped at a tenth of the edge
+- cited effect: A 32-pixel border crop removed all 858 pixels of a 32-pixel corner stamp on a 512 by 384 image that the metadata strips and the resize had left in place, and kept 73 percent of the area with its pixels unchanged.
+- citation: the corner-stamp probe of the 2026-09-05 efficacy audit, reproduced in tests/fix_0_2_1.rs
+- Cut the pinned pixels from every edge, capped at a tenth of the edge. The pixels inside the crop are unchanged. Use --no-degrade or --keep PX03 to skip it.
 
 ### PX02 resize (pixel, on png jpeg webp)
 
@@ -198,7 +217,6 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 | Id | Transform | Reason |
 |---|---|---|
 | PX01-lossy | re-encode as a degrade on lossy input | no cited effect on any mark |
-| PX03 | border-crop | no cited figure shows an effect at a stated strength. A crop keeping a tenth of the pixels leaves Stable Signature at 84 percent detection. |
 | PX04 | requantize | no cited effect on any mark |
 | PX05 | add-noise | no cited effect on any mark |
 | PX06 | rotate-or-flip | no cited figure shows an effect at a stated strength. Tree-Ring average detection 0.375 under rotation is cited without its tested strength. |
