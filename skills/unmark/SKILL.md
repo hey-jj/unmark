@@ -40,7 +40,7 @@ preserve an item. `--strip-capture` strips a certified-capture claim. Ask first.
 
 ```
 unmark inspect --output text asset.png
-unmark clean   --out clean.png asset.png
+unmark clean   --out clean.png asset.png > report.json
 unmark verify  --report report.json clean.png
 ```
 

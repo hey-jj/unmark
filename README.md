@@ -30,7 +30,7 @@ One default run covers each file. The flags below preserve selected items.
 ```
 unmark inspect --output text asset.png
 unmark plan    asset.png
-unmark clean   --out clean.png asset.png
+unmark clean   --out clean.png asset.png > report.json
 unmark clean   --out cleaned/ generated/
 unmark verify  --report report.json clean.png
 ```
@@ -49,7 +49,7 @@ written output is refused. A run whose output equals its input is a no-op: a sin
 | `--keep <id\|class>` | Repeatable. Turns off the named transform, by id or name, or every strip of the named mark class, and reports the item as kept by flag |
 | `--no-degrade` | Turns off every transform that touches pixels or samples, so the encoded stream comes out byte-identical |
 | `--strip-capture` | Strips a certified capture claim that the default run keeps |
-| `--output json\|text` | The machine report, the default, or the human one |
+| `--output json\|text` | The machine report, the default, or the human one. Any other value is a usage error |
 
 | Exit | Meaning |
 |---|---|

@@ -56,7 +56,10 @@ def bases():
     cv2.ellipse(img, (315, 375), (135, 52), 20, 0, 360, (90, 170, 110), -1)
     out["flat-illustration"] = img
     # A dense texture: high-frequency structured noise over a chroma field.
-    h, w = 300, 400
+    # Every base keeps its short edge at or above 336 pixels so the default
+    # run's 32-pixel crop and 0.95 resize leave an output the oracle still
+    # reads (it refuses an edge under 256).
+    h, w = 340, 448
     y, x = np.mgrid[0:h, 0:w].astype(np.float64)
     img = np.zeros((h, w, 3))
     base = 128 + 50 * np.sin(x * 0.7) * np.cos(y * 0.5) + rng.normal(0, 8, (h, w))
@@ -72,9 +75,10 @@ def bases():
         width = int(rng.integers(150, 360))
         cv2.rectangle(img, (30, row), (30 + width, row + 8), (40, 40, 40), -1)
     out["text-ui"] = img
-    # A small image near the package's own lower bound, with a stronger
-    # chroma field because the 136-bit payload repeats fewer times here.
-    out["small"] = gradient_field(rng, 256, 320, 2.0, 50, 1.5)
+    # The smallest image whose default-run output the oracle still reads,
+    # with a stronger chroma field because the 136-bit payload repeats fewer
+    # times here.
+    out["small"] = gradient_field(rng, 336, 352, 2.0, 50, 1.5)
     return {k: np.clip(v, 0, 255).astype(np.uint8) for k, v in out.items()}
 
 

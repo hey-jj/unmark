@@ -102,7 +102,17 @@ fn parse_common(parser: &mut lexopt::Parser) -> Result<Common, lexopt::Error> {
     };
     while let Some(arg) = parser.next()? {
         match arg {
-            Long("output") => c.output_text = matches!(parser.value()?.string()?.as_str(), "text"),
+            Long("output") => {
+                c.output_text = match parser.value()?.string()?.as_str() {
+                    "text" => true,
+                    "json" => false,
+                    other => {
+                        return Err(lexopt::Error::from(format!(
+                            "--output takes json or text, not {other}"
+                        )))
+                    }
+                }
+            }
             Long("max-bytes") => c.max_bytes = parser.value()?.parse()?,
             Long("keep") => c.opts.keep.push(parser.value()?.string()?),
             Long("no-degrade") => c.opts.no_degrade = true,

@@ -54,6 +54,15 @@ fn a_profile_flag_is_a_usage_error_and_so_is_a_missing_out() {
 }
 
 #[test]
+fn an_unknown_output_format_is_a_usage_error() {
+    let png = fixture("generated.png");
+    let (code, out, err) = run(&["inspect", "--output", "yaml", png.to_str().unwrap()]);
+    assert_eq!(code, 2, "{err}");
+    assert!(out.is_empty(), "nothing is emitted for a refused format");
+    assert!(err.contains("--output takes json or text"));
+}
+
+#[test]
 fn inspect_runs_at_exit_0_and_prints_one_json_object() {
     let png = fixture("generated.png");
     let (code, out, _) = run(&["inspect", png.to_str().unwrap()]);

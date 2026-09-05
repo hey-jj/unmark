@@ -46,6 +46,9 @@ Keep a Changelog, and the project uses semantic versioning.
   `--no-degrade`) writes the file with the other strips applied.
 - A colliding output in a batch is refused, never overwritten.
 - `verify` refuses an unsupported, malformed, or wrong-format output.
+- `--output` takes `json` or `text`. Any other value is a usage error.
+- The efficacy fixtures keep their short edge at or above 336 pixels, so
+  the default run's crop and resize leave an output the oracle still reads.
 
 ## [0.2.0] - 2026-09-04
 

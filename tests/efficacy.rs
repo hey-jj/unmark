@@ -159,19 +159,23 @@ fn every_marked_fixture_reads_present_before_and_absent_after_the_default_run() 
                 "{name}: in-crate and oracle bits disagree before cleaning ({agree_before:.3})"
             );
             // The oracle refuses an image under 256 pixels on an edge, so
-            // an output the crop and resize took below that is read in-crate
-            // only, and that read matches the oracle's arithmetic.
+            // every fixture is sized to leave the crop and resize above it
+            // and every removal claim carries an oracle read.
             let out_img = decode(&written);
-            if out_img.width >= 256 && out_img.height >= 256 {
-                let out_path = scratch.join(name);
-                std::fs::write(&out_path, &written).unwrap();
-                let o_after = oracle_bits(py, &out_path, expected.len());
-                let o_agreement = dwtdct::agreement(&o_after, &expected);
-                assert!(
-                    o_agreement < dwtdct::AGREEMENT_THRESHOLD,
-                    "{name}: the oracle still recovers the payload after cleaning ({o_agreement:.3})"
-                );
-            }
+            assert!(
+                out_img.width >= 256 && out_img.height >= 256,
+                "{name}: the cleaned output is {}x{}, under the oracle's minimum edge",
+                out_img.width,
+                out_img.height
+            );
+            let out_path = scratch.join(name);
+            std::fs::write(&out_path, &written).unwrap();
+            let o_after = oracle_bits(py, &out_path, expected.len());
+            let o_agreement = dwtdct::agreement(&o_after, &expected);
+            assert!(
+                o_agreement < dwtdct::AGREEMENT_THRESHOLD,
+                "{name}: the oracle still recovers the payload after cleaning ({o_agreement:.3})"
+            );
         }
     }
     let _ = std::fs::remove_dir_all(&scratch);
