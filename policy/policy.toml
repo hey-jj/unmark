@@ -356,6 +356,19 @@ citation = "https://arxiv.org/html/2401.17264"
 target = "AudioSeal"
 guard = "Apply the highpass on the scalar path and write the samples back as emitted, integer or float32. The report names the cited figure. Use --no-degrade or --keep AU06 to skip it."
 
+[[transform]]
+id = "AU03"
+name = "re-encode"
+order = 260
+kind = "audio"
+applies = ["mp3"]
+params = { bitrate = "input" }
+strength = "constant bitrate at the input's bitrate, or its average for a variable-rate input, snapped to the layer III table"
+cited_effect = "the same-container write for an MP3 input, a second lossy stage after the one that made the input. The bitrate pin is reported in the result."
+citation = "ISO/IEC 11172-3 layer III bitrate table"
+target = "The MP3 container after the highpass"
+guard = "Write the highpassed samples back as MPEG audio layer III at the pinned bitrate, then drop the encoder's own information frame. Use --no-degrade or --keep AU06 to skip the highpass and the re-encode together."
+
 # ---------------------------------------------------------------------------
 # Held transforms. Each has no flag, does not run, and appears under "cannot
 # do" with its reason.
@@ -402,11 +415,6 @@ name = "dither-requantize"
 reason = "no cited effect on any mark"
 
 [[held]]
-id = "AU03"
-name = "lossy-transcode-round-trip"
-reason = "dropped from this release. No pure Rust MP3 or AAC encoder meets the dependency bar."
-
-[[held]]
 id = "AU04"
 name = "eq-tilt"
 reason = "no cited effect on any mark"
@@ -449,6 +457,11 @@ keep = [
 status = "confirmed by owner review 2026-09-03"
 psnr_floor_db = 25.0
 ssim_floor = 0.6
+# The log-spectral distance ceiling for an audio re-encode, in dB, measured
+# between the highpassed samples and the decoded re-encode. PROPOSED with the
+# fixture evidence in the 0.3.0 report.
+lsd_ceiling_db = 6.0
+lsd_status = "proposed"
 
 # ---------------------------------------------------------------------------
 # Guardrails.

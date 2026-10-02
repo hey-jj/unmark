@@ -54,7 +54,7 @@ pub fn encode(audio: &Audio, bits: u16) -> Result<Vec<u8>, CodecError> {
     // sixteen.
     let frames = audio.frames();
     let mut block_size = BLOCK_SIZE;
-    while block_size > 16 && frames % block_size != 0 && frames % block_size < 16 {
+    while block_size > 16 && !frames.is_multiple_of(block_size) && frames % block_size < 16 {
         block_size -= 16;
     }
     let mut config = flacenc::config::Encoder::default();

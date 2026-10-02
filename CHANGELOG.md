@@ -19,10 +19,23 @@ MP3 joins the supported containers.
   report shows it kept with that value.
 - Mark classes `ape` and `xing`, transforms `MC13` (strip-ape-tag) and
   `MC14` (strip-info-frame), and `--keep` by class or id for each.
-- The `AU06` row on MP3 reads `not_attempted` with the reason as its result
-  field.
+- The default run on MP3 decodes, applies the 1500 Hz highpass, and
+  re-encodes at the input's bitrate, or its average for a variable-rate
+  input, snapped to the layer III table. The encoder's own information
+  frame is dropped and kept tags ride around the fresh frames. `AU03`
+  (re-encode) is the transform, reported as a second lossy stage with its
+  bitrate pin, and `AU06` reports the measured log-spectral distance. The
+  sanity block holds that distance to `lsd_ceiling_db`, proposed at 6.0.
+- The audio feature adds nanomp3 0.2.0 (MIT OR Apache-2.0, without its
+  SIMD feature) as the decoder and rusty_mp3 0.8.0 (Apache-2.0, no
+  dependencies) as the encoder. The minimum supported Rust version is 1.89.
+- `tests/mp3_identity.rs` pins the sha256 of the decoded samples, the
+  highpassed samples, and the re-encoded bytes of every MP3 fixture, so the
+  macOS and Linux CI legs prove the path byte-identical across platforms.
+- Without the audio feature the `AU06` row on MP3 reads `not_attempted`
+  with the reason as its result field.
 - Builder-rendered MP3 fixtures under `fixtures/mp3/` from a synthetic tone,
-  with tests per tag class and for the reservoir rule.
+  with tests per tag class and for the reservoir rule. Report schema 2.2.0.
 
 ## [0.2.1] - 2026-09-05
 

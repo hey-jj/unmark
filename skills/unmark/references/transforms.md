@@ -3,7 +3,7 @@
 Regenerate with `unmark policy snapshot` after any policy change. Edits here are overwritten.
 
 - policy version: 0.3.0
-- policy digest: sha256:ee63376704911e9d0004e44fde6df4d22743e0e1f040816bf3aeabcb512b7ea6
+- policy digest: sha256:94ae3dafdb398460409722e2007db4dac3ac87b22e236fc4593b59731da1b749
 
 ## What each mark kind means
 
@@ -231,6 +231,15 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 - citation: https://arxiv.org/html/2401.17264
 - Apply the highpass on the scalar path and write the samples back as emitted, integer or float32. The report names the cited figure. Use --no-degrade or --keep AU06 to skip it.
 
+### AU03 re-encode (audio, on mp3)
+
+- target: The MP3 container after the highpass
+- parameters: bitrate=input
+- strength: constant bitrate at the input's bitrate, or its average for a variable-rate input, snapped to the layer III table
+- cited effect: the same-container write for an MP3 input, a second lossy stage after the one that made the input. The bitrate pin is reported in the result.
+- citation: ISO/IEC 11172-3 layer III bitrate table
+- Write the highpassed samples back as MPEG audio layer III at the pinned bitrate, then drop the encoder's own information frame. Use --no-degrade or --keep AU06 to skip the highpass and the re-encode together.
+
 ## Held transforms
 
 | Id | Transform | Reason |
@@ -243,7 +252,6 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 | PX08 | jpeg-quality-degrade | no cited figure shows an effect. Tree-Ring AUC 0.999 at quality 25 against 1.000 clean is survival. |
 | AU01 | resample-round-trip | no cited effect on any mark |
 | AU02 | dither-requantize | no cited effect on any mark |
-| AU03 | lossy-transcode-round-trip | dropped from this release. No pure Rust MP3 or AAC encoder meets the dependency bar. |
 | AU04 | eq-tilt | no cited effect on any mark |
 | AU05 | speed-change | no cited effect on any mark |
 

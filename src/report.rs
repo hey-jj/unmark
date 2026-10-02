@@ -86,6 +86,10 @@ pub struct Sanity {
     pub ssim: Option<f64>,
     pub psnr_floor_db: f64,
     pub ssim_floor: f64,
+    /// The log-spectral distance of an audio re-encode, in dB, and its
+    /// ceiling. None on an image run.
+    pub lsd_db: Option<f64>,
+    pub lsd_ceiling_db: Option<f64>,
     pub passed: bool,
     pub refusal: Option<String>,
 }
@@ -209,6 +213,13 @@ pub fn render_text(r: &Report) -> String {
     }
     let _ = writeln!(o);
     if let Some(s) = &r.sanity {
+        if let (Some(lsd), Some(ceiling)) = (s.lsd_db, s.lsd_ceiling_db) {
+            let _ = writeln!(
+                o,
+                "sanity: LSD {lsd:.2} dB against the ceiling {ceiling:.1} dB: {}",
+                if s.passed { "passed" } else { "refused" }
+            );
+        }
         let _ = writeln!(
             o,
             "sanity: PSNR {} dB, SSIM {} against floors {:.1} dB and {:.2}: {}",

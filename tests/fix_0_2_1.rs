@@ -634,7 +634,9 @@ fn the_border_crop_runs_by_default_removes_a_corner_stamp_and_keeps_off_under_th
     };
     let magenta = |i: &unmark::codec::Image| {
         i.data
-            .chunks_exact(3)
+            .as_chunks::<3>()
+            .0
+            .iter()
             .filter(|p| p[0] > 235 && p[1] < 20 && p[2] > 235)
             .count()
     };

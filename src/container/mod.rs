@@ -245,6 +245,19 @@ pub fn carry_ancillary(source: &[u8], fresh: &[u8], format: Format) -> Vec<u8> {
             out.extend_from_slice(&fresh[audio_start..]);
             out
         }
+        Format::Mp3 => {
+            // The tags the strips left stand at either end of the frames;
+            // the fresh frames go between them.
+            let l = crate::detect::mp3::layout(source);
+            if !l.complete {
+                return fresh.to_vec();
+            }
+            let mut out = Vec::with_capacity(source.len() + fresh.len());
+            out.extend_from_slice(&source[..l.frames_start]);
+            out.extend_from_slice(fresh);
+            out.extend_from_slice(&source[l.frames_end..]);
+            out
+        }
         Format::RiffWav => {
             let (src, _) = crate::detect::riff::chunks(source);
             let carried: Vec<&[u8]> = src

@@ -37,7 +37,7 @@ use policy::PolicyPackage;
 use report::{Action, Capture, Finding, Kept, Report, ScanRow, Survivor};
 use scan::{Detection, Detections, Honesty, ScanState};
 
-pub const SCHEMA_VERSION: &str = "2.1.0";
+pub const SCHEMA_VERSION: &str = "2.2.0";
 
 /// The smallest image edge the pixel path accepts. The SSIM window is eight
 /// pixels and the resize must leave a scorable grid, so an image narrower or
@@ -620,9 +620,11 @@ pub fn clean(
     let mut run = run;
     // An information frame the next audio frame draws reservoir bits from
     // stays, and the strip that targets it is reported kept with that value.
+    let mut info_kept_for_reservoir = false;
     if format == Format::Mp3 && run.iter().any(|t| t == "MC14") {
         if let Some(info) = detect::mp3::layout(&out_bytes).info {
             if !info.droppable() {
+                info_kept_for_reservoir = true;
                 r.kept.push(Kept {
                     item: "MC14 strip-info-frame".to_string(),
                     reason: format!(
@@ -636,6 +638,7 @@ pub fn clean(
             }
         }
     }
+    #[cfg(not(feature = "audio"))]
     if format == Format::Mp3 && run.iter().any(|t| t == "AU06") {
         actions.push(action_for(
             pkg,
@@ -644,7 +647,7 @@ pub fn clean(
             "mp3 decode is not in this build",
         ));
     }
-    let targeted = targeted_for(&run);
+    let _ = &info_kept_for_reservoir;
     let mut dwtdct_before: Option<bool> = None;
     let mut dwtdct_after: Option<bool> = None;
 
@@ -719,6 +722,8 @@ pub fn clean(
                 ssim,
                 psnr_floor_db: pkg.sanity.psnr_floor_db,
                 ssim_floor: pkg.sanity.ssim_floor,
+                lsd_db: None,
+                lsd_ceiling_db: None,
                 passed,
                 refusal: if passed {
                     None
@@ -863,7 +868,111 @@ pub fn clean(
         out_bytes = container::carry_ancillary(&out_bytes, &written, format);
     }
 
+    // The MP3 audio path: decode, highpass, re-encode at the input bitrate,
+    // drop the encoder's own information frame, measure the log-spectral
+    // distance of the decoded re-encode against the highpassed samples.
+    #[cfg(feature = "audio")]
+    if format == Format::Mp3 && run.iter().any(|t| t == "AU06") {
+        let (audio, input_kbps) = codec::mp3::decode_with_bitrate(&out_bytes)
+            .map_err(|e| UnmarkError::Inspection(format!("the audio would not decode: {e}")))?;
+        if audio.frames() == 0 {
+            return Err(UnmarkError::Unsupported(
+                "the audio carries no samples".to_string(),
+            ));
+        }
+        let p = transform::audio::AudioParams::from_policy(pkg, &run)
+            .map_err(|e| UnmarkError::Inspection(format!("audio plan: {e}")))?;
+        let processed = transform::audio::apply(&audio, &p);
+        let (mut written, used_kbps) = codec::mp3::encode(&processed, input_kbps)
+            .map_err(|e| UnmarkError::Inspection(format!("the audio would not encode: {e}")))?;
+        // The re-encode replaces every frame, so an information frame kept
+        // for its reservoir bits is gone with the rest and the strip of the
+        // encoder's own frame goes ahead; only --keep keeps one.
+        if info_kept_for_reservoir {
+            r.kept.retain(|k| !k.item.starts_with("MC14"));
+            run.push("MC14".to_string());
+        }
+        if run.iter().any(|t| t == "MC14") {
+            let spec = container::DropSpec {
+                xing: true,
+                ..Default::default()
+            };
+            written = container::mp3::rewrite(&written, &spec).map_err(|e| {
+                UnmarkError::Inspection(format!("the re-encode would not rewrite: {e}"))
+            })?;
+        }
+        let (back, _) = codec::mp3::decode_with_bitrate(&written).map_err(|e| {
+            UnmarkError::Inspection(format!("the written audio would not decode: {e}"))
+        })?;
+        // An encoder adds its delay and tail padding, so the length may grow
+        // by a few frames and never shrink.
+        if back.channels.len() != audio.channels.len()
+            || back.frames() < audio.frames()
+            || back.frames() > audio.frames() + 4 * 1152
+        {
+            return Err(UnmarkError::Inspection(format!(
+                "the written audio changed from {} to {} frames",
+                audio.frames(),
+                back.frames()
+            )));
+        }
+        let lsd = budget::lsd(
+            &processed.channels[0],
+            &back.channels[0],
+            &budget::LsdParams::PINNED,
+        );
+        let Some(lsd_db) = lsd else {
+            return Err(UnmarkError::Inspection(
+                "the fidelity measurement did not run over the output".to_string(),
+            ));
+        };
+        let passed = lsd_db <= pkg.sanity.lsd_ceiling_db;
+        r.sanity = Some(report::Sanity {
+            psnr_db: None,
+            ssim: None,
+            psnr_floor_db: pkg.sanity.psnr_floor_db,
+            ssim_floor: pkg.sanity.ssim_floor,
+            lsd_db: Some(lsd_db),
+            lsd_ceiling_db: Some(pkg.sanity.lsd_ceiling_db),
+            passed,
+            refusal: if passed {
+                None
+            } else {
+                Some(format!(
+                    "the re-encode scores LSD {lsd_db:.2} dB against the ceiling {:.1} dB",
+                    pkg.sanity.lsd_ceiling_db
+                ))
+            },
+        });
+        actions.push(action_for(
+            pkg,
+            "AU06",
+            "applied",
+            &format!("applied at 1500 Hz, LSD {lsd_db:.2} dB"),
+        ));
+        actions.push(action_for(
+            pkg,
+            "AU03",
+            "applied",
+            &format!("same-container path, {used_kbps} kbps CBR, second lossy stage"),
+        ));
+        // The kept tags ride around the fresh frames.
+        written = container::carry_ancillary(&out_bytes, &written, format);
+        if !passed {
+            r.actions = actions;
+            r.actions.extend(metadata_actions(pkg, &run, &det, None));
+            r.survived = survivors(pkg, &det, &run);
+            r.exit_code = report::EXIT_SANITY;
+            return Ok(CleanOutcome {
+                report: r,
+                output: None,
+            });
+        }
+        out_bytes = written;
+    }
+
     // Re-inspect the output and prove the targeted confirmable marks gone.
+    let targeted = targeted_for(&run);
     let det_after = full_inspect(&out_bytes);
     let mut remaining = Vec::new();
     for class in &targeted {

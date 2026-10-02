@@ -33,7 +33,9 @@ pub fn decode(bytes: &[u8]) -> Result<Image, CodecError> {
         png::ColorType::Grayscale => (3, buf.iter().flat_map(|&g| [g, g, g]).collect()),
         png::ColorType::GrayscaleAlpha => (
             4,
-            buf.chunks_exact(2)
+            buf.as_chunks::<2>()
+                .0
+                .iter()
                 .flat_map(|p| [p[0], p[0], p[0], p[1]])
                 .collect(),
         ),

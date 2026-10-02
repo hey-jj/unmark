@@ -11,6 +11,8 @@
 pub mod flac;
 #[cfg(feature = "image")]
 pub mod jpeg;
+#[cfg(feature = "audio")]
+pub mod mp3;
 #[cfg(feature = "image")]
 pub mod png;
 #[cfg(feature = "audio")]
@@ -76,7 +78,7 @@ impl Image {
             return self.clone();
         }
         let mut data = Vec::with_capacity(self.width * self.height * 4);
-        for p in self.data.chunks_exact(3) {
+        for p in self.data.as_chunks::<3>().0 {
             data.extend_from_slice(p);
             data.push(255);
         }
@@ -203,6 +205,7 @@ pub fn decode_audio(bytes: &[u8], format: Format) -> Result<Audio, CodecError> {
     match format {
         Format::RiffWav => wav::decode(bytes),
         Format::Flac => flac::decode(bytes),
+        Format::Mp3 => mp3::decode(bytes),
         other => Err(CodecError::Unsupported(format!(
             "{} is not an audio container this build decodes",
             other.as_str()

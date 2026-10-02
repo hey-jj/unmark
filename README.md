@@ -71,7 +71,7 @@ named mark.
 | JPEG | C2PA, XMP, EXIF, and comment and application segment strips, then a 32-pixel border crop, a resize at ratio 0.95, and a re-encode at quality 92 with 4:4:4 chroma |
 | PNG, WebP | C2PA, XMP, EXIF, text-chunk, and unlisted-chunk strips, then the same crop and resize and a lossless write |
 | WAV, FLAC | Tag, RIFF ancillary, production metadata, Vorbis comment, and unlisted-chunk strips, then a 1500 Hz highpass |
-| MP3 | ID3v2 with its padding, ID3v1, APE, and information-frame strips, the audio frames copied byte for byte. The information frame stays, reported kept, when the next frame's `main_data_begin` is not zero |
+| MP3 | ID3v2 with its padding, ID3v1, APE, and information-frame strips, then a 1500 Hz highpass and a re-encode at the input's bitrate, or its average for a variable-rate input, with the encoder's own information frame dropped. Under `--no-degrade` the audio frames are copied byte for byte, and the information frame stays, reported kept, when the next frame's `main_data_begin` is not zero |
 | MP4, M4A | Tag strips |
 | Text, SVG, HTML | Invisible Unicode and generator-header strips |
 
@@ -82,7 +82,10 @@ is the mildest value in the sweep that changes both dimensions of every input an
 defeats every efficacy fixture. No ratio between 0.995 and 0.5 let any fixture
 survive. At 0.95 the round-trip PSNR against the input is above 31 dB and the SSIM
 above 0.93 on every fixture. For the highpass the report cites the AudioSeal figures:
-accuracy 0.61, true-positive rate 0.82, false-positive rate 0.60.
+accuracy 0.61, true-positive rate 0.82, false-positive rate 0.60. On MP3 the report
+carries the log-spectral distance of the decoded re-encode against the highpassed
+samples, held to the ceiling in the policy, and the re-encode row names its bitrate pin
+and marks it a second lossy stage.
 
 ## Certified capture
 
@@ -105,7 +108,7 @@ manifest without a capture action, and `--keep c2pa` preserves it.
 - `actions`: every transform with its strength, outcome, and result.
 - `capture`: the capture status, the quoted claim or the named hint, and the line the run prints.
 - `scan_states`: one state per mark class: `confirmed_present`, `confirmed_absent`, `unsupported_format`, `malformed`, or `not_attempted`. `findings` carries the located and malformed marks with their evidence.
-- `sanity`: the PSNR and SSIM of the output against its grid-matched reference and the floor they are held to.
+- `sanity`: the PSNR and SSIM of an image output against its grid-matched reference and the floors they are held to, or the log-spectral distance of an MP3 re-encode and its ceiling.
 - `no_op`, `input`, `output`, `error`: whether the output equals the input, the paths the command line used, and the failure message when a run did not complete.
 
 ## Fixtures and the oracle
