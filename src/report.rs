@@ -32,6 +32,13 @@ pub struct Action {
     /// survives`, `no mark of this class was present`, or the cited effect.
     pub result: String,
     pub citation: Option<String>,
+    /// Fields a rewrite removed and kept, for a transform that rewrites a
+    /// structure in place.
+    pub removed: Vec<String>,
+    pub kept: Vec<String>,
+    /// Encoder delay and padding in samples, on an audio re-encode row.
+    pub delay: Option<u32>,
+    pub padding: Option<u32>,
 }
 
 /// One scan-state row per class, carried as its own field so a reader never

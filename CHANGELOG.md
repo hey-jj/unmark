@@ -12,13 +12,16 @@ MP3 joins the supported containers.
 - A ground-up MPEG audio frame parser from ISO/IEC 11172-3 and 13818-3:
   frame headers, lengths, side-information sizes, and `main_data_begin`.
 - The default run on MP3 strips ID3v2 with its padding and footer, ID3v1,
-  APE tags at either end, and the Xing, Info, or VBRI information frame
-  with its encoder string, and copies the audio frames byte for byte in
-  the same container. The information frame is dropped only when the next
-  audio frame's `main_data_begin` is zero. Otherwise it stays and the
-  report shows it kept with that value.
-- Mark classes `ape` and `xing`, transforms `MC13` (strip-ape-tag) and
-  `MC14` (strip-info-frame), and `--keep` by class or id for each.
+  and APE tags at either end, and rewrites the Xing, Info, or VBRI
+  information frame in place as its minimal form: the frame count, byte
+  count, and seek table it had, the encoder delay and padding, and zero
+  everywhere else, the encoder identity included. A file without an
+  information frame gets none. The referenced frame bytes are copied as
+  they are, and a decode of the output matches a decode of the input
+  sample for sample once the frame's delay and padding are applied.
+- Mark classes `ape` and `mp3_info`, transforms `MC13` (strip-ape-tag) and
+  `MC14` (rewrite-info-frame), and `--keep` by class or id for each. The
+  `MC14` row reports `rewritten` with the fields removed and kept.
 - `MC15` (scrub-ancillary-data) and the class `mp3_ancillary`: the bytes
   inside each frame's main-data region that no frame's main data covers,
   located from the side information with the bit reservoir honoured, are
@@ -26,12 +29,15 @@ MP3 joins the supported containers.
   samples, which a test proves bit for bit.
 - The default run on MP3 decodes, applies the 1500 Hz highpass, and
   re-encodes at the input's bitrate, or its average for a variable-rate
-  input, snapped to the layer III table. The encoder's own information
-  frame is dropped and kept tags ride around the fresh frames. `AU03`
-  (re-encode) is the transform, reported as a second lossy stage with its
-  bitrate pin, and `AU06` reports the measured log-spectral distance,
-  taken after the decoded re-encode is aligned to the highpassed samples
-  by the measured encoder and decoder delay and trimmed to the common
+  input, snapped to the layer III table. The input is padded through the
+  encoder's delay, and the encoder's information frame is rewritten as the
+  minimal one carrying the frame count, byte count, and the measured
+  encoder delay and padding (528 samples, the same at every pin), so a
+  decode of the output matches the input's length within one frame. Kept
+  tags ride around the fresh frames. `AU03` (re-encode) is the transform,
+  reported as a second lossy stage with its bitrate pin, delay, and
+  padding, and `AU06` reports the log-spectral distance taken after the
+  decoded re-encode is aligned by those values and trimmed to the common
   length. The sanity block holds that distance to `lsd_ceiling_db`,
   proposed at 6.0. A `--keep` of the ancillary bytes stands the highpass
   and the re-encode down with a reported reason, since a re-encode would

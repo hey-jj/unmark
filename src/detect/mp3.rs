@@ -116,26 +116,38 @@ pub fn main_data_begin(frame: &[u8], h: &FrameHeader) -> Option<u16> {
     })
 }
 
-/// The information frame an encoder writes first.
+/// The information frame an encoder writes first: a Xing or Info tag with
+/// its flagged fields and the LAME-style extension after them.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct InfoFrame {
     pub offset: usize,
     pub len: usize,
     /// "Xing", "Info", or "VBRI".
     pub kind: String,
-    /// The encoder string a LAME-style tag carries, when printable.
+    /// Offset of the tag id within the frame.
+    pub tag_at: usize,
+    pub flags: u32,
+    pub frames: Option<u32>,
+    pub bytes: Option<u32>,
+    pub has_toc: bool,
+    pub has_quality: bool,
+    /// Offset of the extension within the frame, when the frame has room
+    /// for its 36 bytes.
+    pub extension_at: Option<usize>,
+    /// The encoder string the extension carries, when printable.
     pub encoder: Option<String>,
-    /// The next frame's main_data_begin, when a next frame parsed.
-    pub next_main_data_begin: Option<u16>,
+    /// Encoder delay and padding from the extension, in samples.
+    pub delay_padding: Option<(u16, u16)>,
+    /// True when the extension carries an identity: a nonzero byte in the
+    /// encoder string, the revision, the lowpass, the replay gain, the
+    /// encoding flags, the ABR rate, the misc, gain, or preset fields.
+    pub identity: bool,
 }
 
-impl InfoFrame {
-    /// The frame may be dropped only when the next audio frame draws no
-    /// bits from the reservoir, so no audio data lives inside it.
-    pub fn droppable(&self) -> bool {
-        self.next_main_data_begin == Some(0)
-    }
-}
+/// Field offsets inside the 36-byte extension.
+pub const EXT_ENCODER: std::ops::Range<usize> = 0..9;
+pub const EXT_DELAY_PADDING: std::ops::Range<usize> = 21..24;
+pub const EXT_LEN: usize = 36;
 
 /// Where everything sits in a standalone MPEG audio file.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -257,8 +269,9 @@ pub fn layout(bytes: &[u8]) -> Layout {
 }
 
 fn info_frame(bytes: &[u8], p: usize, h: &FrameHeader, end: usize) -> Option<InfoFrame> {
-    let xing_at = p + 4 + if h.crc { 2 } else { 0 } + h.side_info;
-    let kind = match bytes.get(xing_at..xing_at + 4) {
+    let frame = &bytes[p..end.min(p + h.len)];
+    let xing_at = 4 + if h.crc { 2 } else { 0 } + h.side_info;
+    let kind = match frame.get(xing_at..xing_at + 4) {
         Some(b"Xing") => Some("Xing"),
         Some(b"Info") => Some("Info"),
         _ => None,
@@ -266,58 +279,80 @@ fn info_frame(bytes: &[u8], p: usize, h: &FrameHeader, end: usize) -> Option<Inf
     let (kind, tag_at) = match kind {
         Some(k) => (k, xing_at),
         None => {
-            if bytes.get(p + 36..p + 40) == Some(b"VBRI") {
-                ("VBRI", p + 36)
+            if frame.get(36..40) == Some(b"VBRI") {
+                ("VBRI", 36)
             } else {
                 return None;
             }
         }
     };
-    let encoder = if kind == "VBRI" {
-        None
-    } else {
-        let flags = bytes
-            .get(tag_at + 4..tag_at + 8)
-            .map(|f| u32::from_be_bytes([f[0], f[1], f[2], f[3]]))
-            .unwrap_or(0);
-        let mut at = tag_at + 8;
-        if flags & 1 != 0 {
-            at += 4;
-        }
-        if flags & 2 != 0 {
-            at += 4;
-        }
-        if flags & 4 != 0 {
-            at += 100;
-        }
-        if flags & 8 != 0 {
-            at += 4;
-        }
-        bytes
-            .get(at..at + 9)
-            .map(|s| {
-                let printable: Vec<u8> = s
-                    .iter()
-                    .take_while(|c| c.is_ascii_graphic() || **c == b' ')
-                    .copied()
-                    .collect();
-                String::from_utf8_lossy(&printable).trim_end().to_string()
-            })
-            .filter(|s| !s.is_empty())
-    };
-    let next = p + h.len;
-    let next_main_data_begin = if next < end {
-        parse_header(&bytes[next..end]).and_then(|nh| main_data_begin(&bytes[next..end], &nh))
-    } else {
-        None
-    };
-    Some(InfoFrame {
+    let mut info = InfoFrame {
         offset: p,
         len: h.len,
         kind: kind.to_string(),
-        encoder,
-        next_main_data_begin,
-    })
+        tag_at,
+        flags: 0,
+        frames: None,
+        bytes: None,
+        has_toc: false,
+        has_quality: false,
+        extension_at: None,
+        encoder: None,
+        delay_padding: None,
+        identity: false,
+    };
+    if kind == "VBRI" {
+        return Some(info);
+    }
+    let be32 = |at: usize| {
+        frame
+            .get(at..at + 4)
+            .map(|f| u32::from_be_bytes([f[0], f[1], f[2], f[3]]))
+    };
+    info.flags = be32(tag_at + 4).unwrap_or(0);
+    let mut at = tag_at + 8;
+    if info.flags & 1 != 0 {
+        info.frames = be32(at);
+        at += 4;
+    }
+    if info.flags & 2 != 0 {
+        info.bytes = be32(at);
+        at += 4;
+    }
+    if info.flags & 4 != 0 {
+        info.has_toc = true;
+        at += 100;
+    }
+    if info.flags & 8 != 0 {
+        info.has_quality = true;
+        at += 4;
+    }
+    if let Some(ext) = frame.get(at..at + EXT_LEN) {
+        info.extension_at = Some(at);
+        let printable: Vec<u8> = ext[EXT_ENCODER]
+            .iter()
+            .take_while(|c| c.is_ascii_graphic() || **c == b' ')
+            .copied()
+            .collect();
+        let name = String::from_utf8_lossy(&printable).trim_end().to_string();
+        if !name.is_empty() {
+            info.encoder = Some(name);
+        }
+        // An extension of all zeros is no extension, as a decoder reads it.
+        if ext.iter().any(|b| *b != 0) {
+            let t = &ext[EXT_DELAY_PADDING];
+            info.delay_padding = Some((
+                (u16::from(t[0]) << 4) | u16::from(t[1] >> 4),
+                (u16::from(t[1] & 0x0F) << 8) | u16::from(t[2]),
+            ));
+        }
+        // Everything in the extension that is not the delay and padding.
+        info.identity = ext
+            .iter()
+            .enumerate()
+            .any(|(i, b)| !EXT_DELAY_PADDING.contains(&i) && *b != 0);
+    }
+    Some(info)
 }
 
 /// Read `n` bits at bit offset `at` of `b`, most significant first.
@@ -482,21 +517,29 @@ pub fn scan(bytes: &[u8]) -> (Vec<Detection>, bool) {
         out.push(ape);
     }
     if let Some(info) = &l.info {
-        let mut xing = Detection::present("xing", "Xing/Info frame", Honesty::Confirmable);
-        xing.locations.push(Location {
-            container: "MPEG frame".to_string(),
-            offset: info.offset,
-            length: info.len,
-            detail: match &info.encoder {
-                Some(e) => format!("{} tag, encoder {e}", info.kind),
-                None => format!("{} tag", info.kind),
-            },
-        });
-        if let Some(mdb) = info.next_main_data_begin {
-            xing.evidence
-                .push(format!("next frame main_data_begin {mdb}"));
+        if info.identity {
+            let mut ident = Detection::present(
+                "mp3_info",
+                "information frame identity",
+                Honesty::Confirmable,
+            );
+            ident.locations.push(Location {
+                container: "MPEG frame".to_string(),
+                offset: info.offset,
+                length: info.len,
+                detail: match &info.encoder {
+                    Some(e) => format!("{} tag, encoder {e}", info.kind),
+                    None => format!("{} tag", info.kind),
+                },
+            });
+            if let Some((d, p)) = info.delay_padding {
+                ident.evidence.push(format!("delay {d}, padding {p}"));
+            }
+            if info.has_toc {
+                ident.evidence.push("toc".to_string());
+            }
+            out.push(ident);
         }
-        out.push(xing);
     }
     let complete = l.complete;
     match ancillary_ranges(bytes, &l) {
@@ -545,7 +588,7 @@ pub fn scan(bytes: &[u8]) -> (Vec<Detection>, bool) {
     }
     if !complete {
         for d in out.iter_mut() {
-            if d.class == "xing" {
+            if d.class == "mp3_info" {
                 d.state = ScanState::Malformed;
             }
         }

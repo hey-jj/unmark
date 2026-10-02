@@ -78,10 +78,10 @@ label = "APE tag"
 guard = "An APEv1 or APEv2 tag at either end of an MPEG audio file. Its items carry free-form text, so an encoder or tool name rides there."
 
 [[mark_class]]
-id = "xing"
+id = "mp3_info"
 honesty = "confirmable"
-label = "Xing/Info frame"
-guard = "The information frame an encoder writes first: a Xing or Info tag with the frame count, byte count, seek table, and a LAME-style encoder string, or a VBRI tag. The encoder string is tool identity. The frame is dropped only when the next audio frame's main_data_begin is zero, since a nonzero value means that frame draws bits from inside it."
+label = "information frame identity"
+guard = "The encoder identity an MPEG information frame carries: the nine-byte encoder string and the revision, lowpass, replay-gain, encoding-flag, bitrate, misc, gain, and preset fields of its extension. The frame count, byte count, seek table, encoder delay, and padding are stream data a decoder uses and stay."
 
 [[mark_class]]
 id = "mp3_ancillary"
@@ -241,12 +241,12 @@ guard = "Remove every APE tag with its header, items, and footer, and copy the a
 
 [[transform]]
 id = "MC14"
-name = "strip-info-frame"
+name = "rewrite-info-frame"
 order = 54
 kind = "metadata"
 applies = ["mp3"]
-target = "The Xing, Info, or VBRI information frame and its encoder string"
-guard = "Remove the information frame when the next audio frame's main_data_begin is zero. When it is not, the frame holds reservoir bits that frame decodes, so it stays and the report shows it kept with that value. Use --keep MC14 or --keep xing to keep it."
+target = "The encoder identity in the Xing, Info, or VBRI information frame"
+guard = "Rewrite the information frame in place as its minimal form, the same size: the frame count, byte count, and seek table it had, the encoder delay and padding, and zero everywhere else. A file without an information frame gets none. Use --keep MC14 or --keep mp3_info to keep the frame as it is."
 
 [[transform]]
 id = "MC15"
@@ -382,7 +382,7 @@ strength = "constant bitrate at the input's bitrate, or its average for a variab
 cited_effect = "the same-container write for an MP3 input, a second lossy stage after the one that made the input. The bitrate pin is reported in the result."
 citation = "ISO/IEC 11172-3 layer III bitrate table"
 target = "The MP3 container after the highpass"
-guard = "Write the highpassed samples back as MPEG audio layer III at the pinned bitrate, then drop the encoder's own information frame. Use --no-degrade or --keep AU06 to skip the highpass and the re-encode together."
+guard = "Write the highpassed samples back as MPEG audio layer III at the pinned bitrate, with a minimal information frame carrying the frame count, byte count, and the measured encoder delay and padding. Use --no-degrade or --keep AU06 to skip the highpass and the re-encode together."
 
 # ---------------------------------------------------------------------------
 # Held transforms. Each has no flag, does not run, and appears under "cannot

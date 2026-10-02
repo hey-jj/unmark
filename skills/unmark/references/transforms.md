@@ -3,7 +3,7 @@
 Regenerate with `unmark policy snapshot` after any policy change. Edits here are overwritten.
 
 - policy version: 0.3.0
-- policy digest: sha256:1cfc03e47002994542ceab83dd7fe55f885c4b1a7551fbf1ee77b7aba7dcf9b5
+- policy digest: sha256:8d4b504450f994d2e8bcbe9dcbd67d85d5351337bffc1526ddae853e48a61df9
 
 ## What each mark kind means
 
@@ -57,9 +57,9 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 - APE tag: An APEv1 or APEv2 tag at either end of an MPEG audio file. Its items carry free-form text, so an encoder or tool name rides there.
 
-### xing (confirmable)
+### mp3_info (confirmable)
 
-- Xing/Info frame: The information frame an encoder writes first: a Xing or Info tag with the frame count, byte count, seek table, and a LAME-style encoder string, or a VBRI tag. The encoder string is tool identity. The frame is dropped only when the next audio frame's main_data_begin is zero, since a nonzero value means that frame draws bits from inside it.
+- information frame identity: The encoder identity an MPEG information frame carries: the nine-byte encoder string and the revision, lowpass, replay-gain, encoding-flag, bitrate, misc, gain, and preset fields of its extension. The frame count, byte count, seek table, encoder delay, and padding are stream data a decoder uses and stay.
 
 ### mp3_ancillary (confirmable)
 
@@ -160,10 +160,10 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 - target: APEv1 and APEv2 tags at either end of an MPEG audio file
 - Remove every APE tag with its header, items, and footer, and copy the audio frames byte for byte. Use --keep MC13 or --keep ape to keep them.
 
-### MC14 strip-info-frame (metadata, on mp3)
+### MC14 rewrite-info-frame (metadata, on mp3)
 
-- target: The Xing, Info, or VBRI information frame and its encoder string
-- Remove the information frame when the next audio frame's main_data_begin is zero. When it is not, the frame holds reservoir bits that frame decodes, so it stays and the report shows it kept with that value. Use --keep MC14 or --keep xing to keep it.
+- target: The encoder identity in the Xing, Info, or VBRI information frame
+- Rewrite the information frame in place as its minimal form, the same size: the frame count, byte count, and seek table it had, the encoder delay and padding, and zero everywhere else. A file without an information frame gets none. Use --keep MC14 or --keep mp3_info to keep the frame as it is.
 
 ### MC15 scrub-ancillary-data (metadata, on mp3)
 
@@ -247,7 +247,7 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 - strength: constant bitrate at the input's bitrate, or its average for a variable-rate input, snapped to the layer III table
 - cited effect: the same-container write for an MP3 input, a second lossy stage after the one that made the input. The bitrate pin is reported in the result.
 - citation: ISO/IEC 11172-3 layer III bitrate table
-- Write the highpassed samples back as MPEG audio layer III at the pinned bitrate, then drop the encoder's own information frame. Use --no-degrade or --keep AU06 to skip the highpass and the re-encode together.
+- Write the highpassed samples back as MPEG audio layer III at the pinned bitrate, with a minimal information frame carrying the frame count, byte count, and the measured encoder delay and padding. Use --no-degrade or --keep AU06 to skip the highpass and the re-encode together.
 
 ## Held transforms
 

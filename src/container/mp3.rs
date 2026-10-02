@@ -1,10 +1,10 @@
 //! MPEG audio rewriter. It drops the leading ID3v2 tags with their padding,
-//! the trailing ID3v1 tag, APE tags at either end, and the information
-//! frame when the next audio frame draws no bits from the reservoir, and
-//! copies every audio frame byte for byte.
+//! the trailing ID3v1 tag, and APE tags at either end, rewrites the
+//! information frame in place as its minimal form, zeroes the ancillary
+//! bytes, and copies every audio frame's referenced bytes as they are.
 
 use super::{DropSpec, RewriteError};
-use crate::detect::mp3::{ancillary_ranges, layout};
+use crate::detect::mp3::{ancillary_ranges, layout, InfoFrame, EXT_DELAY_PADDING, EXT_LEN};
 
 /// Zero the ancillary bytes of the audio frames: everything inside the
 /// main-data regions that no frame's main data covers, the bit reservoir
@@ -24,6 +24,86 @@ pub fn scrub_ancillary(bytes: &[u8]) -> Result<Vec<u8>, RewriteError> {
         }
     }
     Ok(out)
+}
+
+/// Rewrite an information frame in place as its minimal form: the frame
+/// count, byte count, and TOC it had, the delay and padding of its
+/// extension, and zero everywhere else, the encoder identity included.
+/// Same size, byte-for-byte deterministic.
+pub fn minimal_info_frame(frame: &mut [u8], info: &InfoFrame) {
+    if info.kind == "VBRI" {
+        // VBRI carries a version and encoder-specific fields after its
+        // table; the 26-byte head (version, delay, quality, bytes, frames,
+        // table layout) stays and the rest is zeroed.
+        let keep = (info.tag_at + 26).min(frame.len());
+        for b in frame[keep..].iter_mut() {
+            *b = 0;
+        }
+        return;
+    }
+    let mut at = info.tag_at + 8;
+    if info.flags & 1 != 0 {
+        at += 4;
+    }
+    if info.flags & 2 != 0 {
+        at += 4;
+    }
+    if info.flags & 4 != 0 {
+        at += 100;
+    }
+    let n = frame.len();
+    if info.flags & 8 != 0 {
+        // The quality indicator is an encoder setting, zeroed in place.
+        for b in frame[at.min(n)..(at + 4).min(n)].iter_mut() {
+            *b = 0;
+        }
+        at += 4;
+    }
+    let delay_padding: Option<[u8; 3]> = info.extension_at.and_then(|e| {
+        frame
+            .get(e + EXT_DELAY_PADDING.start..e + EXT_DELAY_PADDING.end)
+            .map(|t| [t[0], t[1], t[2]])
+    });
+    for b in frame[at.min(n)..].iter_mut() {
+        *b = 0;
+    }
+    if let (Some(e), Some(t)) = (info.extension_at, delay_padding) {
+        frame[e + EXT_DELAY_PADDING.start..e + EXT_DELAY_PADDING.end].copy_from_slice(&t);
+    }
+}
+
+/// Build the minimal information frame the re-encode writes: the given
+/// header and side-information size, an Info tag with the frame count and
+/// byte count, the extension carrying only the delay and padding, zero
+/// elsewhere, padded to the frame length.
+pub fn build_info_frame(
+    header: &[u8; 4],
+    crc: bool,
+    side_info: usize,
+    frame_len: usize,
+    counts: (u32, u32),
+    delay_padding: (u16, u16),
+) -> Vec<u8> {
+    let (frames, bytes) = counts;
+    let (delay, padding) = delay_padding;
+    let mut out = header.to_vec();
+    if crc {
+        out.extend_from_slice(&[0, 0]);
+    }
+    out.resize(out.len() + side_info, 0);
+    out.extend_from_slice(b"Info");
+    out.extend_from_slice(&3u32.to_be_bytes());
+    out.extend_from_slice(&frames.to_be_bytes());
+    out.extend_from_slice(&bytes.to_be_bytes());
+    let ext_at = out.len();
+    out.resize(ext_at + EXT_LEN, 0);
+    let d = delay & 0x0FFF;
+    let p = padding & 0x0FFF;
+    out[ext_at + 21] = (d >> 4) as u8;
+    out[ext_at + 22] = (((d & 0x0F) << 4) | (p >> 8)) as u8;
+    out[ext_at + 23] = (p & 0xFF) as u8;
+    out.resize(frame_len.max(out.len()), 0);
+    out
 }
 
 pub fn rewrite(input: &[u8], spec: &DropSpec) -> Result<Vec<u8>, RewriteError> {
@@ -60,13 +140,14 @@ pub fn rewrite(input: &[u8], spec: &DropSpec) -> Result<Vec<u8>, RewriteError> {
             p += 1;
         }
     }
-    let mut frames = &bytes[l.frames_start..l.frames_end];
+    let frames_at = out.len();
+    out.extend_from_slice(&bytes[l.frames_start..l.frames_end]);
     if let Some(info) = &l.info {
-        if spec.xing && info.droppable() && info.offset == l.frames_start {
-            frames = &bytes[info.offset + info.len..l.frames_end];
+        if spec.info_identity && info.offset == l.frames_start {
+            let frame = &mut out[frames_at..frames_at + info.len];
+            minimal_info_frame(frame, info);
         }
     }
-    out.extend_from_slice(frames);
     // Trailing tags, in file order.
     let mut p = l.frames_end;
     while p < bytes.len() {

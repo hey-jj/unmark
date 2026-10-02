@@ -45,9 +45,10 @@ fn every_mp3_stage_matches_its_pinned_digest() {
             },
         );
         let highpassed = digest_samples(&processed.channels);
-        let (encoded_bytes, used) = mp3::encode(&processed, kbps).unwrap();
+        let enc = mp3::encode(&processed, kbps).unwrap();
+        let used = enc.bitrate_kbps;
         let mut h = Sha256::new();
-        h.update(&encoded_bytes);
+        h.update(&enc.bytes);
         let encoded = hex(&h.finalize());
         for (stage, got) in [
             ("decoded", decoded),

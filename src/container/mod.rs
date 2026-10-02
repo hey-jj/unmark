@@ -36,9 +36,9 @@ pub struct DropSpec {
     pub riff_production: bool,
     /// MC13: drop APE tags from an MPEG audio file.
     pub ape: bool,
-    /// MC14: drop the Xing, Info, or VBRI information frame when the next
-    /// frame draws no bits from the reservoir.
-    pub xing: bool,
+    /// MC14: rewrite the Xing, Info, or VBRI information frame in place as
+    /// its minimal form, the encoder identity zeroed.
+    pub info_identity: bool,
     /// MC15: zero the ancillary bytes of MPEG audio frames.
     pub ancillary: bool,
 }

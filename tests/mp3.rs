@@ -1,7 +1,8 @@
-//! MPEG audio, milestone A: the tags strip, the information frame strips
-//! only when the next frame draws nothing from the reservoir, the audio
-//! frames are byte-identical across the run, and every class has its own
-//! keep.
+//! MPEG audio: the tags strip, the information frame is rewritten in place
+//! as its minimal form, the ancillary bytes are zeroed, the referenced
+//! frame bytes are untouched, every class has its own keep, and under the
+//! audio feature the highpass and re-encode carry the measured delay and
+//! padding so the output decodes to the input's length.
 
 use std::path::PathBuf;
 use unmark::asset::Format;
@@ -29,17 +30,26 @@ fn keep(items: &[&str]) -> Options {
     }
 }
 
+fn no_degrade() -> Options {
+    Options {
+        no_degrade: true,
+        ..Default::default()
+    }
+}
+
 fn state(bytes: &[u8], class: &str) -> Option<ScanState> {
     detect::inspect(bytes).get(class).map(|d| d.state)
 }
 
+const CLASSES: [&str; 4] = ["id3", "ape", "mp3_info", "mp3_ancillary"];
+
 #[test]
-fn mp3_is_a_supported_container_with_three_tag_classes() {
+fn mp3_is_a_supported_container_with_four_classes() {
     assert!(Format::Mp3.is_supported_container());
     let tagged = fixture("tagged.mp3");
     let det = detect::inspect(&tagged);
     assert_eq!(det.format, Format::Mp3);
-    for class in ["id3", "ape", "xing"] {
+    for class in CLASSES {
         assert_eq!(
             det.get(class).map(|d| d.state),
             Some(ScanState::ConfirmedPresent),
@@ -49,12 +59,13 @@ fn mp3_is_a_supported_container_with_three_tag_classes() {
     let id3 = det.get("id3").unwrap();
     assert!(id3.locations.iter().any(|l| l.container == "ID3v2"));
     assert!(id3.locations.iter().any(|l| l.container == "ID3v1"));
-    let xing = det.get("xing").unwrap();
-    assert!(xing.locations[0]
+    let info = det.get("mp3_info").unwrap();
+    assert!(info.locations[0]
         .detail
         .starts_with("Info tag, encoder LAME"));
+    assert!(info.evidence.iter().any(|e| e.starts_with("delay ")));
     let plain = fixture("plain.mp3");
-    for class in ["id3", "ape", "xing"] {
+    for class in ["id3", "ape", "mp3_info"] {
         assert_eq!(
             state(&plain, class),
             Some(ScanState::ConfirmedAbsent),
@@ -64,28 +75,28 @@ fn mp3_is_a_supported_container_with_three_tag_classes() {
 }
 
 #[test]
-fn the_default_run_strips_every_tag_and_no_degrade_copies_the_audio_frames() {
+fn the_default_run_strips_every_class_and_leaves_the_referenced_bytes() {
     let tagged = fixture("tagged.mp3");
     let before = container::signal_stream(&tagged, Format::Mp3);
     assert!(!before.is_empty());
-    let no_degrade = Options {
-        no_degrade: true,
-        ..Default::default()
-    };
-    let out = clean(&tagged, &no_degrade, &pkg()).unwrap();
+    let out = clean(&tagged, &no_degrade(), &pkg()).unwrap();
     assert_eq!(out.report.exit_code, EXIT_OK, "{:?}", out.report.actions);
     assert_eq!(out.report.output_format, "mp3");
     let bytes = out.output.expect("the run writes");
     assert_eq!(container::signal_stream(&bytes, Format::Mp3), before);
-    assert_eq!(bytes, before, "nothing but the audio frames remains");
-    for class in ["id3", "ape", "xing"] {
+    for class in CLASSES {
         assert_eq!(
             state(&bytes, class),
             Some(ScanState::ConfirmedAbsent),
             "{class}"
         );
     }
-    for label in ["ID3 tag", "APE tag", "Xing/Info frame"] {
+    for label in [
+        "ID3 tag",
+        "APE tag",
+        "information frame identity",
+        "MPEG ancillary data",
+    ] {
         assert!(
             out.report
                 .stripped_and_proven_gone
@@ -95,13 +106,41 @@ fn the_default_run_strips_every_tag_and_no_degrade_copies_the_audio_frames() {
             out.report.stripped_and_proven_gone
         );
     }
+    // The information frame is still there, the same size, minimal.
+    let l = detect::mp3::layout(&bytes);
+    let info = l.info.expect("the frame stays");
+    assert_eq!(info.offset, 0);
+    assert!(!info.identity);
+    assert!(info.frames.is_some() && info.bytes.is_some());
+    assert!(info.delay_padding.is_some());
+    assert_eq!(info.encoder, None);
+    let mc14 = out
+        .report
+        .actions
+        .iter()
+        .find(|a| a.transform == "MC14")
+        .unwrap();
+    assert_eq!(mc14.outcome, "rewritten");
+    assert_eq!(mc14.removed, vec!["encoder_identity".to_string()]);
+    for field in ["frame_count", "byte_count", "delay", "padding"] {
+        assert!(mc14.kept.iter().any(|k| k == field), "{field}");
+    }
     let au06 = out
         .report
         .actions
         .iter()
         .find(|a| a.transform == "AU06")
-        .expect("AU06 row");
+        .unwrap();
     assert!(au06.outcome.contains("kept"), "{}", au06.outcome);
+    for class in ["audioseal", "synthid_audio"] {
+        let s = out
+            .report
+            .survived
+            .iter()
+            .find(|s| s.class == class)
+            .unwrap();
+        assert!(s.citation.is_some());
+    }
     #[cfg(not(feature = "audio"))]
     {
         let out = clean(&tagged, &Options::default(), &pkg()).unwrap();
@@ -110,24 +149,15 @@ fn the_default_run_strips_every_tag_and_no_degrade_copies_the_audio_frames() {
             .actions
             .iter()
             .find(|a| a.transform == "AU06")
-            .expect("AU06 row");
+            .unwrap();
         assert_eq!(au06.outcome, "not_attempted");
         assert!(!au06.result.is_empty());
     }
-    for class in ["audioseal", "synthid_audio"] {
-        let s = out
-            .report
-            .survived
-            .iter()
-            .find(|s| s.class == class)
-            .unwrap_or_else(|| panic!("{class} survivor row"));
-        assert!(s.citation.is_some());
-    }
-    // The default run strips the same three classes.
+    // The default run strips the same classes.
     let default = clean(&tagged, &Options::default(), &pkg()).unwrap();
     assert_eq!(default.report.exit_code, EXIT_OK);
     let bytes = default.output.unwrap();
-    for class in ["id3", "ape", "xing"] {
+    for class in CLASSES {
         assert_eq!(
             state(&bytes, class),
             Some(ScanState::ConfirmedAbsent),
@@ -137,17 +167,21 @@ fn the_default_run_strips_every_tag_and_no_degrade_copies_the_audio_frames() {
 }
 
 #[test]
-fn each_tag_class_has_its_own_keep() {
+fn each_class_has_its_own_keep() {
     let tagged = fixture("tagged.mp3");
     let p = pkg();
     for (name, class, id) in [
         ("id3", "id3", "MC05"),
         ("ape", "ape", "MC13"),
-        ("xing", "xing", "MC14"),
+        ("mp3_info", "mp3_info", "MC14"),
         ("MC13", "ape", "MC13"),
-        ("strip-info-frame", "xing", "MC14"),
+        ("rewrite-info-frame", "mp3_info", "MC14"),
+        ("MC15", "mp3_ancillary", "MC15"),
+        ("mp3_ancillary", "mp3_ancillary", "MC15"),
     ] {
-        let out = clean(&tagged, &keep(&[name]), &p).unwrap();
+        let mut opts = keep(&[name]);
+        opts.no_degrade = true;
+        let out = clean(&tagged, &opts, &p).unwrap();
         assert_eq!(
             out.report.exit_code, EXIT_OK,
             "--keep {name}: {:?}",
@@ -159,7 +193,7 @@ fn each_tag_class_has_its_own_keep() {
             Some(ScanState::ConfirmedPresent),
             "--keep {name} dropped {class}"
         );
-        for other in ["id3", "ape", "xing"] {
+        for other in CLASSES {
             if other != class {
                 assert_eq!(
                     state(&bytes, other),
@@ -177,90 +211,169 @@ fn each_tag_class_has_its_own_keep() {
 }
 
 #[test]
-fn the_information_frame_stays_when_the_next_frame_draws_from_the_reservoir() {
+fn a_reservoir_dependent_stream_keeps_its_frame_in_place() {
+    // The information frame precedes frames that draw from the reservoir;
+    // the rewrite never moves or drops it, so nothing breaks.
     let res = fixture("reservoir.mp3");
-    let layout = detect::mp3::layout(&res);
-    let info = layout.info.as_ref().expect("an Info frame");
-    assert!(!info.droppable());
-    assert!(info.next_main_data_begin.is_some_and(|v| v > 0));
-    // Under --no-degrade the frames stay, so the keep rule is what decides.
-    let out = clean(
-        &res,
-        &Options {
-            no_degrade: true,
-            ..Default::default()
-        },
-        &pkg(),
-    )
-    .unwrap();
+    let l = detect::mp3::layout(&res);
+    let info = l.info.as_ref().expect("an Info frame");
+    assert!(!info.identity, "the synthetic frame carries no identity");
+    assert_eq!(state(&res, "mp3_info"), Some(ScanState::ConfirmedAbsent));
+    let out = clean(&res, &no_degrade(), &pkg()).unwrap();
     assert_eq!(out.report.exit_code, EXIT_OK, "{:?}", out.report.actions);
     let bytes = out.output.unwrap();
-    // Only the ancillary scrub touched the file: same length, the
-    // information frame in place, no byte changed to anything but zero.
     assert_eq!(bytes.len(), res.len());
+    assert_eq!(
+        &bytes[..info.len],
+        &res[..info.len],
+        "the frame is untouched"
+    );
     assert!(bytes.iter().zip(res.iter()).all(|(a, b)| a == b || *a == 0));
-    assert_eq!(&bytes[..info.len], &res[..info.len]);
-    assert_eq!(state(&bytes, "xing"), Some(ScanState::ConfirmedPresent));
-    let kept = out
-        .report
-        .kept
-        .iter()
-        .find(|k| k.item.starts_with("MC14"))
-        .expect("MC14 reported kept");
-    assert!(kept.reason.contains("main_data_begin"), "{}", kept.reason);
-    assert!(out
-        .report
-        .actions
-        .iter()
-        .any(|a| a.transform == "MC14" && a.outcome.contains("main_data_begin")));
-    // The LAME-written file's first audio frame starts fresh, so there the
-    // frame goes.
+    // A LAME-written frame carries identity and is rewritten at its size.
     let tagged = fixture("tagged.mp3");
     let info = detect::mp3::layout(&tagged).info.unwrap();
-    assert_eq!(info.next_main_data_begin, Some(0));
-    assert!(info.droppable());
+    assert!(info.identity);
+    let spec = container::DropSpec {
+        info_identity: true,
+        ..Default::default()
+    };
+    let rewritten = container::rewrite(&tagged, Format::Mp3, &spec).unwrap();
+    assert_eq!(rewritten.len(), tagged.len());
+    let after = detect::mp3::layout(&rewritten).info.unwrap();
+    assert_eq!((after.offset, after.len), (info.offset, info.len));
+    assert_eq!(after.frames, info.frames);
+    assert_eq!(after.bytes, info.bytes);
+    assert_eq!(after.has_toc, info.has_toc);
+    assert_eq!(after.delay_padding, info.delay_padding);
+    assert!(!after.identity);
+    // Deterministic: a second rewrite is a no-op.
+    assert_eq!(
+        container::rewrite(&rewritten, Format::Mp3, &spec).unwrap(),
+        rewritten
+    );
 }
 
 #[test]
-fn a_vbr_xing_frame_strips_and_the_frames_stay() {
+fn a_vbr_xing_frame_keeps_its_table_and_loses_its_identity() {
     let vbr = fixture("vbr.mp3");
-    let before = container::signal_stream(&vbr, Format::Mp3);
-    let out = clean(
-        &vbr,
-        &Options {
-            no_degrade: true,
-            ..Default::default()
-        },
-        &pkg(),
-    )
-    .unwrap();
+    let before = detect::mp3::layout(&vbr).info.unwrap();
+    assert!(before.has_toc && before.identity);
+    let out = clean(&vbr, &no_degrade(), &pkg()).unwrap();
     assert_eq!(out.report.exit_code, EXIT_OK);
     let bytes = out.output.unwrap();
-    assert_eq!(bytes, before);
-    assert_eq!(state(&bytes, "xing"), Some(ScanState::ConfirmedAbsent));
+    assert_eq!(state(&bytes, "mp3_info"), Some(ScanState::ConfirmedAbsent));
+    let after = detect::mp3::layout(&bytes).info.unwrap();
+    assert!(after.has_toc && after.kind == "Xing");
+    let mc14 = out
+        .report
+        .actions
+        .iter()
+        .find(|a| a.transform == "MC14")
+        .unwrap();
+    assert!(mc14.kept.iter().any(|k| k == "toc"));
 }
 
 #[test]
 fn a_truncated_stream_is_malformed_and_fails_closed() {
     let tagged = fixture("tagged.mp3");
-    // Cut inside the last audio frame, before the trailing tags.
     let layout = detect::mp3::layout(&tagged);
     let mut cut = tagged[..layout.frames_end - 7].to_vec();
     cut.extend_from_slice(&tagged[layout.frames_end..]);
     let det = detect::inspect(&cut);
-    assert_eq!(det.get("xing").map(|d| d.state), Some(ScanState::Malformed));
+    assert_eq!(
+        det.get("mp3_info").map(|d| d.state),
+        Some(ScanState::Malformed)
+    );
     let r = inspect(&cut, &Options::default(), &pkg()).unwrap();
     assert_eq!(r.exit_code, EXIT_INSTRUMENTATION);
     let err = clean(&cut, &Options::default(), &pkg()).unwrap_err();
     assert!(matches!(err, UnmarkError::Inspection(_)), "{err}");
-    let spec = container::DropSpec {
-        id3: true,
-        ..Default::default()
-    };
-    assert!(matches!(
-        container::rewrite(&cut, Format::Mp3, &spec),
-        Err(container::RewriteError::Malformed(_))
-    ));
+}
+
+// --- MC15: the ancillary bytes ----------------------------------------------
+
+#[test]
+fn the_ancillary_bytes_are_zeroed_by_default_and_kept_under_the_flag() {
+    let tagged = fixture("tagged.mp3");
+    let p = pkg();
+    let count = |b: &[u8]| b.windows(4).filter(|w| w == b"LAME").count();
+    assert!(count(&tagged) > 1);
+    let anc = detect::inspect(&tagged)
+        .get("mp3_ancillary")
+        .cloned()
+        .unwrap();
+    assert_eq!(anc.state, ScanState::ConfirmedPresent);
+    assert!(anc.evidence.iter().any(|e| e.starts_with("LAME in ")));
+    for opts in [Options::default(), no_degrade()] {
+        let out = clean(&tagged, &opts, &p).unwrap();
+        assert_eq!(out.report.exit_code, EXIT_OK, "{:?}", out.report.actions);
+        let bytes = out.output.unwrap();
+        assert_eq!(count(&bytes), 0, "an encoder name survived in the frames");
+        assert_eq!(
+            state(&bytes, "mp3_ancillary"),
+            Some(ScanState::ConfirmedAbsent)
+        );
+        assert!(out
+            .report
+            .stripped_and_proven_gone
+            .iter()
+            .any(|l| l == "MPEG ancillary data"));
+    }
+    let scrubbed = container::mp3::scrub_ancillary(&tagged).unwrap();
+    assert_eq!(scrubbed.len(), tagged.len());
+    let l = detect::mp3::layout(&tagged);
+    let mut p = l.frames_start;
+    while p < l.frames_end {
+        let h = detect::mp3::parse_header(&tagged[p..]).unwrap();
+        let head = 4 + if h.crc { 2 } else { 0 } + h.side_info;
+        assert_eq!(&scrubbed[p..p + head], &tagged[p..p + head]);
+        p += h.len;
+    }
+    assert!(scrubbed
+        .iter()
+        .zip(tagged.iter())
+        .all(|(a, b)| a == b || *a == 0));
+}
+
+#[cfg(feature = "audio")]
+#[test]
+fn zeroed_and_rewritten_frames_decode_to_the_same_samples() {
+    // The acceptance property: a decode of the cleaned file matches a
+    // decode of the input sample for sample under --no-degrade, with the
+    // delay and padding the rewritten frame carries applied where the
+    // input's own extension made the decoder apply them.
+    let p = pkg();
+    for name in [
+        "tagged.mp3",
+        "vbr.mp3",
+        "plain.mp3",
+        "reservoir.mp3",
+        "broadband.mp3",
+    ] {
+        let original = fixture(name);
+        let (a, _) = unmark::codec::mp3::decode_with_bitrate(&original).unwrap();
+        let out = clean(&original, &no_degrade(), &p).unwrap();
+        assert_eq!(
+            out.report.exit_code, EXIT_OK,
+            "{name}: {:?}",
+            out.report.actions
+        );
+        let cleaned = out.output.unwrap();
+        // The decode applies the rewritten frame's delay and padding where
+        // the input's own extension made the decoder apply them.
+        let (b, _) = unmark::codec::mp3::decode_with_bitrate(&cleaned).unwrap();
+        assert_eq!(a.rate, b.rate, "{name}");
+        assert_eq!(a.channels.len(), b.channels.len(), "{name}");
+        for (ca, cb) in a.channels.iter().zip(b.channels.iter()) {
+            assert_eq!(ca.len(), cb.len(), "{name}: sample count changed");
+            assert!(
+                ca.iter()
+                    .zip(cb.iter())
+                    .all(|(x, y)| x.to_bits() == y.to_bits()),
+                "{name}: the samples differ"
+            );
+        }
+    }
 }
 
 // --- Milestone B: the highpass and the re-encode ---------------------------
@@ -298,43 +411,71 @@ fn the_default_run_highpasses_and_re_encodes_at_the_input_bitrate() {
         "{}",
         au03.result
     );
+    assert_eq!(au03.delay, Some(unmark::codec::mp3::ENCODER_DELAY as u32));
+    assert!(au03.padding.is_some());
     let sanity = out.report.sanity.as_ref().expect("the sanity block");
     assert!(sanity.passed);
     assert!(sanity
         .lsd_db
         .is_some_and(|v| v > 0.0 && v <= p.sanity.lsd_ceiling_db));
-    assert_eq!(sanity.lsd_ceiling_db, Some(p.sanity.lsd_ceiling_db));
-    for class in ["id3", "ape", "xing"] {
+    for class in CLASSES {
         assert_eq!(
             state(&bytes, class),
             Some(ScanState::ConfirmedAbsent),
             "{class}"
         );
     }
-    assert!(out
-        .report
-        .stripped_and_proven_gone
-        .iter()
-        .any(|l| l == "Xing/Info frame"));
+    // The output's information frame carries the fields, and no identity.
+    let info = detect::mp3::layout(&bytes)
+        .info
+        .expect("a minimal information frame");
+    assert!(!info.identity);
+    assert_eq!(
+        info.delay_padding,
+        Some((au03.delay.unwrap() as u16, au03.padding.unwrap() as u16))
+    );
     let (back, kbps) = unmark::codec::mp3::decode_with_bitrate(&bytes).unwrap();
     assert_eq!(kbps, 128);
     assert_eq!(back.channels.len(), 1);
-    assert_eq!(back.rate, 44100);
-    // The encoder's ancillary bytes are gone with the re-encode.
     assert!(!bytes.windows(4).any(|w| w == b"LAME"));
-    // Under --no-degrade the frames are the input's frames, untouched.
-    let nd = clean(
-        &tagged,
-        &Options {
-            no_degrade: true,
-            ..Default::default()
-        },
-        &p,
-    )
-    .unwrap();
+    // Duration: with the fields applied, the output matches the input
+    // within one frame, and a second default run stays within one frame.
+    let (input, _) = unmark::codec::mp3::decode_with_bitrate(&tagged).unwrap();
+    let (raw, _) = unmark::codec::mp3::decode_raw_with_bitrate(&bytes).unwrap();
+    let (d, pd) = info.delay_padding.unwrap();
+    let trimmed = unmark::codec::mp3::apply_delay_padding(&raw, d, pd);
+    assert_eq!(trimmed.frames(), back.frames());
+    assert!(
+        trimmed.frames().abs_diff(input.frames()) <= 1152,
+        "{} vs {}",
+        trimmed.frames(),
+        input.frames()
+    );
+    let again = clean(&bytes, &Options::default(), &p).unwrap();
     assert_eq!(
-        nd.output.unwrap(),
-        container::signal_stream(&tagged, Format::Mp3)
+        again.report.exit_code, EXIT_OK,
+        "{:?}",
+        again.report.actions
+    );
+    let second = again.output.unwrap();
+    assert!(detect::mp3::layout(&second)
+        .info
+        .unwrap()
+        .delay_padding
+        .is_some());
+    let (trimmed2, _) = unmark::codec::mp3::decode_with_bitrate(&second).unwrap();
+    assert!(
+        trimmed2.frames().abs_diff(input.frames()) <= 1152,
+        "{} vs {}",
+        trimmed2.frames(),
+        input.frames()
+    );
+    // Under --no-degrade the frames are the input's referenced bytes.
+    let nd = clean(&tagged, &no_degrade(), &p).unwrap();
+    let input_info = detect::mp3::layout(&tagged).info.unwrap();
+    assert_eq!(
+        nd.output.unwrap().len(),
+        container::signal_stream(&tagged, Format::Mp3).len() + input_info.len
     );
     assert!(nd.report.sanity.is_none());
     assert!(nd.report.kept.iter().any(|k| k.item.starts_with("AU06")));
@@ -342,8 +483,7 @@ fn the_default_run_highpasses_and_re_encodes_at_the_input_bitrate() {
 
 #[cfg(feature = "audio")]
 #[test]
-fn a_variable_rate_input_is_re_encoded_at_its_average_and_a_reservoir_frame_goes_with_the_re_encode(
-) {
+fn a_variable_rate_input_is_re_encoded_at_its_average() {
     let p = pkg();
     let vbr = fixture("vbr.mp3");
     let out = clean(&vbr, &Options::default(), &p).unwrap();
@@ -354,8 +494,6 @@ fn a_variable_rate_input_is_re_encoded_at_its_average_and_a_reservoir_frame_goes
         .iter()
         .find(|a| a.transform == "AU03")
         .unwrap();
-    // The pin is the input's average, snapped to the layer III table, and
-    // the output carries that rate.
     let (_, input_kbps) = unmark::codec::mp3::decode_with_bitrate(&vbr).unwrap();
     let pinned: u32 = au03
         .result
@@ -372,119 +510,9 @@ fn a_variable_rate_input_is_re_encoded_at_its_average_and_a_reservoir_frame_goes
     let (_, out_kbps) =
         unmark::codec::mp3::decode_with_bitrate(out.output.as_ref().unwrap()).unwrap();
     assert_eq!(out_kbps, pinned);
-    // The reservoir fixture's information frame is kept only for the frames
-    // it feeds; the re-encode replaces those frames, so it goes too.
-    let res = fixture("reservoir.mp3");
-    let out = clean(&res, &Options::default(), &p).unwrap();
-    assert_eq!(out.report.exit_code, EXIT_OK, "{:?}", out.report.actions);
-    let bytes = out.output.unwrap();
-    assert_eq!(state(&bytes, "xing"), Some(ScanState::ConfirmedAbsent));
-    assert!(out
-        .report
-        .stripped_and_proven_gone
-        .iter()
-        .any(|l| l == "Xing/Info frame"));
-    assert!(!out.report.kept.iter().any(|k| k.item.starts_with("MC14")));
-    // --keep xing keeps the encoder's information frame on the re-encode.
-    let out = clean(&res, &keep(&["xing"]), &p).unwrap();
-    assert_eq!(out.report.exit_code, EXIT_OK, "{:?}", out.report.actions);
-    let bytes = out.output.unwrap();
-    assert_eq!(state(&bytes, "xing"), Some(ScanState::ConfirmedPresent));
 }
 
-// --- MC15: the ancillary bytes ----------------------------------------------
-
-#[test]
-fn the_ancillary_bytes_are_zeroed_by_default_and_kept_under_the_flag() {
-    let tagged = fixture("tagged.mp3");
-    let p = pkg();
-    let count = |b: &[u8]| b.windows(4).filter(|w| w == b"LAME").count();
-    assert!(
-        count(&tagged) > 1,
-        "the fixture carries the encoder name in its frames"
-    );
-    let before = detect::inspect(&tagged);
-    let anc = before.get("mp3_ancillary").expect("the class is scanned");
-    assert_eq!(anc.state, ScanState::ConfirmedPresent);
-    assert!(anc.evidence.iter().any(|e| e.starts_with("LAME in ")));
-    for opts in [
-        Options::default(),
-        Options {
-            no_degrade: true,
-            ..Default::default()
-        },
-    ] {
-        let out = clean(&tagged, &opts, &p).unwrap();
-        assert_eq!(out.report.exit_code, EXIT_OK, "{:?}", out.report.actions);
-        let bytes = out.output.unwrap();
-        assert_eq!(count(&bytes), 0, "an encoder name survived in the frames");
-        assert_eq!(
-            state(&bytes, "mp3_ancillary"),
-            Some(ScanState::ConfirmedAbsent)
-        );
-        assert!(out
-            .report
-            .stripped_and_proven_gone
-            .iter()
-            .any(|l| l == "MPEG ancillary data"));
-    }
-    // --keep MC15 leaves the bytes, and so does --keep by class.
-    for name in ["MC15", "mp3_ancillary", "scrub-ancillary-data"] {
-        let mut opts = keep(&[name]);
-        opts.no_degrade = true;
-        let out = clean(&tagged, &opts, &p).unwrap();
-        let bytes = out.output.unwrap();
-        assert!(count(&bytes) > 1, "--keep {name} zeroed the bytes");
-        assert_eq!(
-            state(&bytes, "mp3_ancillary"),
-            Some(ScanState::ConfirmedPresent)
-        );
-        assert!(out.report.kept.iter().any(|k| k.item.starts_with("MC15")));
-    }
-    // The scrub touches only unreferenced bytes: every frame header and
-    // side information byte is unchanged, and the file length is the same.
-    let scrubbed = container::mp3::scrub_ancillary(&tagged).unwrap();
-    assert_eq!(scrubbed.len(), tagged.len());
-    let l = detect::mp3::layout(&tagged);
-    let mut p = l.frames_start;
-    while p < l.frames_end {
-        let h = detect::mp3::parse_header(&tagged[p..]).unwrap();
-        let head = 4 + if h.crc { 2 } else { 0 } + h.side_info;
-        assert_eq!(&scrubbed[p..p + head], &tagged[p..p + head]);
-        p += h.len;
-    }
-    for (a, b) in scrubbed.iter().zip(tagged.iter()) {
-        assert!(
-            a == b || *a == 0,
-            "a byte was changed to something other than zero"
-        );
-    }
-}
-
-#[cfg(feature = "audio")]
-#[test]
-fn zeroed_frames_decode_to_the_same_samples() {
-    for name in ["tagged.mp3", "vbr.mp3", "plain.mp3", "reservoir.mp3"] {
-        let original = fixture(name);
-        let scrubbed = container::mp3::scrub_ancillary(&original).unwrap();
-        assert_ne!(original, scrubbed, "{name}: nothing was zeroed");
-        let (a, _) = unmark::codec::mp3::decode_with_bitrate(&original).unwrap();
-        let (b, _) = unmark::codec::mp3::decode_with_bitrate(&scrubbed).unwrap();
-        assert_eq!(a.rate, b.rate);
-        assert_eq!(a.channels.len(), b.channels.len());
-        for (ca, cb) in a.channels.iter().zip(b.channels.iter()) {
-            assert_eq!(ca.len(), cb.len(), "{name}: sample count changed");
-            assert!(
-                ca.iter()
-                    .zip(cb.iter())
-                    .all(|(x, y)| x.to_bits() == y.to_bits()),
-                "{name}: the samples differ after the scrub"
-            );
-        }
-    }
-}
-
-// --- M1 and M2: aligned LSD on broadband content, and a kept MC15 ----------
+// --- M1 and M2: aligned LSD on broadband content, and a kept frame -----------
 
 #[cfg(feature = "audio")]
 #[test]
@@ -496,17 +524,9 @@ fn a_lame_encoded_broadband_input_passes_the_default_run_with_the_lsd_aligned() 
     let sanity = out.report.sanity.as_ref().unwrap();
     let lsd = sanity.lsd_db.unwrap();
     assert!(sanity.passed && lsd <= p.sanity.lsd_ceiling_db, "LSD {lsd}");
-    // Broadband content reads above a tone and well under the ceiling.
     assert!(lsd > 1.0 && lsd < 4.0, "LSD {lsd}");
-    let au06 = out
-        .report
-        .actions
-        .iter()
-        .find(|a| a.transform == "AU06")
-        .unwrap();
-    assert!(au06.result.contains("at lag "), "{}", au06.result);
-    // The lag the alignment finds is the encoder and decoder delay, the
-    // same for every fixture, and an unaligned measure reads several dB.
+    // The lag a search finds is the delay the frame carries plus the
+    // decoder's own, and an unaligned measure reads several dB.
     let (audio, kbps) = unmark::codec::mp3::decode_with_bitrate(&wide).unwrap();
     let processed = unmark::transform::audio::apply(
         &audio,
@@ -514,10 +534,10 @@ fn a_lame_encoded_broadband_input_passes_the_default_run_with_the_lsd_aligned() 
             highpass_hz: Some(1500.0),
         },
     );
-    let (encoded, _) = unmark::codec::mp3::encode(&processed, kbps).unwrap();
-    let (back, _) = unmark::codec::mp3::decode_with_bitrate(&encoded).unwrap();
+    let enc = unmark::codec::mp3::encode(&processed, kbps).unwrap();
+    let (back, _) = unmark::codec::mp3::decode_raw_with_bitrate(&enc.bytes).unwrap();
     let lag = unmark::budget::align_lag(&processed.channels[0], &back.channels[0], 2304, 16384);
-    assert!(lag > 0 && lag < 2304, "lag {lag}");
+    assert_eq!(lag, enc.delay as usize + unmark::codec::mp3::DECODER_DELAY);
     let n = processed.channels[0]
         .len()
         .min(back.channels[0].len() - lag);
@@ -535,27 +555,23 @@ fn a_lame_encoded_broadband_input_passes_the_default_run_with_the_lsd_aligned() 
 
 #[cfg(feature = "audio")]
 #[test]
-fn a_kept_ancillary_range_stands_the_audio_path_down() {
+fn a_kept_frame_class_stands_the_audio_path_down() {
     let tagged = fixture("tagged.mp3");
     let count = |b: &[u8]| b.windows(4).filter(|w| w == b"LAME").count();
     let p = pkg();
-    for name in ["MC15", "mp3_ancillary"] {
+    for (name, class) in [
+        ("MC15", "mp3_ancillary"),
+        ("mp3_ancillary", "mp3_ancillary"),
+        ("mp3_info", "mp3_info"),
+    ] {
         let out = clean(&tagged, &keep(&[name]), &p).unwrap();
         assert_eq!(out.report.exit_code, EXIT_OK, "{:?}", out.report.actions);
         let bytes = out.output.expect("the strips still write");
         assert!(
-            count(&bytes) > 1,
-            "--keep {name}: the ancillary bytes were discarded"
+            count(&bytes) >= 1,
+            "--keep {name}: the kept bytes were discarded"
         );
-        assert_eq!(
-            state(&bytes, "mp3_ancillary"),
-            Some(ScanState::ConfirmedPresent)
-        );
-        assert!(out
-            .report
-            .kept
-            .iter()
-            .any(|k| k.item.starts_with("MC15") && k.reason.contains("kept by flag")));
+        assert_eq!(state(&bytes, class), Some(ScanState::ConfirmedPresent));
         for id in ["AU06", "AU03"] {
             let a = out
                 .report
@@ -567,12 +583,5 @@ fn a_kept_ancillary_range_stands_the_audio_path_down() {
             assert!(a.result.contains("stands down"), "{}", a.result);
         }
         assert!(out.report.sanity.is_none());
-        for class in ["id3", "ape", "xing"] {
-            assert_eq!(
-                state(&bytes, class),
-                Some(ScanState::ConfirmedAbsent),
-                "{class}"
-            );
-        }
     }
 }

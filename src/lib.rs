@@ -37,7 +37,7 @@ use policy::PolicyPackage;
 use report::{Action, Capture, Finding, Kept, Report, ScanRow, Survivor};
 use scan::{Detection, Detections, Honesty, ScanState};
 
-pub const SCHEMA_VERSION: &str = "2.2.0";
+pub const SCHEMA_VERSION: &str = "2.3.0";
 
 /// The smallest image edge the pixel path accepts. The SSIM window is eight
 /// pixels and the resize must leave a scorable grid, so an image narrower or
@@ -431,6 +431,10 @@ fn action_for(pkg: &PolicyPackage, id: &str, outcome: &str, result: &str) -> Act
         outcome: outcome.to_string(),
         result: result.to_string(),
         citation: t.and_then(|t| t.citation.clone()),
+        removed: Vec::new(),
+        kept: Vec::new(),
+        delay: None,
+        padding: None,
     }
 }
 
@@ -617,27 +621,6 @@ pub fn clean(
     };
     let mut out_bytes = applied.bytes;
     let mut actions: Vec<Action> = Vec::new();
-    let mut run = run;
-    // An information frame the next audio frame draws reservoir bits from
-    // stays, and the strip that targets it is reported kept with that value.
-    let mut info_kept_for_reservoir = false;
-    if format == Format::Mp3 && run.iter().any(|t| t == "MC14") {
-        if let Some(info) = detect::mp3::layout(&out_bytes).info {
-            if !info.droppable() {
-                info_kept_for_reservoir = true;
-                r.kept.push(Kept {
-                    item: "MC14 strip-info-frame".to_string(),
-                    reason: format!(
-                        "kept: next frame main_data_begin {}",
-                        info.next_main_data_begin
-                            .map(|v| v.to_string())
-                            .unwrap_or_else(|| "unread".to_string())
-                    ),
-                });
-                run.retain(|t| t != "MC14");
-            }
-        }
-    }
     #[cfg(not(feature = "audio"))]
     if format == Format::Mp3 && run.iter().any(|t| t == "AU06") {
         actions.push(action_for(
@@ -647,7 +630,6 @@ pub fn clean(
             "mp3 decode is not in this build",
         ));
     }
-    let _ = &info_kept_for_reservoir;
     let mut dwtdct_before: Option<bool> = None;
     let mut dwtdct_after: Option<bool> = None;
 
@@ -873,9 +855,10 @@ pub fn clean(
     // distance of the decoded re-encode against the highpassed samples.
     #[cfg(feature = "audio")]
     let mp3_ancillary_kept = format == Format::Mp3
-        && r.kept
-            .iter()
-            .any(|k| k.item.starts_with("MC15") && k.reason.contains("kept by flag"));
+        && r.kept.iter().any(|k| {
+            (k.item.starts_with("MC15") || k.item.starts_with("MC14"))
+                && k.reason.contains("kept by flag")
+        });
     // A kept ancillary byte range cannot ride through a re-encode, so the
     // audio path stands down and says why, as the pixel path does for a
     // kept C2PA chunk on WebP.
@@ -886,7 +869,7 @@ pub fn clean(
                 pkg,
                 id,
                 "not applied",
-                "the kept ancillary bytes cannot be carried through the re-encode, so the audio path stands down",
+                "the kept frame bytes cannot be carried through the re-encode, so the audio path stands down",
             ));
         }
     }
@@ -902,32 +885,18 @@ pub fn clean(
         let p = transform::audio::AudioParams::from_policy(pkg, &run)
             .map_err(|e| UnmarkError::Inspection(format!("audio plan: {e}")))?;
         let processed = transform::audio::apply(&audio, &p);
-        let (mut written, used_kbps) = codec::mp3::encode(&processed, input_kbps)
+        let enc = codec::mp3::encode(&processed, input_kbps)
             .map_err(|e| UnmarkError::Inspection(format!("the audio would not encode: {e}")))?;
-        // The re-encode replaces every frame, so an information frame kept
-        // for its reservoir bits is gone with the rest and the strip of the
-        // encoder's own frame goes ahead; only --keep keeps one.
-        if info_kept_for_reservoir {
-            r.kept.retain(|k| !k.item.starts_with("MC14"));
-            run.push("MC14".to_string());
-        }
-        if run.iter().any(|t| t == "MC14") {
-            let spec = container::DropSpec {
-                xing: true,
-                ..Default::default()
-            };
-            written = container::mp3::rewrite(&written, &spec).map_err(|e| {
-                UnmarkError::Inspection(format!("the re-encode would not rewrite: {e}"))
-            })?;
-        }
+        let mut written = enc.bytes;
+        let used_kbps = enc.bitrate_kbps;
         let (back, _) = codec::mp3::decode_with_bitrate(&written).map_err(|e| {
             UnmarkError::Inspection(format!("the written audio would not decode: {e}"))
         })?;
-        // An encoder adds its delay and tail padding, so the length may grow
-        // by a few frames and never shrink.
+        // The decode applies the delay and padding the frame carries, so
+        // it comes back at the input's length, within one frame, aligned.
+        let spf = 1152usize;
         if back.channels.len() != audio.channels.len()
-            || back.frames() < audio.frames()
-            || back.frames() > audio.frames() + 4 * 1152
+            || back.frames().abs_diff(audio.frames()) > spf
         {
             return Err(UnmarkError::Inspection(format!(
                 "the written audio changed from {} to {} frames",
@@ -935,16 +904,13 @@ pub fn clean(
                 back.frames()
             )));
         }
-        // The decoded re-encode carries the encoder and decoder delay at
-        // its head and padding at its tail, so the two signals are aligned
-        // by the measured lag and trimmed to the common length first.
-        let lag = budget::align_lag(&processed.channels[0], &back.channels[0], 2304, 16384);
-        let n = processed.channels[0]
-            .len()
-            .min(back.channels[0].len().saturating_sub(lag));
+        // The decoded re-encode is aligned by the delay the frame carries
+        // plus the decoder's own, and trimmed to the common length, before
+        // the spectral distance.
+        let n = processed.channels[0].len().min(back.channels[0].len());
         let lsd = budget::lsd(
             &processed.channels[0][..n],
-            &back.channels[0][lag..lag + n],
+            &back.channels[0][..n],
             &budget::LsdParams::PINNED,
         );
         let Some(lsd_db) = lsd else {
@@ -974,14 +940,23 @@ pub fn clean(
             pkg,
             "AU06",
             "applied",
-            &format!("applied at 1500 Hz, LSD {lsd_db:.2} dB at lag {lag}"),
+            &format!("applied at 1500 Hz, LSD {lsd_db:.2} dB"),
         ));
-        actions.push(action_for(
+        let mut re_encode = action_for(
             pkg,
             "AU03",
             "applied",
             &format!("same-container path, {used_kbps} kbps CBR, second lossy stage"),
-        ));
+        );
+        re_encode.delay = Some(enc.delay as u32);
+        re_encode.padding = Some(enc.padding as u32);
+        re_encode.kept = vec![
+            "frame_count".to_string(),
+            "byte_count".to_string(),
+            "delay".to_string(),
+            "padding".to_string(),
+        ];
+        actions.push(re_encode);
         // The kept tags ride around the fresh frames.
         written = container::carry_ancillary(&out_bytes, &written, format);
         if !passed {
@@ -1105,7 +1080,24 @@ fn metadata_actions(
                 None => "not written".to_string(),
             }
         };
-        out.push(action_for(pkg, id, "applied", &result));
+        let mut a = action_for(pkg, id, "applied", &result);
+        if id == "MC14" && !present.is_empty() {
+            a.outcome = "rewritten".to_string();
+            a.removed = vec!["encoder_identity".to_string()];
+            a.kept = vec![
+                "frame_count".to_string(),
+                "byte_count".to_string(),
+                "delay".to_string(),
+                "padding".to_string(),
+            ];
+            if before
+                .get("mp3_info")
+                .is_some_and(|d| d.evidence.iter().any(|e| e == "toc"))
+            {
+                a.kept.push("toc".to_string());
+            }
+        }
+        out.push(a);
     }
     out
 }

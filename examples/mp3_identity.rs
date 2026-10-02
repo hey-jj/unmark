@@ -39,10 +39,10 @@ pub fn stages(bytes: &[u8]) -> Option<(String, String, String, u32)> {
         },
     );
     let highpassed = digest_samples(&processed.channels);
-    let (encoded, used) = mp3::encode(&processed, kbps).ok()?;
+    let enc = mp3::encode(&processed, kbps).ok()?;
     let mut h = Sha256::new();
-    h.update(&encoded);
-    Some((decoded, highpassed, hex(&h.finalize()), used))
+    h.update(&enc.bytes);
+    Some((decoded, highpassed, hex(&h.finalize()), enc.bitrate_kbps))
 }
 
 fn main() {

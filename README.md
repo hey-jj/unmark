@@ -71,7 +71,7 @@ named mark.
 | JPEG | C2PA, XMP, EXIF, and comment and application segment strips, then a 32-pixel border crop, a resize at ratio 0.95, and a re-encode at quality 92 with 4:4:4 chroma |
 | PNG, WebP | C2PA, XMP, EXIF, text-chunk, and unlisted-chunk strips, then the same crop and resize and a lossless write |
 | WAV, FLAC | Tag, RIFF ancillary, production metadata, Vorbis comment, and unlisted-chunk strips, then a 1500 Hz highpass |
-| MP3 | ID3v2 with its padding, ID3v1, APE, and information-frame strips, the ancillary bytes of every frame zeroed, then a 1500 Hz highpass and a re-encode at the input's bitrate, or its average for a variable-rate input, with the encoder's own information frame dropped. Under `--no-degrade` the audio frames are copied byte for byte, and the information frame stays, reported kept, when the next frame's `main_data_begin` is not zero |
+| MP3 | ID3v2 with its padding, ID3v1, and APE strips, the information frame rewritten in place to its frame count, byte count, seek table, delay, and padding with the encoder identity zeroed, the ancillary bytes of every frame zeroed, then a 1500 Hz highpass and a re-encode at the input's bitrate, or its average for a variable-rate input, whose information frame carries the measured delay and padding. Under `--no-degrade` the referenced frame bytes are copied as they are |
 | MP4, M4A | Tag strips |
 | Text, SVG, HTML | Invisible Unicode and generator-header strips |
 

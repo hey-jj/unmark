@@ -48,7 +48,7 @@ fn applicable_confirmable(format: Format) -> &'static [(&'static str, &'static s
         Format::Mp3 => &[
             ("id3", "ID3 tag"),
             ("ape", "APE tag"),
-            ("xing", "Xing/Info frame"),
+            ("mp3_info", "information frame identity"),
             ("mp3_ancillary", "MPEG ancillary data"),
         ],
         Format::Flac => &[("vorbis", "Vorbis comment")],
