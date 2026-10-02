@@ -335,3 +335,54 @@ pub fn averaged_spectrum_distance(reference: &[f64], output: &[f64], p: &LsdPara
     let sq: f64 = a.iter().zip(&b).map(|(x, y)| (x - y) * (x - y)).sum();
     Some((sq / a.len() as f64).sqrt())
 }
+
+/// The sample lag at which `output` best matches `reference`, searched over
+/// `0..=max_lag` by normalised cross-correlation on the first `window`
+/// samples. An MP3 encoder and decoder together add a fixed delay at the
+/// head of the decoded stream (1105 samples for the layer III pair this
+/// crate carries), and a spectral distance over misaligned frames reads
+/// broadband content as if it were two different signals. The lag is an
+/// integer argmax, so it is the same on every platform.
+pub fn align_lag(reference: &[f64], output: &[f64], max_lag: usize, window: usize) -> usize {
+    let n = window.min(reference.len());
+    if n == 0 {
+        return 0;
+    }
+    let ref_norm: f64 = reference[..n].iter().map(|v| v * v).sum::<f64>().sqrt();
+    let mut best = (0usize, f64::NEG_INFINITY);
+    for lag in 0..=max_lag {
+        if lag + n > output.len() {
+            break;
+        }
+        let out = &output[lag..lag + n];
+        let dot: f64 = reference[..n].iter().zip(out).map(|(a, b)| a * b).sum();
+        let out_norm: f64 = out.iter().map(|v| v * v).sum::<f64>().sqrt();
+        let score = if ref_norm > 0.0 && out_norm > 0.0 {
+            dot / (ref_norm * out_norm)
+        } else {
+            0.0
+        };
+        if score > best.1 {
+            best = (lag, score);
+        }
+    }
+    best.0
+}
+
+#[cfg(test)]
+mod align_tests {
+    use super::*;
+
+    #[test]
+    fn the_lag_search_finds_a_known_shift() {
+        let reference: Vec<f64> = (0..20000)
+            .map(|i| crate::dsp::sin(i as f64 * 0.37) + crate::dsp::sin(i as f64 * 0.011))
+            .collect();
+        let mut output = vec![0.0; 1105];
+        output.extend_from_slice(&reference);
+        output.extend_from_slice(&[0.0; 500]);
+        assert_eq!(align_lag(&reference, &output, 2304, 16384), 1105);
+        assert_eq!(align_lag(&reference, &reference, 2304, 16384), 0);
+        assert_eq!(align_lag(&[], &output, 10, 16), 0);
+    }
+}

@@ -77,8 +77,30 @@ def main_data_begin(frame, h):
     return word >> 7 if h[3] else word >> 8
 
 
+def broadband(path, seconds=2.0, rate=44100, seed=20261002):
+    """Noise plus a chirp: the content a stationary tone cannot stand in for
+    when a fidelity measure is checked for alignment."""
+    import random
+    rng = random.Random(seed)
+    frames = int(seconds * rate)
+    out = []
+    for i in range(frames):
+        t = i / rate
+        chirp = math.sin(2 * math.pi * (200 + 3000 * t / seconds) * t)
+        noise = rng.gauss(0, 0.25)
+        v = int(10000 * (0.6 * chirp + noise))
+        out.append(struct.pack("<h", max(-32768, min(32767, v))))
+    with wave.open(path, "wb") as w:
+        w.setparams((1, 2, rate, frames, "NONE", "not compressed"))
+        w.writeframes(b"".join(out))
+
+
 def main(out_dir):
     os.makedirs(out_dir, exist_ok=True)
+    wide = os.path.join(out_dir, "broadband.wav")
+    broadband(wide)
+    subprocess.run(["lame", "--quiet", "-m", "m", "-b", "128", "-t", wide, os.path.join(out_dir, "broadband.mp3")], check=True)
+    os.remove(wide)
     wav = os.path.join(out_dir, "tone.wav")
     tone(wav)
     base = ["lame", "--quiet", "-m", "m", "-b", "128"]
@@ -112,7 +134,7 @@ def main(out_dir):
     with open(os.path.join(out_dir, "reservoir.mp3"), "wb") as f:
         f.write(info + data[pick:])
     os.remove(wav)
-    for name in ["tagged.mp3", "vbr.mp3", "plain.mp3", "reservoir.mp3"]:
+    for name in ["tagged.mp3", "vbr.mp3", "plain.mp3", "reservoir.mp3", "broadband.mp3"]:
         print(name, os.path.getsize(os.path.join(out_dir, name)), "bytes")
 
 

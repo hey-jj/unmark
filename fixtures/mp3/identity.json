@@ -1,4 +1,5 @@
 {
+  "broadband.mp3": {"decoded": "837dda62bafb3768b46a7a159321a20fa737826c4693808fb2edea21316b8c93", "highpassed": "cb8bd2d5ef8d7cfb0e451d397e5ccf82d626f1b7e1332d89a2dea095c4a7fe07", "encoded": "765fe5490a6a9ec3c33b13a15a8ca11aa3bfa6717fc99acd3f956428999f8989", "bitrate_kbps": 128},
   "plain.mp3": {"decoded": "44523b8a6cacadcf3dd913cf2f55ec270ade58f99e3e0f0527e0f79e521cf651", "highpassed": "29c465f88b05c6a812e9a97de2117f195c554dd3055d0d67138ae28a73b11f06", "encoded": "3cce995d68e3084ee45298eb66146bdf806d48e7b33ddf945748a2ee35f93b6f", "bitrate_kbps": 128},
   "reservoir.mp3": {"decoded": "592b77dc18a48b66bb6d6263ced9a618f6cd38707f398c63343d36c037c42045", "highpassed": "0828a5faa0546ada7c438d4084ba53286fcd4bf5d08d3c6864ba9f16519f001a", "encoded": "1b714bbaf39b17cfa83cf36571ec4b03fa5b444002b36cd6199b6fcc127cb6e1", "bitrate_kbps": 128},
   "tagged.mp3": {"decoded": "0cc4056285c2efec9dbd430d4cb48368f1e9c50f8931b9831d07588e28ec0fd3", "highpassed": "b36e03060e6b286ccb1933fcbe6378415a50aeec443aa2aa54c2d4c144bba9f9", "encoded": "a0d3e7162da32d62e969b258774124d693f485462830cd56dd56cdbc65e78283", "bitrate_kbps": 128},

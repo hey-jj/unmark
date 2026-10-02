@@ -483,3 +483,96 @@ fn zeroed_frames_decode_to_the_same_samples() {
         }
     }
 }
+
+// --- M1 and M2: aligned LSD on broadband content, and a kept MC15 ----------
+
+#[cfg(feature = "audio")]
+#[test]
+fn a_lame_encoded_broadband_input_passes_the_default_run_with_the_lsd_aligned() {
+    let wide = fixture("broadband.mp3");
+    let p = pkg();
+    let out = clean(&wide, &Options::default(), &p).unwrap();
+    assert_eq!(out.report.exit_code, EXIT_OK, "{:?}", out.report.actions);
+    let sanity = out.report.sanity.as_ref().unwrap();
+    let lsd = sanity.lsd_db.unwrap();
+    assert!(sanity.passed && lsd <= p.sanity.lsd_ceiling_db, "LSD {lsd}");
+    // Broadband content reads above a tone and well under the ceiling.
+    assert!(lsd > 1.0 && lsd < 4.0, "LSD {lsd}");
+    let au06 = out
+        .report
+        .actions
+        .iter()
+        .find(|a| a.transform == "AU06")
+        .unwrap();
+    assert!(au06.result.contains("at lag "), "{}", au06.result);
+    // The lag the alignment finds is the encoder and decoder delay, the
+    // same for every fixture, and an unaligned measure reads several dB.
+    let (audio, kbps) = unmark::codec::mp3::decode_with_bitrate(&wide).unwrap();
+    let processed = unmark::transform::audio::apply(
+        &audio,
+        &unmark::transform::audio::AudioParams {
+            highpass_hz: Some(1500.0),
+        },
+    );
+    let (encoded, _) = unmark::codec::mp3::encode(&processed, kbps).unwrap();
+    let (back, _) = unmark::codec::mp3::decode_with_bitrate(&encoded).unwrap();
+    let lag = unmark::budget::align_lag(&processed.channels[0], &back.channels[0], 2304, 16384);
+    assert!(lag > 0 && lag < 2304, "lag {lag}");
+    let n = processed.channels[0]
+        .len()
+        .min(back.channels[0].len() - lag);
+    let unaligned = unmark::budget::lsd(
+        &processed.channels[0][..n],
+        &back.channels[0][..n],
+        &unmark::budget::LsdParams::PINNED,
+    )
+    .unwrap();
+    assert!(
+        unaligned > lsd + 2.0,
+        "unaligned {unaligned} vs aligned {lsd}"
+    );
+}
+
+#[cfg(feature = "audio")]
+#[test]
+fn a_kept_ancillary_range_stands_the_audio_path_down() {
+    let tagged = fixture("tagged.mp3");
+    let count = |b: &[u8]| b.windows(4).filter(|w| w == b"LAME").count();
+    let p = pkg();
+    for name in ["MC15", "mp3_ancillary"] {
+        let out = clean(&tagged, &keep(&[name]), &p).unwrap();
+        assert_eq!(out.report.exit_code, EXIT_OK, "{:?}", out.report.actions);
+        let bytes = out.output.expect("the strips still write");
+        assert!(
+            count(&bytes) > 1,
+            "--keep {name}: the ancillary bytes were discarded"
+        );
+        assert_eq!(
+            state(&bytes, "mp3_ancillary"),
+            Some(ScanState::ConfirmedPresent)
+        );
+        assert!(out
+            .report
+            .kept
+            .iter()
+            .any(|k| k.item.starts_with("MC15") && k.reason.contains("kept by flag")));
+        for id in ["AU06", "AU03"] {
+            let a = out
+                .report
+                .actions
+                .iter()
+                .find(|a| a.transform == id)
+                .unwrap();
+            assert_eq!(a.outcome, "not applied", "{id}");
+            assert!(a.result.contains("stands down"), "{}", a.result);
+        }
+        assert!(out.report.sanity.is_none());
+        for class in ["id3", "ape", "xing"] {
+            assert_eq!(
+                state(&bytes, class),
+                Some(ScanState::ConfirmedAbsent),
+                "{class}"
+            );
+        }
+    }
+}

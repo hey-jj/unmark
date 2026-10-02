@@ -872,7 +872,26 @@ pub fn clean(
     // drop the encoder's own information frame, measure the log-spectral
     // distance of the decoded re-encode against the highpassed samples.
     #[cfg(feature = "audio")]
-    if format == Format::Mp3 && run.iter().any(|t| t == "AU06") {
+    let mp3_ancillary_kept = format == Format::Mp3
+        && r.kept
+            .iter()
+            .any(|k| k.item.starts_with("MC15") && k.reason.contains("kept by flag"));
+    // A kept ancillary byte range cannot ride through a re-encode, so the
+    // audio path stands down and says why, as the pixel path does for a
+    // kept C2PA chunk on WebP.
+    #[cfg(feature = "audio")]
+    if mp3_ancillary_kept && run.iter().any(|t| t == "AU06") {
+        for id in ["AU06", "AU03"] {
+            actions.push(action_for(
+                pkg,
+                id,
+                "not applied",
+                "the kept ancillary bytes cannot be carried through the re-encode, so the audio path stands down",
+            ));
+        }
+    }
+    #[cfg(feature = "audio")]
+    if format == Format::Mp3 && !mp3_ancillary_kept && run.iter().any(|t| t == "AU06") {
         let (audio, input_kbps) = codec::mp3::decode_with_bitrate(&out_bytes)
             .map_err(|e| UnmarkError::Inspection(format!("the audio would not decode: {e}")))?;
         if audio.frames() == 0 {
@@ -916,9 +935,16 @@ pub fn clean(
                 back.frames()
             )));
         }
+        // The decoded re-encode carries the encoder and decoder delay at
+        // its head and padding at its tail, so the two signals are aligned
+        // by the measured lag and trimmed to the common length first.
+        let lag = budget::align_lag(&processed.channels[0], &back.channels[0], 2304, 16384);
+        let n = processed.channels[0]
+            .len()
+            .min(back.channels[0].len().saturating_sub(lag));
         let lsd = budget::lsd(
-            &processed.channels[0],
-            &back.channels[0],
+            &processed.channels[0][..n],
+            &back.channels[0][lag..lag + n],
             &budget::LsdParams::PINNED,
         );
         let Some(lsd_db) = lsd else {
@@ -948,7 +974,7 @@ pub fn clean(
             pkg,
             "AU06",
             "applied",
-            &format!("applied at 1500 Hz, LSD {lsd_db:.2} dB"),
+            &format!("applied at 1500 Hz, LSD {lsd_db:.2} dB at lag {lag}"),
         ));
         actions.push(action_for(
             pkg,
