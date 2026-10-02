@@ -84,6 +84,12 @@ label = "Xing/Info frame"
 guard = "The information frame an encoder writes first: a Xing or Info tag with the frame count, byte count, seek table, and a LAME-style encoder string, or a VBRI tag. The encoder string is tool identity. The frame is dropped only when the next audio frame's main_data_begin is zero, since a nonzero value means that frame draws bits from inside it."
 
 [[mark_class]]
+id = "mp3_ancillary"
+honesty = "confirmable"
+label = "MPEG ancillary data"
+guard = "The bytes inside the main-data regions of MPEG audio frames that no frame's main data covers. An encoder fills them with its name. They are located from the side information, part2_3_length over each granule and channel against main_data_begin, so the bit reservoir is honoured and a decoder reads the same samples after they are zeroed."
+
+[[mark_class]]
 id = "vorbis"
 honesty = "confirmable"
 label = "Vorbis comment"
@@ -241,6 +247,15 @@ kind = "metadata"
 applies = ["mp3"]
 target = "The Xing, Info, or VBRI information frame and its encoder string"
 guard = "Remove the information frame when the next audio frame's main_data_begin is zero. When it is not, the frame holds reservoir bits that frame decodes, so it stays and the report shows it kept with that value. Use --keep MC14 or --keep xing to keep it."
+
+[[transform]]
+id = "MC15"
+name = "scrub-ancillary-data"
+order = 56
+kind = "metadata"
+applies = ["mp3"]
+target = "The ancillary bytes of every audio frame, encoder name included"
+guard = "Zero every main-data byte no frame references, the reservoir honoured, and copy the rest byte for byte. A frame whose main data cannot be placed from its side information refuses the run. Use --keep MC15 or --keep mp3_ancillary to keep the bytes."
 
 [[transform]]
 id = "MC09"

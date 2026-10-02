@@ -19,6 +19,11 @@ MP3 joins the supported containers.
   report shows it kept with that value.
 - Mark classes `ape` and `xing`, transforms `MC13` (strip-ape-tag) and
   `MC14` (strip-info-frame), and `--keep` by class or id for each.
+- `MC15` (scrub-ancillary-data) and the class `mp3_ancillary`: the bytes
+  inside each frame's main-data region that no frame's main data covers,
+  located from the side information with the bit reservoir honoured, are
+  zeroed. An encoder writes its name there. The frames decode to the same
+  samples, which a test proves bit for bit.
 - The default run on MP3 decodes, applies the 1500 Hz highpass, and
   re-encodes at the input's bitrate, or its average for a variable-rate
   input, snapped to the layer III table. The encoder's own information

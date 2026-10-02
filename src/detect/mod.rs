@@ -49,6 +49,7 @@ fn applicable_confirmable(format: Format) -> &'static [(&'static str, &'static s
             ("id3", "ID3 tag"),
             ("ape", "APE tag"),
             ("xing", "Xing/Info frame"),
+            ("mp3_ancillary", "MPEG ancillary data"),
         ],
         Format::Flac => &[("vorbis", "Vorbis comment")],
         Format::Svg | Format::Html | Format::Text => &[("invisibles", "invisible Unicode")],

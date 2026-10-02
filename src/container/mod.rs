@@ -39,6 +39,8 @@ pub struct DropSpec {
     /// MC14: drop the Xing, Info, or VBRI information frame when the next
     /// frame draws no bits from the reservoir.
     pub xing: bool,
+    /// MC15: zero the ancillary bytes of MPEG audio frames.
+    pub ancillary: bool,
 }
 
 /// The reason a rewrite could not be completed for a container in this build.

@@ -3,7 +3,7 @@
 Regenerate with `unmark policy snapshot` after any policy change. Edits here are overwritten.
 
 - policy version: 0.3.0
-- policy digest: sha256:94ae3dafdb398460409722e2007db4dac3ac87b22e236fc4593b59731da1b749
+- policy digest: sha256:1cfc03e47002994542ceab83dd7fe55f885c4b1a7551fbf1ee77b7aba7dcf9b5
 
 ## What each mark kind means
 
@@ -60,6 +60,10 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 ### xing (confirmable)
 
 - Xing/Info frame: The information frame an encoder writes first: a Xing or Info tag with the frame count, byte count, seek table, and a LAME-style encoder string, or a VBRI tag. The encoder string is tool identity. The frame is dropped only when the next audio frame's main_data_begin is zero, since a nonzero value means that frame draws bits from inside it.
+
+### mp3_ancillary (confirmable)
+
+- MPEG ancillary data: The bytes inside the main-data regions of MPEG audio frames that no frame's main data covers. An encoder fills them with its name. They are located from the side information, part2_3_length over each granule and channel against main_data_begin, so the bit reservoir is honoured and a decoder reads the same samples after they are zeroed.
 
 ### vorbis (confirmable)
 
@@ -160,6 +164,11 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 
 - target: The Xing, Info, or VBRI information frame and its encoder string
 - Remove the information frame when the next audio frame's main_data_begin is zero. When it is not, the frame holds reservoir bits that frame decodes, so it stays and the report shows it kept with that value. Use --keep MC14 or --keep xing to keep it.
+
+### MC15 scrub-ancillary-data (metadata, on mp3)
+
+- target: The ancillary bytes of every audio frame, encoder name included
+- Zero every main-data byte no frame references, the reservoir honoured, and copy the rest byte for byte. A frame whose main data cannot be placed from its side information refuses the run. Use --keep MC15 or --keep mp3_ancillary to keep the bytes.
 
 ### MC09 strip-riff-ancillary (metadata, on riff-wav webp)
 

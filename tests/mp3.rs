@@ -194,12 +194,12 @@ fn the_information_frame_stays_when_the_next_frame_draws_from_the_reservoir() {
     )
     .unwrap();
     assert_eq!(out.report.exit_code, EXIT_OK, "{:?}", out.report.actions);
-    assert!(
-        out.report.no_op,
-        "nothing else to strip, so the run is a no-op"
-    );
     let bytes = out.output.unwrap();
-    assert_eq!(bytes, res);
+    // Only the ancillary scrub touched the file: same length, the
+    // information frame in place, no byte changed to anything but zero.
+    assert_eq!(bytes.len(), res.len());
+    assert!(bytes.iter().zip(res.iter()).all(|(a, b)| a == b || *a == 0));
+    assert_eq!(&bytes[..info.len], &res[..info.len]);
     assert_eq!(state(&bytes, "xing"), Some(ScanState::ConfirmedPresent));
     let kept = out
         .report
@@ -390,4 +390,96 @@ fn a_variable_rate_input_is_re_encoded_at_its_average_and_a_reservoir_frame_goes
     assert_eq!(out.report.exit_code, EXIT_OK, "{:?}", out.report.actions);
     let bytes = out.output.unwrap();
     assert_eq!(state(&bytes, "xing"), Some(ScanState::ConfirmedPresent));
+}
+
+// --- MC15: the ancillary bytes ----------------------------------------------
+
+#[test]
+fn the_ancillary_bytes_are_zeroed_by_default_and_kept_under_the_flag() {
+    let tagged = fixture("tagged.mp3");
+    let p = pkg();
+    let count = |b: &[u8]| b.windows(4).filter(|w| w == b"LAME").count();
+    assert!(
+        count(&tagged) > 1,
+        "the fixture carries the encoder name in its frames"
+    );
+    let before = detect::inspect(&tagged);
+    let anc = before.get("mp3_ancillary").expect("the class is scanned");
+    assert_eq!(anc.state, ScanState::ConfirmedPresent);
+    assert!(anc.evidence.iter().any(|e| e.starts_with("LAME in ")));
+    for opts in [
+        Options::default(),
+        Options {
+            no_degrade: true,
+            ..Default::default()
+        },
+    ] {
+        let out = clean(&tagged, &opts, &p).unwrap();
+        assert_eq!(out.report.exit_code, EXIT_OK, "{:?}", out.report.actions);
+        let bytes = out.output.unwrap();
+        assert_eq!(count(&bytes), 0, "an encoder name survived in the frames");
+        assert_eq!(
+            state(&bytes, "mp3_ancillary"),
+            Some(ScanState::ConfirmedAbsent)
+        );
+        assert!(out
+            .report
+            .stripped_and_proven_gone
+            .iter()
+            .any(|l| l == "MPEG ancillary data"));
+    }
+    // --keep MC15 leaves the bytes, and so does --keep by class.
+    for name in ["MC15", "mp3_ancillary", "scrub-ancillary-data"] {
+        let mut opts = keep(&[name]);
+        opts.no_degrade = true;
+        let out = clean(&tagged, &opts, &p).unwrap();
+        let bytes = out.output.unwrap();
+        assert!(count(&bytes) > 1, "--keep {name} zeroed the bytes");
+        assert_eq!(
+            state(&bytes, "mp3_ancillary"),
+            Some(ScanState::ConfirmedPresent)
+        );
+        assert!(out.report.kept.iter().any(|k| k.item.starts_with("MC15")));
+    }
+    // The scrub touches only unreferenced bytes: every frame header and
+    // side information byte is unchanged, and the file length is the same.
+    let scrubbed = container::mp3::scrub_ancillary(&tagged).unwrap();
+    assert_eq!(scrubbed.len(), tagged.len());
+    let l = detect::mp3::layout(&tagged);
+    let mut p = l.frames_start;
+    while p < l.frames_end {
+        let h = detect::mp3::parse_header(&tagged[p..]).unwrap();
+        let head = 4 + if h.crc { 2 } else { 0 } + h.side_info;
+        assert_eq!(&scrubbed[p..p + head], &tagged[p..p + head]);
+        p += h.len;
+    }
+    for (a, b) in scrubbed.iter().zip(tagged.iter()) {
+        assert!(
+            a == b || *a == 0,
+            "a byte was changed to something other than zero"
+        );
+    }
+}
+
+#[cfg(feature = "audio")]
+#[test]
+fn zeroed_frames_decode_to_the_same_samples() {
+    for name in ["tagged.mp3", "vbr.mp3", "plain.mp3", "reservoir.mp3"] {
+        let original = fixture(name);
+        let scrubbed = container::mp3::scrub_ancillary(&original).unwrap();
+        assert_ne!(original, scrubbed, "{name}: nothing was zeroed");
+        let (a, _) = unmark::codec::mp3::decode_with_bitrate(&original).unwrap();
+        let (b, _) = unmark::codec::mp3::decode_with_bitrate(&scrubbed).unwrap();
+        assert_eq!(a.rate, b.rate);
+        assert_eq!(a.channels.len(), b.channels.len());
+        for (ca, cb) in a.channels.iter().zip(b.channels.iter()) {
+            assert_eq!(ca.len(), cb.len(), "{name}: sample count changed");
+            assert!(
+                ca.iter()
+                    .zip(cb.iter())
+                    .all(|(x, y)| x.to_bits() == y.to_bits()),
+                "{name}: the samples differ after the scrub"
+            );
+        }
+    }
 }

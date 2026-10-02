@@ -320,6 +320,122 @@ fn info_frame(bytes: &[u8], p: usize, h: &FrameHeader, end: usize) -> Option<Inf
     })
 }
 
+/// Read `n` bits at bit offset `at` of `b`, most significant first.
+fn bits(b: &[u8], at: usize, n: usize) -> Option<u32> {
+    let mut v = 0u32;
+    for i in 0..n {
+        let bit = at + i;
+        let byte = *b.get(bit / 8)?;
+        v = (v << 1) | ((byte >> (7 - bit % 8)) & 1) as u32;
+    }
+    Some(v)
+}
+
+/// The number of main-data bits a frame's side information declares: the
+/// sum of part2_3_length over its granules and channels. The side
+/// information layout is fixed by the standard: main_data_begin, the
+/// private bits, scfsi in MPEG-1, then per granule and channel 59 bits in
+/// MPEG-1 and 63 in MPEG-2 and 2.5, each starting with the 12-bit
+/// part2_3_length.
+pub fn main_data_bits(frame: &[u8], h: &FrameHeader) -> Option<u32> {
+    let start = 4 + if h.crc { 2 } else { 0 };
+    let side = frame.get(start..start + h.side_info)?;
+    let (first, granules, per) = match (h.version, h.mono) {
+        (Version::Mpeg1, true) => (9 + 5 + 4, 2usize, 59usize),
+        (Version::Mpeg1, false) => (9 + 3 + 8, 2, 59),
+        (_, true) => (8 + 1, 1, 63),
+        (_, false) => (8 + 2, 1, 63),
+    };
+    let channels = if h.mono { 1 } else { 2 };
+    let mut total = 0u32;
+    for g in 0..granules {
+        for c in 0..channels {
+            let at = first + (g * channels + c) * per;
+            total += bits(side, at, 12)?;
+        }
+    }
+    Some(total)
+}
+
+/// The byte ranges of the file that hold ancillary data: bytes inside the
+/// main-data regions of the audio frames that no frame's main data covers.
+/// Main data for a frame starts main_data_begin bytes before the frame's
+/// own region, in the reservoir the earlier frames left, and runs for the
+/// declared bits rounded up to bytes; the standard bounds it to end inside
+/// the frame's own region. The information frame's region is left out,
+/// since its strip is its own transform. None when a frame's extent cannot
+/// be placed, which is the case the scrub refuses.
+pub fn ancillary_ranges(bytes: &[u8], l: &Layout) -> Option<Vec<(usize, usize)>> {
+    if !l.complete {
+        return None;
+    }
+    // The reservoir stream: every region in order, with its file offset.
+    let mut regions: Vec<(usize, usize)> = Vec::new(); // (file offset, len)
+    let mut headers = Vec::new();
+    let mut p = l.frames_start;
+    while p < l.frames_end {
+        let h = parse_header(&bytes[p..l.frames_end])?;
+        let header_len = 4 + if h.crc { 2 } else { 0 } + h.side_info;
+        if h.len < header_len {
+            return None;
+        }
+        regions.push((p + header_len, h.len - header_len));
+        headers.push((p, h));
+        p += h.len;
+    }
+    let total: usize = regions.iter().map(|r| r.1).sum();
+    let mut covered = vec![false; total];
+    let mut pos = 0usize;
+    let info_at = l.info.as_ref().map(|i| i.offset);
+    for (i, (frame_at, h)) in headers.iter().enumerate() {
+        let region_len = regions[i].1;
+        if Some(*frame_at) != info_at {
+            let frame = &bytes[*frame_at..*frame_at + h.len];
+            let mdb = main_data_begin(frame, h)? as usize;
+            let nbits = main_data_bits(frame, h)? as usize;
+            let nbytes = nbits.div_ceil(8);
+            let start = pos.checked_sub(mdb)?;
+            let end = start + nbytes;
+            if end > pos + region_len {
+                return None;
+            }
+            for c in covered.iter_mut().take(end).skip(start) {
+                *c = true;
+            }
+        }
+        pos += region_len;
+    }
+    // Uncovered bytes, mapped back to file offsets, outside the information
+    // frame's region.
+    let mut out = Vec::new();
+    let mut pos = 0usize;
+    for (i, (offset, len)) in regions.iter().enumerate() {
+        let is_info = Some(headers[i].0) == info_at;
+        if !is_info {
+            let mut run_start: Option<usize> = None;
+            for k in 0..*len {
+                let free = !covered[pos + k];
+                match (free, run_start) {
+                    (true, None) => run_start = Some(k),
+                    (false, Some(s)) => {
+                        out.push((offset + s, k - s));
+                        run_start = None;
+                    }
+                    _ => {}
+                }
+            }
+            if let Some(s) = run_start {
+                out.push((offset + s, len - s));
+            }
+        }
+        pos += len;
+    }
+    Some(out)
+}
+
+/// Encoder names seen in ancillary bytes.
+const ANCILLARY_NAMES: &[&[u8]] = &[b"LAME", b"Lavc", b"Lavf", b"GOGO", b"Xing"];
+
 pub fn scan(bytes: &[u8]) -> (Vec<Detection>, bool) {
     let l = layout(bytes);
     let mut out = Vec::new();
@@ -383,6 +499,50 @@ pub fn scan(bytes: &[u8]) -> (Vec<Detection>, bool) {
         out.push(xing);
     }
     let complete = l.complete;
+    match ancillary_ranges(bytes, &l) {
+        Some(ranges) => {
+            let nonzero: usize = ranges
+                .iter()
+                .map(|(at, len)| bytes[*at..*at + *len].iter().filter(|b| **b != 0).count())
+                .sum();
+            if nonzero > 0 {
+                let mut anc = Detection::present(
+                    "mp3_ancillary",
+                    "MPEG ancillary data",
+                    Honesty::Confirmable,
+                );
+                let total: usize = ranges.iter().map(|r| r.1).sum();
+                anc.locations.push(Location {
+                    container: "MPEG frame".to_string(),
+                    offset: ranges[0].0,
+                    length: total,
+                    detail: format!("{nonzero} nonzero bytes across {} runs", ranges.len()),
+                });
+                for name in ANCILLARY_NAMES {
+                    let hits = ranges
+                        .iter()
+                        .filter(|(at, len)| super::c2pa::contains(&bytes[*at..*at + *len], name))
+                        .count();
+                    if hits > 0 {
+                        anc.evidence.push(format!(
+                            "{} in {hits} frames",
+                            String::from_utf8_lossy(name)
+                        ));
+                    }
+                }
+                out.push(anc);
+            }
+        }
+        None if complete => {
+            out.push(Detection::with_state(
+                "mp3_ancillary",
+                "MPEG ancillary data",
+                Honesty::Confirmable,
+                ScanState::Malformed,
+            ));
+        }
+        None => {}
+    }
     if !complete {
         for d in out.iter_mut() {
             if d.class == "xing" {
@@ -430,6 +590,27 @@ mod tests {
         let mut frame = vec![0xFF, 0xF3, 0x80, 0xC0];
         frame.extend_from_slice(&[0x2B, 0x00]);
         assert_eq!(main_data_begin(&frame, &h2), Some(0x2B));
+    }
+
+    #[test]
+    fn main_data_bits_sums_part2_3_length_over_granules_and_channels() {
+        // MPEG-1 mono: side info 17 bytes; mdb 9 bits, private 5, scfsi 4,
+        // then granule 0 part2_3_length at bit 18 and granule 1 at bit 77.
+        let h = parse_header(&[0xFF, 0xFB, 0x92, 0xC0]).unwrap();
+        let mut side = vec![0u8; 17];
+        let set = |side: &mut Vec<u8>, at: usize, v: u32| {
+            for i in 0..12 {
+                let bit = at + i;
+                if (v >> (11 - i)) & 1 == 1 {
+                    side[bit / 8] |= 1 << (7 - bit % 8);
+                }
+            }
+        };
+        set(&mut side, 18, 1000);
+        set(&mut side, 77, 24);
+        let mut frame = vec![0xFF, 0xFB, 0x92, 0xC0];
+        frame.extend_from_slice(&side);
+        assert_eq!(main_data_bits(&frame, &h), Some(1024));
     }
 
     #[test]

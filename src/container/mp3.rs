@@ -4,9 +4,36 @@
 //! copies every audio frame byte for byte.
 
 use super::{DropSpec, RewriteError};
-use crate::detect::mp3::layout;
+use crate::detect::mp3::{ancillary_ranges, layout};
 
-pub fn rewrite(bytes: &[u8], spec: &DropSpec) -> Result<Vec<u8>, RewriteError> {
+/// Zero the ancillary bytes of the audio frames: everything inside the
+/// main-data regions that no frame's main data covers, the bit reservoir
+/// honoured. The frames decode to the same samples, since a decoder reads
+/// only the covered bits. The information frame is left to its own strip.
+pub fn scrub_ancillary(bytes: &[u8]) -> Result<Vec<u8>, RewriteError> {
+    let l = layout(bytes);
+    let Some(ranges) = ancillary_ranges(bytes, &l) else {
+        return Err(RewriteError::Malformed(
+            "a frame's main data and ancillary bytes could not be separated".to_string(),
+        ));
+    };
+    let mut out = bytes.to_vec();
+    for (at, len) in ranges {
+        for b in out[at..at + len].iter_mut() {
+            *b = 0;
+        }
+    }
+    Ok(out)
+}
+
+pub fn rewrite(input: &[u8], spec: &DropSpec) -> Result<Vec<u8>, RewriteError> {
+    let scrubbed;
+    let bytes: &[u8] = if spec.ancillary {
+        scrubbed = scrub_ancillary(input)?;
+        &scrubbed
+    } else {
+        input
+    };
     let l = layout(bytes);
     if !l.complete {
         return Err(RewriteError::Malformed(
@@ -61,9 +88,12 @@ pub fn rewrite(bytes: &[u8], spec: &DropSpec) -> Result<Vec<u8>, RewriteError> {
     Ok(out)
 }
 
-/// The audio frames after any information frame. These must not change
-/// across a tag strip.
-pub fn signal_stream(bytes: &[u8]) -> Vec<u8> {
+/// The audio frames after any information frame, with their ancillary
+/// bytes zeroed: the bytes a decoder reads. These must not change across a
+/// tag strip or the ancillary scrub.
+pub fn signal_stream(input: &[u8]) -> Vec<u8> {
+    let scrubbed = scrub_ancillary(input).unwrap_or_else(|_| input.to_vec());
+    let bytes = &scrubbed;
     let l = layout(bytes);
     let start = match &l.info {
         Some(info) if info.offset == l.frames_start => info.offset + info.len,
