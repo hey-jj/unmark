@@ -442,6 +442,7 @@ fn verify_confirms_a_cleaned_output_and_catches_a_reintroduced_mark() {
             assert!(problems.iter().any(|m| m.contains("present again")))
         }
         VerifyOutcome::Verified => panic!("the original still carries the marks"),
+        other => panic!("unexpected verify outcome {other:?}"),
     }
 }
 

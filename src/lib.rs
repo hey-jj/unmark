@@ -1126,7 +1126,13 @@ fn metadata_actions(
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum VerifyOutcome {
     Verified,
+    /// A mark the report proved gone is present again, the digest or the
+    /// container differs, or the report did not parse: exit 10.
     Mismatch(Vec<String>),
+    /// The output is a container this build does not read: exit 40.
+    Unsupported(Vec<String>),
+    /// A walker left a class malformed in the output: exit 30.
+    Malformed(Vec<String>),
 }
 
 /// Re-inspect an output against the report that produced it. It confirms the
@@ -1143,10 +1149,19 @@ pub fn verify(output: &[u8], report_json: &str, pkg: &PolicyPackage) -> VerifyOu
     }
     let det = full_inspect(output);
     if det.format == Format::Unknown || !det.format.is_supported_container() {
-        problems.push(format!(
-            "the output is {}, which this build does not verify",
+        return VerifyOutcome::Unsupported(vec![format!(
+            "the output is {}, which this build does not read",
             det.format.as_str()
-        ));
+        )]);
+    }
+    let malformed: Vec<String> = det
+        .items
+        .iter()
+        .filter(|d| d.state == ScanState::Malformed)
+        .map(|d| format!("{} is malformed in the output", d.label))
+        .collect();
+    if !malformed.is_empty() {
+        return VerifyOutcome::Malformed(malformed);
     }
     if let Some(emitted) = parsed.get("output_format").and_then(|v| v.as_str()) {
         if emitted != det.format.as_str() {
@@ -1156,11 +1171,7 @@ pub fn verify(output: &[u8], report_json: &str, pkg: &PolicyPackage) -> VerifyOu
             ));
         }
     }
-    for d in &det.items {
-        if d.state == ScanState::Malformed {
-            problems.push(format!("{} is malformed in the output", d.label));
-        }
-    }
+
     if let Some(list) = parsed
         .get("stripped_and_proven_gone")
         .and_then(|v| v.as_array())

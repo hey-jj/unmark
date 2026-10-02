@@ -171,6 +171,44 @@ fn an_out_extension_that_contradicts_the_emitted_container_exits_2_with_the_repo
 }
 
 #[test]
+fn verify_exits_30_on_a_malformed_file_and_40_on_an_unknown_blob() {
+    let dir = scratch("verify-codes");
+    let (code, out, _) = run(&[
+        "clean",
+        "--out",
+        dir.join("clean.png").to_str().unwrap(),
+        fixture("generated.png").to_str().unwrap(),
+    ]);
+    assert_eq!(code, 0);
+    let report = dir.join("report.json");
+    std::fs::write(&report, out).unwrap();
+    let (code, out, err) = run(&[
+        "verify",
+        "--report",
+        report.to_str().unwrap(),
+        fixture("malformed.png").to_str().unwrap(),
+    ]);
+    assert_eq!(code, 30, "{err}");
+    assert!(out.contains("\"verified\":false"));
+    let blob = dir.join("blob.bin");
+    std::fs::write(&blob, [0xC0u8; 32]).unwrap();
+    let (code, _, _) = run(&[
+        "verify",
+        "--report",
+        report.to_str().unwrap(),
+        blob.to_str().unwrap(),
+    ]);
+    assert_eq!(code, 40);
+    let (code, _, _) = run(&[
+        "verify",
+        "--report",
+        report.to_str().unwrap(),
+        dir.join("clean.png").to_str().unwrap(),
+    ]);
+    assert_eq!(code, 0);
+}
+
+#[test]
 fn a_malformed_fixture_exits_30_and_an_unknown_blob_exits_40() {
     let dir = scratch("codes");
     let (code, _, err) = run(&[

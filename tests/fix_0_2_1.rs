@@ -437,19 +437,25 @@ fn verify_refuses_unsupported_malformed_and_wrong_format_outputs() {
         unmark::verify(&out.output.unwrap(), &report, &p),
         VerifyOutcome::Verified
     );
-    for (name, bytes) in [
-        ("blob", vec![0xC0u8; 32]),
-        (
-            "malformed",
-            std::fs::read(fixture("malformed.png")).unwrap(),
+    // An unreadable replacement is refused with the exit the condition has
+    // everywhere else: unsupported input at 40, a malformed walk at 30, a
+    // readable file of the wrong container at 10.
+    assert!(matches!(
+        unmark::verify(&[0xC0u8; 32], &report, &p),
+        VerifyOutcome::Unsupported(_)
+    ));
+    assert!(matches!(
+        unmark::verify(
+            &std::fs::read(fixture("malformed.png")).unwrap(),
+            &report,
+            &p
         ),
-        ("text", b"plain text\n".to_vec()),
-    ] {
-        match unmark::verify(&bytes, &report, &p) {
-            VerifyOutcome::Mismatch(problems) => assert!(!problems.is_empty(), "{name}"),
-            VerifyOutcome::Verified => panic!("{name} verified against a PNG report"),
-        }
-    }
+        VerifyOutcome::Malformed(_)
+    ));
+    assert!(matches!(
+        unmark::verify(b"plain text\n", &report, &p),
+        VerifyOutcome::Mismatch(_)
+    ));
 }
 
 // --- S1, S2, S5, P3, P4: the command line ----------------------------------

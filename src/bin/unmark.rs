@@ -631,6 +631,20 @@ fn cmd_verify(mut parser: lexopt::Parser) -> Result<i32, lexopt::Error> {
             println!("{{\"verified\":false}}");
             Ok(report::EXIT_MARK_REMAINS)
         }
+        VerifyOutcome::Malformed(problems) => {
+            for p in &problems {
+                eprintln!("unmark: verify: inspection_failed: {p}");
+            }
+            println!("{{\"verified\":false}}");
+            Ok(EXIT_INSTRUMENTATION)
+        }
+        VerifyOutcome::Unsupported(problems) => {
+            for p in &problems {
+                eprintln!("unmark: verify: unsupported_input: {p}");
+            }
+            println!("{{\"verified\":false}}");
+            Ok(EXIT_UNSUPPORTED)
+        }
     }
 }
 

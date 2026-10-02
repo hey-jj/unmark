@@ -16,9 +16,10 @@ MP3 joins the supported containers.
   information frame in place as its minimal form: the frame count, byte
   count, and seek table it had, the encoder delay and padding, and zero
   everywhere else, the encoder identity included. A file without an
-  information frame gets none. The referenced frame bytes are copied as
-  they are, and a decode of the output matches a decode of the input
-  sample for sample once the frame's delay and padding are applied.
+  information frame gets none. Under `--no-degrade` the referenced frame
+  bytes are copied as they are, and a decode of the output with the
+  frame's delay and padding applied matches a decode of the input sample
+  for sample.
 - Mark classes `ape` and `mp3_info`, transforms `MC13` (strip-ape-tag) and
   `MC14` (rewrite-info-frame), and `--keep` by class or id for each. The
   `MC14` row reports `rewritten` with the fields removed and kept.
@@ -33,14 +34,17 @@ MP3 joins the supported containers.
   encoder's delay, and the encoder's information frame is rewritten as the
   minimal one carrying the frame count, byte count, and the measured
   encoder delay and padding (528 samples, the same at every pin), so a
-  decode of the output matches the input's length within one frame. Kept
+  decode of the output with those fields applied matches the input's
+  length, and an untrimmed decode is longer by exactly delay plus
+  padding. Kept
   tags ride around the fresh frames. `AU03` (re-encode) is the transform,
   reported as a second lossy stage with its bitrate pin, delay, and
   padding, and `AU06` reports the log-spectral distance against the
   highpassed reference as data. An audio write is refused, at exit 50,
-  only when the output fails to decode, its frame count differs from the
-  input's by more than one, or its duration after the delay and padding
-  fields differs by more than one frame. A `--keep` of the information
+  only when the output fails to decode, its audio frame count differs from
+  the input's by more than the frames the codec delay needs, or its
+  duration after the delay and padding fields differs by more than one
+  frame. A `--keep` of the information
   frame or the ancillary bytes stands the highpass and the re-encode down
   with a reported reason, since a re-encode would discard them.
 - The audio feature adds nanomp3 0.2.0 (MIT OR Apache-2.0, without its
@@ -53,7 +57,7 @@ MP3 joins the supported containers.
   with the reason as its result field.
 - Builder-rendered MP3 fixtures under `fixtures/mp3/` from a synthetic tone
   and a broadband noise-plus-chirp signal, with tests per tag class and for
-  the reservoir rule. Report schema 2.2.0.
+  the reservoir rule. Report schema 2.3.0.
 
 ## [0.2.1] - 2026-09-05
 

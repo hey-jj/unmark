@@ -759,3 +759,17 @@ fn an_mpeg2_input_runs_at_exit_0_with_its_lsd_reported() {
         unmark::codec::mp3::decode_with_bitrate(out.output.as_ref().unwrap()).unwrap();
     assert_eq!((back.rate, kbps), (22050, 64));
 }
+
+/// The information-frame class is `mp3_info`; the earlier name is not an
+/// alias, so a keep by it is a usage error like any unknown name.
+#[test]
+fn the_old_class_name_is_not_an_alias() {
+    let tagged = fixture("tagged.mp3");
+    let p = pkg();
+    assert!(matches!(
+        clean(&tagged, &keep(&["xing"]), &p),
+        Err(UnmarkError::Usage(_))
+    ));
+    let out = clean(&tagged, &keep(&["mp3_info"]), &p).unwrap();
+    assert!(out.report.kept.iter().any(|k| k.item.starts_with("MC14")));
+}

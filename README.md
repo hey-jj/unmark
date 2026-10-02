@@ -108,7 +108,7 @@ manifest without a capture action, and `--keep c2pa` preserves it.
 - `actions`: every transform with its strength, outcome, and result.
 - `capture`: the capture status, the quoted claim or the named hint, and the line the run prints.
 - `scan_states`: one state per mark class: `confirmed_present`, `confirmed_absent`, `unsupported_format`, `malformed`, or `not_attempted`. `findings` carries the located and malformed marks with their evidence.
-- `sanity`: the PSNR and SSIM of an image output against its grid-matched reference and the floors they are held to, or the log-spectral distance of an MP3 re-encode and its ceiling.
+- `sanity`: the PSNR and SSIM of an image output against its grid-matched reference and the floors they are held to, or the log-spectral distance of an MP3 re-encode against the highpassed reference, with the structural checks it passed.
 - `no_op`, `input`, `output`, `error`: whether the output equals the input, the paths the command line used, and the failure message when a run did not complete.
 
 ## Fixtures and the oracle
