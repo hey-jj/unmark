@@ -9,6 +9,7 @@ pub mod id3;
 pub mod invisibles;
 pub mod isobmff;
 pub mod jpeg;
+pub mod mp3;
 pub mod png_text;
 pub mod riff;
 pub mod xmp;
@@ -44,7 +45,11 @@ fn applicable_confirmable(format: Format) -> &'static [(&'static str, &'static s
             ("c2pa", "C2PA manifest"),
         ],
         Format::Isobmff => &[("c2pa", "C2PA manifest"), ("ilst", "MP4 ilst tag")],
-        Format::Mp3 => &[("id3", "ID3 tag")],
+        Format::Mp3 => &[
+            ("id3", "ID3 tag"),
+            ("ape", "APE tag"),
+            ("xing", "Xing/Info frame"),
+        ],
         Format::Flac => &[("vorbis", "Vorbis comment")],
         Format::Svg | Format::Html | Format::Text => &[("invisibles", "invisible Unicode")],
         _ => &[],
@@ -92,7 +97,7 @@ pub fn inspect(bytes: &[u8]) -> Detections {
         Format::Jpeg => jpeg::scan(bytes),
         Format::WebP | Format::RiffWav | Format::RiffAvi => riff::scan(bytes, format),
         Format::Isobmff => isobmff::scan(bytes),
-        Format::Mp3 => id3::scan(bytes),
+        Format::Mp3 => mp3::scan(bytes),
         Format::Flac => flac::scan(bytes),
         Format::Svg | Format::Html | Format::Text => invisibles::scan(bytes),
         Format::Ogg | Format::Unknown => (Vec::new(), false),

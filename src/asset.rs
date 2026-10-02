@@ -41,6 +41,7 @@ pub const SUPPORTED_CONTAINERS: &[Format] = &[
     Format::WebP,
     Format::RiffWav,
     Format::Isobmff,
+    Format::Mp3,
     Format::Flac,
     Format::Svg,
     Format::Html,

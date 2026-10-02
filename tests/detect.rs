@@ -112,7 +112,7 @@ fn confirmed_absent_only_over_the_supported_constant() {
     }
     // RAW-style and unknown formats are not in the set.
     assert!(!Format::Unknown.is_supported_container());
-    assert!(!Format::Mp3.is_supported_container());
+    assert!(Format::Mp3.is_supported_container());
     assert!(!Format::RiffAvi.is_supported_container());
 }
 

@@ -3,6 +3,27 @@
 All notable changes to this project are documented here. The format follows
 Keep a Changelog, and the project uses semantic versioning.
 
+## [0.3.0] - 2026-10-02
+
+MP3 joins the supported containers.
+
+### Added
+
+- A ground-up MPEG audio frame parser from ISO/IEC 11172-3 and 13818-3:
+  frame headers, lengths, side-information sizes, and `main_data_begin`.
+- The default run on MP3 strips ID3v2 with its padding and footer, ID3v1,
+  APE tags at either end, and the Xing, Info, or VBRI information frame
+  with its encoder string, and copies the audio frames byte for byte in
+  the same container. The information frame is dropped only when the next
+  audio frame's `main_data_begin` is zero. Otherwise it stays and the
+  report shows it kept with that value.
+- Mark classes `ape` and `xing`, transforms `MC13` (strip-ape-tag) and
+  `MC14` (strip-info-frame), and `--keep` by class or id for each.
+- The `AU06` row on MP3 reads `not_attempted` with the reason as its result
+  field.
+- Builder-rendered MP3 fixtures under `fixtures/mp3/` from a synthetic tone,
+  with tests per tag class and for the reservoir rule.
+
 ## [0.2.1] - 2026-09-05
 
 ### Added

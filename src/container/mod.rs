@@ -6,6 +6,7 @@
 pub mod flac;
 pub mod id3;
 pub mod jpeg;
+pub mod mp3;
 pub mod mp4;
 pub mod png;
 pub mod riff;
@@ -33,6 +34,11 @@ pub struct DropSpec {
     /// MC12: drop WAV production metadata chunks (bext, iXML, aXML, _PMX,
     /// cue, smpl, inst).
     pub riff_production: bool,
+    /// MC13: drop APE tags from an MPEG audio file.
+    pub ape: bool,
+    /// MC14: drop the Xing, Info, or VBRI information frame when the next
+    /// frame draws no bits from the reservoir.
+    pub xing: bool,
 }
 
 /// The reason a rewrite could not be completed for a container in this build.
@@ -68,7 +74,7 @@ pub fn rewrite(bytes: &[u8], format: Format, spec: &DropSpec) -> Result<Vec<u8>,
         Format::Jpeg => Ok(jpeg::rewrite(bytes, spec)),
         Format::WebP | Format::RiffWav | Format::RiffAvi => riff::rewrite(bytes, spec),
         Format::Isobmff => mp4::rewrite(bytes, spec),
-        Format::Mp3 => Ok(id3::rewrite(bytes, spec)),
+        Format::Mp3 => mp3::rewrite(bytes, spec),
         Format::Flac => flac::rewrite(bytes, spec),
         _ if format.is_text() => Ok(bytes.to_vec()),
         other => Err(RewriteError::Unsupported(other.as_str().to_string())),
@@ -87,7 +93,7 @@ pub fn signal_stream(bytes: &[u8], format: Format) -> Vec<u8> {
         Format::Jpeg => jpeg::signal_stream(bytes),
         Format::WebP | Format::RiffWav | Format::RiffAvi => riff::signal_stream(bytes),
         Format::Isobmff => mp4::signal_stream(bytes),
-        Format::Mp3 => id3::signal_stream(bytes),
+        Format::Mp3 => mp3::signal_stream(bytes),
         Format::Flac => flac::signal_stream(bytes),
         _ if format.is_text() => text_signal(bytes),
         _ => bytes.to_vec(),

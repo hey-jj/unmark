@@ -2,8 +2,8 @@
 
 unmark strips the marks it detects from an image, audio file, or text file: container
 metadata, C2PA content credentials, EXIF and XMP fields, PNG generation chunks, audio
-tags, RIFF ancillary chunks, MP4 `ilst` atoms, FLAC Vorbis comments, invisible Unicode,
-and the dwtDct pixel mark, which a mild resize removes and the built-in detector proves
+tags, RIFF ancillary chunks, MP4 `ilst` atoms, FLAC Vorbis comments, MP3 APE tags and
+information frames, invisible Unicode, and the dwtDct pixel mark, which a mild resize removes and the built-in detector proves
 gone. A well-formed C2PA claim that identifies a camera or sensor capture with no later
 generative action is kept, and that output is byte-identical. `--keep` and
 `--no-degrade` turn strips off, and `--strip-capture` strips that kept claim. The report
@@ -71,7 +71,8 @@ named mark.
 | JPEG | C2PA, XMP, EXIF, and comment and application segment strips, then a 32-pixel border crop, a resize at ratio 0.95, and a re-encode at quality 92 with 4:4:4 chroma |
 | PNG, WebP | C2PA, XMP, EXIF, text-chunk, and unlisted-chunk strips, then the same crop and resize and a lossless write |
 | WAV, FLAC | Tag, RIFF ancillary, production metadata, Vorbis comment, and unlisted-chunk strips, then a 1500 Hz highpass |
-| MP3, MP4, M4A | Tag strips |
+| MP3 | ID3v2 with its padding, ID3v1, APE, and information-frame strips, the audio frames copied byte for byte. The information frame stays, reported kept, when the next frame's `main_data_begin` is not zero |
+| MP4, M4A | Tag strips |
 | Text, SVG, HTML | Invisible Unicode and generator-header strips |
 
 The border crop cuts 32 pixels from every edge, capped at a tenth of the edge, and

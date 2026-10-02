@@ -205,7 +205,7 @@ pub fn plan_run(pkg: &PolicyPackage, format: Format, opts: &Options) -> (Vec<Str
 }
 
 /// Classes the run strips.
-fn targeted(run: &[String]) -> Vec<&'static str> {
+fn targeted_for(run: &[String]) -> Vec<&'static str> {
     let mut out = Vec::new();
     for id in run {
         for c in transform::targeted_classes(id) {
@@ -588,7 +588,7 @@ pub fn clean(
 
     let (run, kept) = plan_run(pkg, format, opts);
     r.kept = kept;
-    let targeted = targeted(&run);
+    let targeted = targeted_for(&run);
 
     // A targeted class whose scan state is malformed has unknown presence;
     // the required inspection failed. Nothing is written.
@@ -617,6 +617,34 @@ pub fn clean(
     };
     let mut out_bytes = applied.bytes;
     let mut actions: Vec<Action> = Vec::new();
+    let mut run = run;
+    // An information frame the next audio frame draws reservoir bits from
+    // stays, and the strip that targets it is reported kept with that value.
+    if format == Format::Mp3 && run.iter().any(|t| t == "MC14") {
+        if let Some(info) = detect::mp3::layout(&out_bytes).info {
+            if !info.droppable() {
+                r.kept.push(Kept {
+                    item: "MC14 strip-info-frame".to_string(),
+                    reason: format!(
+                        "kept: next frame main_data_begin {}",
+                        info.next_main_data_begin
+                            .map(|v| v.to_string())
+                            .unwrap_or_else(|| "unread".to_string())
+                    ),
+                });
+                run.retain(|t| t != "MC14");
+            }
+        }
+    }
+    if format == Format::Mp3 && run.iter().any(|t| t == "AU06") {
+        actions.push(action_for(
+            pkg,
+            "AU06",
+            "not_attempted",
+            "mp3 decode is not in this build",
+        ));
+    }
+    let targeted = targeted_for(&run);
     let mut dwtdct_before: Option<bool> = None;
     let mut dwtdct_after: Option<bool> = None;
 

@@ -33,6 +33,8 @@ pub fn targeted_classes(id: &str) -> &'static [&'static str] {
         "MC10" => &["vorbis"],
         "MC11" => &[],
         "MC12" => &[],
+        "MC13" => &["ape"],
+        "MC14" => &["xing"],
         "PX02" => &["dwtdct"],
         _ => &[],
     }
@@ -62,6 +64,8 @@ pub fn drop_spec(transforms: &[String]) -> DropSpec {
             "MC10" => s.vorbis = true,
             "MC11" => s.jpeg_segments = true,
             "MC12" => s.riff_production = true,
+            "MC13" => s.ape = true,
+            "MC14" => s.xing = true,
             _ => {}
         }
     }

@@ -1,0 +1,461 @@
+//! MPEG audio layer III, read from the frame headers of ISO/IEC 11172-3 and
+//! 13818-3: the sync word, version, layer, bitrate and sample-rate indices,
+//! padding, and channel mode give each frame's length and side-information
+//! size, and the first bits of the side information give main_data_begin,
+//! the bit reservoir pointer. Around the frames sit the tags: a leading
+//! ID3v2 tag with its padding and optional footer, a trailing ID3v1 tag, an
+//! APE tag at either end, and an information frame (Xing, Info, or VBRI)
+//! that an encoder writes as the first frame. Nothing here decodes audio.
+
+use crate::scan::{Detection, Honesty, Location, ScanState};
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Version {
+    Mpeg1,
+    Mpeg2,
+    Mpeg25,
+}
+
+/// One parsed frame header.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct FrameHeader {
+    pub version: Version,
+    pub crc: bool,
+    pub bitrate_kbps: u32,
+    pub sample_rate: u32,
+    pub padding: bool,
+    pub mono: bool,
+    /// Total frame length in bytes, header included.
+    pub len: usize,
+    /// Side information length in bytes.
+    pub side_info: usize,
+}
+
+const BITRATE_V1: [u32; 16] = [
+    0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0,
+];
+const BITRATE_V2: [u32; 16] = [
+    0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 0,
+];
+
+/// Parse a layer III frame header at the start of `b`. None for anything
+/// that is not a layer III frame with a tabled bitrate and sample rate; a
+/// free-format bitrate (index zero) is None too, since its length is not in
+/// the header.
+pub fn parse_header(b: &[u8]) -> Option<FrameHeader> {
+    let h = b.get(0..4)?;
+    if h[0] != 0xFF || (h[1] & 0xE0) != 0xE0 {
+        return None;
+    }
+    let version = match (h[1] >> 3) & 0x03 {
+        0b11 => Version::Mpeg1,
+        0b10 => Version::Mpeg2,
+        0b00 => Version::Mpeg25,
+        _ => return None,
+    };
+    if (h[1] >> 1) & 0x03 != 0b01 {
+        return None; // layer III only
+    }
+    let crc = h[1] & 0x01 == 0;
+    let bitrate_index = (h[2] >> 4) as usize;
+    let sr_index = ((h[2] >> 2) & 0x03) as usize;
+    let padding = (h[2] >> 1) & 0x01 == 1;
+    let mono = (h[3] >> 6) == 0b11;
+    let bitrate_kbps = match version {
+        Version::Mpeg1 => BITRATE_V1[bitrate_index],
+        _ => BITRATE_V2[bitrate_index],
+    };
+    if bitrate_kbps == 0 {
+        return None;
+    }
+    let sample_rate = match (version, sr_index) {
+        (Version::Mpeg1, 0) => 44100,
+        (Version::Mpeg1, 1) => 48000,
+        (Version::Mpeg1, 2) => 32000,
+        (Version::Mpeg2, 0) => 22050,
+        (Version::Mpeg2, 1) => 24000,
+        (Version::Mpeg2, 2) => 16000,
+        (Version::Mpeg25, 0) => 11025,
+        (Version::Mpeg25, 1) => 12000,
+        (Version::Mpeg25, 2) => 8000,
+        _ => return None,
+    };
+    let per_frame = if version == Version::Mpeg1 {
+        144_000
+    } else {
+        72_000
+    };
+    let len = (per_frame * bitrate_kbps / sample_rate) as usize + padding as usize;
+    let side_info = match (version, mono) {
+        (Version::Mpeg1, true) => 17,
+        (Version::Mpeg1, false) => 32,
+        (_, true) => 9,
+        (_, false) => 17,
+    };
+    Some(FrameHeader {
+        version,
+        crc,
+        bitrate_kbps,
+        sample_rate,
+        padding,
+        mono,
+        len,
+        side_info,
+    })
+}
+
+/// The bit reservoir pointer of a frame: nine bits in MPEG-1, eight in
+/// MPEG-2 and 2.5, at the start of the side information.
+pub fn main_data_begin(frame: &[u8], h: &FrameHeader) -> Option<u16> {
+    let at = 4 + if h.crc { 2 } else { 0 };
+    let s = frame.get(at..at + 2)?;
+    let word = u16::from_be_bytes([s[0], s[1]]);
+    Some(match h.version {
+        Version::Mpeg1 => word >> 7,
+        _ => word >> 8,
+    })
+}
+
+/// The information frame an encoder writes first.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct InfoFrame {
+    pub offset: usize,
+    pub len: usize,
+    /// "Xing", "Info", or "VBRI".
+    pub kind: String,
+    /// The encoder string a LAME-style tag carries, when printable.
+    pub encoder: Option<String>,
+    /// The next frame's main_data_begin, when a next frame parsed.
+    pub next_main_data_begin: Option<u16>,
+}
+
+impl InfoFrame {
+    /// The frame may be dropped only when the next audio frame draws no
+    /// bits from the reservoir, so no audio data lives inside it.
+    pub fn droppable(&self) -> bool {
+        self.next_main_data_begin == Some(0)
+    }
+}
+
+/// Where everything sits in a standalone MPEG audio file.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Layout {
+    /// Leading ID3v2 tags as (offset, length), padding and footer included.
+    pub id3v2: Vec<(usize, usize)>,
+    /// A trailing ID3v1 tag.
+    pub id3v1: Option<usize>,
+    /// APE tags as (offset, length), leading or trailing.
+    pub ape: Vec<(usize, usize)>,
+    pub info: Option<InfoFrame>,
+    /// The audio frames, information frame included.
+    pub frames_start: usize,
+    pub frames_end: usize,
+    /// The number of frames the walk parsed.
+    pub frames: usize,
+    /// True when the frame walk reached frames_end exactly.
+    pub complete: bool,
+}
+
+fn id3v2_len(b: &[u8]) -> Option<usize> {
+    if b.len() < 10 || &b[..3] != b"ID3" {
+        return None;
+    }
+    let body = super::id3::synchsafe(&b[6..10])?;
+    let footer = if b[5] & 0x10 != 0 { 10 } else { 0 };
+    Some(10 + body + footer)
+}
+
+const APE_PREAMBLE: &[u8] = b"APETAGEX";
+const APE_HAS_HEADER: u32 = 0x8000_0000;
+const APE_IS_HEADER: u32 = 0x2000_0000;
+
+/// An APE tag whose header or footer starts at `at`: (tag start, length).
+fn ape_at(b: &[u8], at: usize) -> Option<(usize, usize)> {
+    let block = b.get(at..at + 32)?;
+    if &block[..8] != APE_PREAMBLE {
+        return None;
+    }
+    let size = u32::from_le_bytes([block[12], block[13], block[14], block[15]]) as usize;
+    let flags = u32::from_le_bytes([block[20], block[21], block[22], block[23]]);
+    if size < 32 {
+        return None;
+    }
+    if flags & APE_IS_HEADER != 0 {
+        // Header: items and footer follow.
+        let len = 32 + size;
+        if at + len > b.len() {
+            return None;
+        }
+        Some((at, len))
+    } else {
+        // Footer: items precede it, and a header precedes those when flagged.
+        let header = if flags & APE_HAS_HEADER != 0 { 32 } else { 0 };
+        let end = at + 32;
+        let start = end.checked_sub(size + header)?;
+        Some((start, end - start))
+    }
+}
+
+pub fn layout(bytes: &[u8]) -> Layout {
+    let mut l = Layout::default();
+    // Leading tags in any order: ID3v2 tags and an APE header.
+    let mut start = 0usize;
+    loop {
+        if let Some(len) = id3v2_len(&bytes[start..]) {
+            if start + len > bytes.len() {
+                break;
+            }
+            l.id3v2.push((start, len));
+            start += len;
+        } else if let Some((at, len)) = ape_at(bytes, start) {
+            l.ape.push((at, len));
+            start += len;
+        } else {
+            break;
+        }
+    }
+    // Trailing tags in any order: an ID3v1 tag and an APE footer.
+    let mut end = bytes.len();
+    loop {
+        if end >= start + 128 && &bytes[end - 128..end - 125] == b"TAG" && l.id3v1.is_none() {
+            end -= 128;
+            l.id3v1 = Some(end);
+        } else if end >= start + 32 {
+            match ape_at(bytes, end - 32) {
+                Some((at, len)) if at >= start && at + len == end => {
+                    l.ape.push((at, len));
+                    end = at;
+                }
+                _ => break,
+            }
+        } else {
+            break;
+        }
+    }
+    l.ape.sort();
+    l.frames_start = start.min(end);
+    l.frames_end = end;
+    // Walk the frames.
+    let mut p = l.frames_start;
+    let mut first = true;
+    while p < end {
+        let Some(h) = parse_header(&bytes[p..end]) else {
+            break;
+        };
+        if p + h.len > end {
+            break;
+        }
+        if first {
+            first = false;
+            l.info = info_frame(bytes, p, &h, end);
+        }
+        l.frames += 1;
+        p += h.len;
+    }
+    l.complete = p == end && l.frames > 0;
+    l
+}
+
+fn info_frame(bytes: &[u8], p: usize, h: &FrameHeader, end: usize) -> Option<InfoFrame> {
+    let xing_at = p + 4 + if h.crc { 2 } else { 0 } + h.side_info;
+    let kind = match bytes.get(xing_at..xing_at + 4) {
+        Some(b"Xing") => Some("Xing"),
+        Some(b"Info") => Some("Info"),
+        _ => None,
+    };
+    let (kind, tag_at) = match kind {
+        Some(k) => (k, xing_at),
+        None => {
+            if bytes.get(p + 36..p + 40) == Some(b"VBRI") {
+                ("VBRI", p + 36)
+            } else {
+                return None;
+            }
+        }
+    };
+    let encoder = if kind == "VBRI" {
+        None
+    } else {
+        let flags = bytes
+            .get(tag_at + 4..tag_at + 8)
+            .map(|f| u32::from_be_bytes([f[0], f[1], f[2], f[3]]))
+            .unwrap_or(0);
+        let mut at = tag_at + 8;
+        if flags & 1 != 0 {
+            at += 4;
+        }
+        if flags & 2 != 0 {
+            at += 4;
+        }
+        if flags & 4 != 0 {
+            at += 100;
+        }
+        if flags & 8 != 0 {
+            at += 4;
+        }
+        bytes
+            .get(at..at + 9)
+            .map(|s| {
+                let printable: Vec<u8> = s
+                    .iter()
+                    .take_while(|c| c.is_ascii_graphic() || **c == b' ')
+                    .copied()
+                    .collect();
+                String::from_utf8_lossy(&printable).trim_end().to_string()
+            })
+            .filter(|s| !s.is_empty())
+    };
+    let next = p + h.len;
+    let next_main_data_begin = if next < end {
+        parse_header(&bytes[next..end]).and_then(|nh| main_data_begin(&bytes[next..end], &nh))
+    } else {
+        None
+    };
+    Some(InfoFrame {
+        offset: p,
+        len: h.len,
+        kind: kind.to_string(),
+        encoder,
+        next_main_data_begin,
+    })
+}
+
+pub fn scan(bytes: &[u8]) -> (Vec<Detection>, bool) {
+    let l = layout(bytes);
+    let mut out = Vec::new();
+    let mut id3 = Detection::present("id3", "ID3 tag", Honesty::Confirmable);
+    for (offset, length) in &l.id3v2 {
+        id3.locations.push(Location {
+            container: "ID3v2".to_string(),
+            offset: *offset,
+            length: *length,
+            detail: "leading tag".to_string(),
+        });
+        let body = bytes.get(offset + 10..offset + length).unwrap_or(&[]);
+        for frame in ["PRIV", "GEOB", "TSSE", "TENC", "TXXX"] {
+            if super::c2pa::contains(body, frame.as_bytes()) {
+                id3.evidence.push(format!("{frame} frame"));
+            }
+        }
+    }
+    if let Some(at) = l.id3v1 {
+        id3.locations.push(Location {
+            container: "ID3v1".to_string(),
+            offset: at,
+            length: 128,
+            detail: "trailing tag".to_string(),
+        });
+    }
+    if !id3.locations.is_empty() {
+        out.push(id3);
+    }
+    if !l.ape.is_empty() {
+        let mut ape = Detection::present("ape", "APE tag", Honesty::Confirmable);
+        for (offset, length) in &l.ape {
+            ape.locations.push(Location {
+                container: "APE".to_string(),
+                offset: *offset,
+                length: *length,
+                detail: if *offset < l.frames_start {
+                    "leading tag".to_string()
+                } else {
+                    "trailing tag".to_string()
+                },
+            });
+        }
+        out.push(ape);
+    }
+    if let Some(info) = &l.info {
+        let mut xing = Detection::present("xing", "Xing/Info frame", Honesty::Confirmable);
+        xing.locations.push(Location {
+            container: "MPEG frame".to_string(),
+            offset: info.offset,
+            length: info.len,
+            detail: match &info.encoder {
+                Some(e) => format!("{} tag, encoder {e}", info.kind),
+                None => format!("{} tag", info.kind),
+            },
+        });
+        if let Some(mdb) = info.next_main_data_begin {
+            xing.evidence
+                .push(format!("next frame main_data_begin {mdb}"));
+        }
+        out.push(xing);
+    }
+    let complete = l.complete;
+    if !complete {
+        for d in out.iter_mut() {
+            if d.class == "xing" {
+                d.state = ScanState::Malformed;
+            }
+        }
+    }
+    (out, complete)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_layer_three_header_gives_its_length_and_side_info() {
+        // MPEG-1 layer III, no CRC, 128 kbps, 44100 Hz, no padding, stereo.
+        let h = parse_header(&[0xFF, 0xFB, 0x90, 0x00]).unwrap();
+        assert_eq!(h.version, Version::Mpeg1);
+        assert!(!h.crc);
+        assert_eq!((h.bitrate_kbps, h.sample_rate), (128, 44100));
+        assert_eq!(h.len, 417);
+        assert_eq!(h.side_info, 32);
+        // Padded mono frame.
+        let h = parse_header(&[0xFF, 0xFB, 0x92, 0xC0]).unwrap();
+        assert_eq!(h.len, 418);
+        assert_eq!(h.side_info, 17);
+        // MPEG-2, 64 kbps, 22050 Hz, mono: 72000*64/22050 = 208.
+        let h = parse_header(&[0xFF, 0xF3, 0x80, 0xC0]).unwrap();
+        assert_eq!(h.version, Version::Mpeg2);
+        assert_eq!((h.len, h.side_info), (208, 9));
+        // Free format, reserved version, and layer II are refused.
+        assert!(parse_header(&[0xFF, 0xFB, 0x00, 0x00]).is_none());
+        assert!(parse_header(&[0xFF, 0xEB, 0x90, 0x00]).is_none());
+        assert!(parse_header(&[0xFF, 0xFD, 0x90, 0x00]).is_none());
+    }
+
+    #[test]
+    fn main_data_begin_reads_nine_or_eight_bits() {
+        let h = parse_header(&[0xFF, 0xFB, 0x90, 0x00]).unwrap();
+        let mut frame = vec![0xFF, 0xFB, 0x90, 0x00];
+        frame.extend_from_slice(&[0b1010_1010, 0b1000_0000]);
+        assert_eq!(main_data_begin(&frame, &h), Some(0b1_0101_0101));
+        let h2 = parse_header(&[0xFF, 0xF3, 0x80, 0xC0]).unwrap();
+        let mut frame = vec![0xFF, 0xF3, 0x80, 0xC0];
+        frame.extend_from_slice(&[0x2B, 0x00]);
+        assert_eq!(main_data_begin(&frame, &h2), Some(0x2B));
+    }
+
+    #[test]
+    fn an_ape_footer_locates_its_tag_and_a_bad_walk_is_incomplete() {
+        let mut tag = Vec::new();
+        let item = b"\x05\x00\x00\x00\x00\x00\x00\x00Tool\x00ABCDE";
+        tag.extend_from_slice(item);
+        let size = (item.len() + 32) as u32;
+        let mut footer = Vec::new();
+        footer.extend_from_slice(APE_PREAMBLE);
+        footer.extend_from_slice(&2000u32.to_le_bytes());
+        footer.extend_from_slice(&size.to_le_bytes());
+        footer.extend_from_slice(&1u32.to_le_bytes());
+        footer.extend_from_slice(&0u32.to_le_bytes());
+        footer.extend_from_slice(&[0u8; 8]);
+        tag.extend_from_slice(&footer);
+        let mut file = vec![0xFF, 0xFB, 0x90, 0x00];
+        file.resize(417, 0);
+        let frames_len = file.len();
+        file.extend_from_slice(&tag);
+        let l = layout(&file);
+        assert_eq!(l.ape, vec![(frames_len, tag.len())]);
+        assert_eq!((l.frames_start, l.frames_end), (0, frames_len));
+        assert!(l.complete);
+        // A truncated last frame leaves the walk incomplete.
+        let l = layout(&file[..frames_len - 1]);
+        assert!(!l.complete);
+    }
+}

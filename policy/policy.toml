@@ -8,7 +8,7 @@
 # later generative action, and let every policy flag turn a strip off.
 
 [policy]
-version = "0.2.1"
+version = "0.3.0"
 # sha256 over the canonical serialization of the whole package (this file with
 # the digest emptied, LF endings, followed by each signature file path-sorted).
 # The build embeds the computed value in every result and snapshot.
@@ -24,7 +24,7 @@ digest = ""
 # Only confirmed_absent licenses the word absent, and only over the enumerated
 # supported set. The supported set is a single constant in the code. This list
 # mirrors it for the reader and the code is the authority.
-supported_containers = ["jpeg", "png", "webp", "riff-wav", "isobmff", "flac", "svg", "html", "text"]
+supported_containers = ["jpeg", "png", "webp", "riff-wav", "isobmff", "mp3", "flac", "svg", "html", "text"]
 # honesty class of a mark: confirmable, blind, unaddressed. A confirmable mark
 # has a structural address or a public decoder, so removal is provable. A blind
 # mark is keyed and this offline build cannot see it, so the report names the
@@ -70,6 +70,18 @@ id = "id3"
 honesty = "confirmable"
 label = "ID3 tag"
 guard = "An ID3v1 or ID3v2 tag. TXXX, COMM, PRIV, and GEOB frames carry tool identity and free-form data. ID3v1 sits at the end of the file, so a walker that reads only the front reports a clean strip while the tag is still there."
+
+[[mark_class]]
+id = "ape"
+honesty = "confirmable"
+label = "APE tag"
+guard = "An APEv1 or APEv2 tag at either end of an MPEG audio file. Its items carry free-form text, so an encoder or tool name rides there."
+
+[[mark_class]]
+id = "xing"
+honesty = "confirmable"
+label = "Xing/Info frame"
+guard = "The information frame an encoder writes first: a Xing or Info tag with the frame count, byte count, seek table, and a LAME-style encoder string, or a VBRI tag. The encoder string is tool identity. The frame is dropped only when the next audio frame's main_data_begin is zero, since a nonzero value means that frame draws bits from inside it."
 
 [[mark_class]]
 id = "vorbis"
@@ -213,6 +225,24 @@ target = "ID3v1, ID3v2 including PRIV and GEOB, MP4 ilst"
 guard = "Remove the audio tags at both the leading and the trailing location, and the MP4 ilst atom with its sample offsets corrected."
 
 [[transform]]
+id = "MC13"
+name = "strip-ape-tag"
+order = 52
+kind = "metadata"
+applies = ["mp3"]
+target = "APEv1 and APEv2 tags at either end of an MPEG audio file"
+guard = "Remove every APE tag with its header, items, and footer, and copy the audio frames byte for byte. Use --keep MC13 or --keep ape to keep them."
+
+[[transform]]
+id = "MC14"
+name = "strip-info-frame"
+order = 54
+kind = "metadata"
+applies = ["mp3"]
+target = "The Xing, Info, or VBRI information frame and its encoder string"
+guard = "Remove the information frame when the next audio frame's main_data_begin is zero. When it is not, the frame holds reservoir bits that frame decodes, so it stays and the report shows it kept with that value. Use --keep MC14 or --keep xing to keep it."
+
+[[transform]]
 id = "MC09"
 name = "strip-riff-ancillary"
 order = 60
@@ -318,7 +348,7 @@ id = "AU06"
 name = "highpass"
 order = 250
 kind = "audio"
-applies = ["riff-wav", "flac"]
+applies = ["riff-wav", "flac", "mp3"]
 params = { cutoff_hz = 1500.0, order = 2 }
 strength = "second-order highpass at 1500 Hz"
 cited_effect = "AudioSeal detection accuracy falls to 0.61 under a 1500 Hz highpass, true and false positive rates 0.82 and 0.60."

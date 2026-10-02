@@ -45,8 +45,8 @@ unmark verify  --report report.json clean.png
 ```
 
 `--keep` takes a transform id such as `MC03`, a transform name such as `strip-exif`,
-or a mark class such as `exif`, `xmp`, `c2pa`, `png_text`, `id3`, `vorbis`, `ilst`,
-or `dwtdct`, and repeats. `--no-degrade` keeps the encoded pixels or samples
+or a mark class such as `exif`, `xmp`, `c2pa`, `png_text`, `id3`, `ape`, `xing`,
+`vorbis`, `ilst`, or `dwtdct`, and repeats. `--no-degrade` keeps the encoded pixels or samples
 byte-identical. `--output text` prints the human report and `--output json`, the
 default, prints the machine one. A directory input gets one report per file, failures
 included, with `input` and `output` paths. A report with `no_op` true means the file

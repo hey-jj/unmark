@@ -2,8 +2,8 @@
 
 Regenerate with `unmark policy snapshot` after any policy change. Edits here are overwritten.
 
-- policy version: 0.2.1
-- policy digest: sha256:9f8c958fb808f8cd2a731fd2083e524a3bd4b4b316635ff0cd3bbe8d57c1f14e
+- policy version: 0.3.0
+- policy digest: sha256:ee63376704911e9d0004e44fde6df4d22743e0e1f040816bf3aeabcb512b7ea6
 
 ## What each mark kind means
 
@@ -21,6 +21,7 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 - webp
 - riff-wav
 - isobmff
+- mp3
 - flac
 - svg
 - html
@@ -51,6 +52,14 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 ### id3 (confirmable)
 
 - ID3 tag: An ID3v1 or ID3v2 tag. TXXX, COMM, PRIV, and GEOB frames carry tool identity and free-form data. ID3v1 sits at the end of the file, so a walker that reads only the front reports a clean strip while the tag is still there.
+
+### ape (confirmable)
+
+- APE tag: An APEv1 or APEv2 tag at either end of an MPEG audio file. Its items carry free-form text, so an encoder or tool name rides there.
+
+### xing (confirmable)
+
+- Xing/Info frame: The information frame an encoder writes first: a Xing or Info tag with the frame count, byte count, seek table, and a LAME-style encoder string, or a VBRI tag. The encoder string is tool identity. The frame is dropped only when the next audio frame's main_data_begin is zero, since a nonzero value means that frame draws bits from inside it.
 
 ### vorbis (confirmable)
 
@@ -142,6 +151,16 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 - target: ID3v1, ID3v2 including PRIV and GEOB, MP4 ilst
 - Remove the audio tags at both the leading and the trailing location, and the MP4 ilst atom with its sample offsets corrected.
 
+### MC13 strip-ape-tag (metadata, on mp3)
+
+- target: APEv1 and APEv2 tags at either end of an MPEG audio file
+- Remove every APE tag with its header, items, and footer, and copy the audio frames byte for byte. Use --keep MC13 or --keep ape to keep them.
+
+### MC14 strip-info-frame (metadata, on mp3)
+
+- target: The Xing, Info, or VBRI information frame and its encoder string
+- Remove the information frame when the next audio frame's main_data_begin is zero. When it is not, the frame holds reservoir bits that frame decodes, so it stays and the report shows it kept with that value. Use --keep MC14 or --keep xing to keep it.
+
 ### MC09 strip-riff-ancillary (metadata, on riff-wav webp)
 
 - target: LIST INFO and an embedded id3 chunk in WAV, WebP, and AVI
@@ -203,7 +222,7 @@ A scan reports confirmed_absent only over these. Everything else reports unsuppo
 - cited effect: the same-container write for a JPEG input. The pin is reported in the result.
 - Write a JPEG input back as a baseline JPEG at the pinned quality. A PNG or WebP input is written losslessly in its own container.
 
-### AU06 highpass (audio, on riff-wav flac)
+### AU06 highpass (audio, on riff-wav flac mp3)
 
 - target: AudioSeal
 - parameters: cutoff_hz=1500.0, order=2
