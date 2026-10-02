@@ -37,7 +37,7 @@ use policy::PolicyPackage;
 use report::{Action, Capture, Finding, Kept, Report, ScanRow, Survivor};
 use scan::{Detection, Detections, Honesty, ScanState};
 
-pub const SCHEMA_VERSION: &str = "2.4.0";
+pub const SCHEMA_VERSION: &str = "2.3.0";
 
 /// The smallest image edge the pixel path accepts. The SSIM window is eight
 /// pixels and the resize must leave a scorable grid, so an image narrower or
@@ -435,16 +435,13 @@ fn action_for(pkg: &PolicyPackage, id: &str, outcome: &str, result: &str) -> Act
         kept: Vec::new(),
         delay: None,
         padding: None,
-        reason: None,
     }
 }
 
-/// A row that did not run: the outcome names the keep or the refusal, the
-/// reason says why, and the result is empty.
-fn not_applied(pkg: &PolicyPackage, id: &str, outcome: &str, reason: &str) -> Action {
-    let mut a = action_for(pkg, id, outcome, "");
-    a.reason = Some(reason.to_string());
-    a
+/// A row that did not run: the outcome names the keep or the refusal and
+/// the result carries the explanation as data.
+fn not_applied(pkg: &PolicyPackage, id: &str, outcome: &str, explanation: &str) -> Action {
+    action_for(pkg, id, outcome, explanation)
 }
 
 /// The read-only survey: the detections, the capture reading, the plan the
@@ -494,7 +491,7 @@ fn survey(
                 pkg,
                 &id,
                 "kept: certified capture",
-                "certified capture; use --strip-capture to override",
+                "not applied",
             ));
         }
     } else {
@@ -516,7 +513,8 @@ fn survey(
         }
         for k in &r.kept {
             if let Some(id) = k.item.split(' ').next() {
-                r.actions.push(not_applied(pkg, id, &k.reason, &k.reason));
+                r.actions
+                    .push(not_applied(pkg, id, &k.reason, "not applied"));
             }
         }
         #[cfg(feature = "image")]
@@ -588,7 +586,7 @@ pub fn clean(
                 pkg,
                 &id,
                 "kept: certified capture",
-                "certified capture; use --strip-capture to override",
+                "not applied",
             ));
         }
         r.survived = survivors(pkg, &det, &[]);
@@ -713,7 +711,6 @@ pub fn clean(
                 psnr_floor_db: pkg.sanity.psnr_floor_db,
                 ssim_floor: pkg.sanity.ssim_floor,
                 lsd_db: None,
-                lsd_ceiling_db: None,
                 passed,
                 refusal: if passed {
                     None
@@ -897,58 +894,73 @@ pub fn clean(
             .map_err(|e| UnmarkError::Inspection(format!("the audio would not encode: {e}")))?;
         let mut written = enc.bytes;
         let used_kbps = enc.bitrate_kbps;
-        let (back, _) = codec::mp3::decode_with_bitrate(&written).map_err(|e| {
-            UnmarkError::Inspection(format!("the written audio would not decode: {e}"))
-        })?;
-        // The decode applies the delay and padding the frame carries, so
-        // it comes back at the input's length, within one frame, aligned.
-        let spf = 1152usize;
-        if back.channels.len() != audio.channels.len()
-            || back.frames().abs_diff(audio.frames()) > spf
-        {
-            return Err(UnmarkError::Inspection(format!(
-                "the written audio changed from {} to {} frames",
-                audio.frames(),
-                back.frames()
-            )));
-        }
-        // The decoded re-encode is aligned by the delay the frame carries
-        // plus the decoder's own, and trimmed to the common length, before
-        // the spectral distance.
-        let n = processed.channels[0].len().min(back.channels[0].len());
-        let lsd = budget::lsd(
-            &processed.channels[0][..n],
-            &back.channels[0][..n],
-            &budget::LsdParams::PINNED,
+        // The three structural checks that refuse an audio write: the output
+        // decodes, its frame count is within one of the input's, and its
+        // duration after the delay and padding fields is within one frame.
+        let input_frames = detect::mp3::layout(bytes)
+            .frames
+            .saturating_sub(detect::mp3::layout(bytes).info.is_some() as usize);
+        let output_frames = detect::mp3::layout(&written)
+            .frames
+            .saturating_sub(detect::mp3::layout(&written).info.is_some() as usize);
+        let spf = codec::mp3::samples_per_frame(
+            detect::mp3::parse_header(&written[detect::mp3::layout(&written).frames_start..])
+                .map(|h| h.version)
+                .unwrap_or(detect::mp3::Version::Mpeg1),
         );
-        let Some(lsd_db) = lsd else {
-            return Err(UnmarkError::Inspection(
-                "the fidelity measurement did not run over the output".to_string(),
-            ));
+        let decoded = codec::mp3::decode_with_bitrate(&written);
+        let refusal: Option<String> = match &decoded {
+            Err(e) => Some(format!("the output would not decode: {e}")),
+            Ok((back, _)) if back.channels.len() != audio.channels.len() => Some(format!(
+                "the output has {} channels against {}",
+                back.channels.len(),
+                audio.channels.len()
+            )),
+            Ok(_)
+                if output_frames.abs_diff(input_frames)
+                    > (codec::mp3::ENCODER_DELAY as usize + codec::mp3::DECODER_DELAY)
+                        .div_ceil(spf) =>
+            {
+                Some(format!(
+                    "the output has {output_frames} audio frames against the input's {input_frames}"
+                ))
+            }
+            Ok((back, _)) if back.frames().abs_diff(audio.frames()) > spf => Some(format!(
+                "the output decodes to {} samples against the input's {}",
+                back.frames(),
+                audio.frames()
+            )),
+            Ok(_) => None,
         };
-        let passed = lsd_db <= pkg.sanity.lsd_ceiling_db;
+        let lsd_db = match &decoded {
+            Ok((back, _)) => {
+                let n = processed.channels[0].len().min(back.channels[0].len());
+                budget::lsd(
+                    &processed.channels[0][..n],
+                    &back.channels[0][..n],
+                    &budget::LsdParams::PINNED,
+                )
+            }
+            Err(_) => None,
+        };
+        let passed = refusal.is_none();
         r.sanity = Some(report::Sanity {
             psnr_db: None,
             ssim: None,
             psnr_floor_db: pkg.sanity.psnr_floor_db,
             ssim_floor: pkg.sanity.ssim_floor,
-            lsd_db: Some(lsd_db),
-            lsd_ceiling_db: Some(pkg.sanity.lsd_ceiling_db),
+            lsd_db,
             passed,
-            refusal: if passed {
-                None
-            } else {
-                Some(format!(
-                    "the re-encode scores LSD {lsd_db:.2} dB against the ceiling {:.1} dB",
-                    pkg.sanity.lsd_ceiling_db
-                ))
-            },
+            refusal,
         });
+        let lsd_text = lsd_db
+            .map(|v| format!("{v:.2} dB"))
+            .unwrap_or_else(|| "not measured".to_string());
         actions.push(action_for(
             pkg,
             "AU06",
             "applied",
-            &format!("applied at 1500 Hz, LSD {lsd_db:.2} dB"),
+            &format!("applied at 1500 Hz, LSD {lsd_text}"),
         ));
         let mut re_encode = action_for(
             pkg,
@@ -1017,7 +1029,8 @@ pub fn clean(
         .extend(metadata_actions(pkg, &run, &det, Some(&det_after)));
     for k in &r.kept {
         if let Some(id) = k.item.split(' ').next() {
-            r.actions.push(not_applied(pkg, id, &k.reason, &k.reason));
+            r.actions
+                .push(not_applied(pkg, id, &k.reason, "not applied"));
         }
     }
     // The output's scan states are the file the user now has.

@@ -100,6 +100,8 @@ def main(out_dir):
     wide = os.path.join(out_dir, "broadband.wav")
     broadband(wide)
     subprocess.run(["lame", "--quiet", "-m", "m", "-b", "128", "-t", wide, os.path.join(out_dir, "broadband.mp3")], check=True)
+    # The same content as MPEG-2: resampled to 22050 Hz at 64 kbps.
+    subprocess.run(["lame", "--quiet", "-m", "m", "--resample", "22.05", "-b", "64", wide, os.path.join(out_dir, "mpeg2.mp3")], check=True)
     os.remove(wide)
     wav = os.path.join(out_dir, "tone.wav")
     tone(wav)
@@ -134,7 +136,7 @@ def main(out_dir):
     with open(os.path.join(out_dir, "reservoir.mp3"), "wb") as f:
         f.write(info + data[pick:])
     os.remove(wav)
-    for name in ["tagged.mp3", "vbr.mp3", "plain.mp3", "reservoir.mp3", "broadband.mp3"]:
+    for name in ["tagged.mp3", "vbr.mp3", "plain.mp3", "reservoir.mp3", "broadband.mp3", "mpeg2.mp3"]:
         print(name, os.path.getsize(os.path.join(out_dir, name)), "bytes")
 
 

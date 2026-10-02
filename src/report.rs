@@ -39,9 +39,6 @@ pub struct Action {
     /// Encoder delay and padding in samples, on an audio re-encode row.
     pub delay: Option<u32>,
     pub padding: Option<u32>,
-    /// Why a row was not applied or was refused. `result` carries measured
-    /// values only.
-    pub reason: Option<String>,
 }
 
 /// One scan-state row per class, carried as its own field so a reader never
@@ -96,10 +93,9 @@ pub struct Sanity {
     pub ssim: Option<f64>,
     pub psnr_floor_db: f64,
     pub ssim_floor: f64,
-    /// The log-spectral distance of an audio re-encode, in dB, and its
-    /// ceiling. None on an image run.
+    /// The log-spectral distance of an audio re-encode against the
+    /// highpassed reference, in dB, as data. None on an image run.
     pub lsd_db: Option<f64>,
-    pub lsd_ceiling_db: Option<f64>,
     pub passed: bool,
     pub refusal: Option<String>,
 }
@@ -223,10 +219,10 @@ pub fn render_text(r: &Report) -> String {
     }
     let _ = writeln!(o);
     if let Some(s) = &r.sanity {
-        if let (Some(lsd), Some(ceiling)) = (s.lsd_db, s.lsd_ceiling_db) {
+        if let Some(lsd) = s.lsd_db {
             let _ = writeln!(
                 o,
-                "sanity: LSD {lsd:.2} dB against the ceiling {ceiling:.1} dB: {}",
+                "sanity: LSD {lsd:.2} dB; structural checks {}",
                 if s.passed { "passed" } else { "refused" }
             );
         }

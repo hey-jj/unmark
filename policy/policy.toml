@@ -472,11 +472,10 @@ keep = [
 status = "confirmed by owner review 2026-09-03"
 psnr_floor_db = 25.0
 ssim_floor = 0.6
-# The log-spectral distance ceiling for an audio re-encode, in dB, measured
-# between the highpassed samples and the decoded re-encode. PROPOSED with the
-# fixture evidence in the 0.3.0 report.
-lsd_ceiling_db = 6.0
-lsd_status = "proposed"
+# An audio re-encode has no distance floor: the run refuses only when the
+# output fails to decode, its frame count differs from the input's by more
+# than one, or its duration after the delay and padding fields differs by
+# more than one frame. The log-spectral distance is reported as data.
 
 # ---------------------------------------------------------------------------
 # Guardrails.

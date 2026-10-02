@@ -127,9 +127,6 @@ pub struct Sanity {
     pub status: String,
     pub psnr_floor_db: f64,
     pub ssim_floor: f64,
-    /// The log-spectral distance ceiling for an audio re-encode, in dB.
-    pub lsd_ceiling_db: f64,
-    pub lsd_status: String,
 }
 
 #[derive(Clone, Debug)]
@@ -331,11 +328,6 @@ pub fn load() -> Result<PolicyPackage, String> {
         status: as_str(s.get("status").ok_or("sanity.status")?, "sanity.status")?,
         psnr_floor_db: f("psnr_floor_db")?,
         ssim_floor: f("ssim_floor")?,
-        lsd_ceiling_db: f("lsd_ceiling_db")?,
-        lsd_status: as_str(
-            s.get("lsd_status").ok_or("sanity.lsd_status")?,
-            "sanity.lsd_status",
-        )?,
     };
 
     Ok(PolicyPackage {

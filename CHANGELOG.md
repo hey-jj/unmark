@@ -36,23 +36,21 @@ MP3 joins the supported containers.
   decode of the output matches the input's length within one frame. Kept
   tags ride around the fresh frames. `AU03` (re-encode) is the transform,
   reported as a second lossy stage with its bitrate pin, delay, and
-  padding, and `AU06` reports the log-spectral distance taken after the
-  decoded re-encode is aligned by those values and trimmed to the common
-  length. The sanity block holds that distance to `lsd_ceiling_db`,
-  proposed at 6.0. A `--keep` of the ancillary bytes stands the highpass
-  and the re-encode down with a reported reason, since a re-encode would
-  discard them.
+  padding, and `AU06` reports the log-spectral distance against the
+  highpassed reference as data. An audio write is refused, at exit 50,
+  only when the output fails to decode, its frame count differs from the
+  input's by more than one, or its duration after the delay and padding
+  fields differs by more than one frame. A `--keep` of the information
+  frame or the ancillary bytes stands the highpass and the re-encode down
+  with a reported reason, since a re-encode would discard them.
 - The audio feature adds nanomp3 0.2.0 (MIT OR Apache-2.0, without its
   SIMD feature) as the decoder and rusty_mp3 0.8.0 (Apache-2.0, no
   dependencies) as the encoder. The minimum supported Rust version is 1.89.
 - `tests/mp3_identity.rs` pins the sha256 of the decoded samples, the
   highpassed samples, and the re-encoded bytes of every MP3 fixture, so the
   macOS and Linux CI legs prove the path byte-identical across platforms.
-- Every row that did not run carries its reason in a `reason` field, with
-  `result` for measured values only: kept rows, the certified-capture
-  keep, the stand-downs for a kept WebP C2PA chunk or kept MP3 frame bytes,
-  and the `AU06` row on MP3 without the audio feature, which reads
-  `not_attempted`. Report schema 2.4.0.
+- Without the audio feature the `AU06` row on MP3 reads `not_attempted`
+  with the reason as its result field.
 - Builder-rendered MP3 fixtures under `fixtures/mp3/` from a synthetic tone
   and a broadband noise-plus-chirp signal, with tests per tag class and for
   the reservoir rule. Report schema 2.2.0.

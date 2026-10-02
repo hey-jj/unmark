@@ -108,8 +108,22 @@ pub fn encode(audio: &Audio, bitrate_kbps: u32) -> Result<Encoded, CodecError> {
         return Err(CodecError::Setting(format!("mp3: {n} channels")));
     }
     let frames_in = audio.frames();
-    // Two frames of silence cover the delay at any input length.
-    let tail = 2 * 1152;
+    // Silence to the end of the frame that holds the last input sample
+    // after the encoder and decoder delay, so the stream is at most the
+    // frames the delay needs longer than its input.
+    let spf_guess = samples_per_frame(
+        rusty_mp3::encoder_header(audio.rate, n as u16, bitrate_kbps)
+            .map(|h| {
+                if matches!(h.version, rusty_mp3::header::MpegVersion::V1) {
+                    crate::detect::mp3::Version::Mpeg1
+                } else {
+                    crate::detect::mp3::Version::Mpeg2
+                }
+            })
+            .unwrap_or(crate::detect::mp3::Version::Mpeg1),
+    );
+    let needed = frames_in + ENCODER_DELAY as usize + DECODER_DELAY;
+    let tail = needed.div_ceil(spf_guess) * spf_guess - frames_in;
     let mut interleaved = Vec::with_capacity((frames_in + tail) * n);
     for i in 0..frames_in {
         for ch in &audio.channels {

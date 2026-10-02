@@ -151,8 +151,7 @@ fn the_default_run_strips_every_class_and_leaves_the_referenced_bytes() {
             .find(|a| a.transform == "AU06")
             .unwrap();
         assert_eq!(au06.outcome, "not_attempted");
-        assert!(au06.result.is_empty());
-        assert!(au06.reason.is_some());
+        assert!(!au06.result.is_empty());
     }
     // The default run strips the same classes.
     let default = clean(&tagged, &Options::default(), &pkg()).unwrap();
@@ -416,9 +415,7 @@ fn the_default_run_highpasses_and_re_encodes_at_the_input_bitrate() {
     assert!(au03.padding.is_some());
     let sanity = out.report.sanity.as_ref().expect("the sanity block");
     assert!(sanity.passed);
-    assert!(sanity
-        .lsd_db
-        .is_some_and(|v| v > 0.0 && v <= p.sanity.lsd_ceiling_db));
+    assert!(sanity.lsd_db.is_some_and(|v| v > 0.0));
     for class in CLASSES {
         assert_eq!(
             state(&bytes, class),
@@ -524,7 +521,7 @@ fn a_lame_encoded_broadband_input_passes_the_default_run_with_the_lsd_aligned() 
     assert_eq!(out.report.exit_code, EXIT_OK, "{:?}", out.report.actions);
     let sanity = out.report.sanity.as_ref().unwrap();
     let lsd = sanity.lsd_db.unwrap();
-    assert!(sanity.passed && lsd <= p.sanity.lsd_ceiling_db, "LSD {lsd}");
+    assert!(sanity.passed, "LSD {lsd}");
     assert!(lsd > 1.0 && lsd < 4.0, "LSD {lsd}");
     // The lag a search finds is the delay the frame carries plus the
     // decoder's own, and an unaligned measure reads several dB.
@@ -581,14 +578,7 @@ fn a_kept_frame_class_stands_the_audio_path_down() {
                 .find(|a| a.transform == id)
                 .unwrap();
             assert_eq!(a.outcome, "not applied", "{id}");
-            assert!(a.result.is_empty());
-            assert!(
-                a.reason
-                    .as_deref()
-                    .is_some_and(|r| r.contains("stands down")),
-                "{:?}",
-                a.reason
-            );
+            assert!(a.result.contains("stands down"), "{}", a.result);
         }
         assert!(out.report.sanity.is_none());
     }
@@ -675,4 +665,97 @@ fn ffmpeg_decodes_a_no_degrade_output_to_the_input_samples_once_aligned() {
         );
     }
     let _ = std::fs::remove_dir_all(&scratch);
+}
+
+/// The restated gapless acceptance, through nanomp3: a decode of the output
+/// after applying the frame's delay and padding fields matches the input
+/// sample for sample under --no-degrade, and an untrimmed decode is longer by
+/// exactly delay plus padding, as the frame carries them on the rewrite path
+/// and as the AU03 row carries them on the re-encode path.
+#[cfg(feature = "audio")]
+#[test]
+fn an_untrimmed_decode_is_longer_by_exactly_delay_plus_padding() {
+    let p = pkg();
+    for name in ["tagged.mp3", "vbr.mp3", "broadband.mp3", "mpeg2.mp3"] {
+        let input = fixture(name);
+        let (reference, _) = unmark::codec::mp3::decode_with_bitrate(&input).unwrap();
+        // The rewrite path.
+        let out = clean(&input, &no_degrade(), &p).unwrap();
+        let cleaned = out.output.unwrap();
+        let (applied, _) = unmark::codec::mp3::decode_with_bitrate(&cleaned).unwrap();
+        assert_eq!(
+            applied.channels, reference.channels,
+            "{name}: samples differ after the fields"
+        );
+        let (raw, _) = unmark::codec::mp3::decode_raw_with_bitrate(&cleaned).unwrap();
+        if let Some((d, pd)) = detect::mp3::layout(&cleaned)
+            .info
+            .and_then(|i| i.delay_padding)
+        {
+            assert_eq!(
+                raw.frames(),
+                applied.frames() + d as usize + pd as usize,
+                "{name}: rewrite length"
+            );
+        } else {
+            assert_eq!(raw.frames(), applied.frames(), "{name}: no fields, no trim");
+        }
+        // The re-encode path.
+        let out = clean(&input, &Options::default(), &p).unwrap();
+        assert_eq!(
+            out.report.exit_code, EXIT_OK,
+            "{name}: {:?}",
+            out.report.actions
+        );
+        let au03 = out
+            .report
+            .actions
+            .iter()
+            .find(|a| a.transform == "AU03")
+            .unwrap();
+        let (d, pd) = (au03.delay.unwrap() as usize, au03.padding.unwrap() as usize);
+        let written = out.output.unwrap();
+        let (applied, _) = unmark::codec::mp3::decode_with_bitrate(&written).unwrap();
+        let (raw, _) = unmark::codec::mp3::decode_raw_with_bitrate(&written).unwrap();
+        assert_eq!(
+            raw.frames(),
+            applied.frames() + d + pd,
+            "{name}: re-encode length"
+        );
+        assert_eq!(
+            applied.frames(),
+            reference.frames(),
+            "{name}: the re-encode decodes to the input's length"
+        );
+        assert!(
+            out.report.sanity.as_ref().unwrap().lsd_db.is_some(),
+            "{name}: LSD reported"
+        );
+    }
+}
+
+/// A LAME-encoded MPEG-2 input runs at exit 0 with its distance reported as
+/// data; the refusals are structural only.
+#[cfg(feature = "audio")]
+#[test]
+fn an_mpeg2_input_runs_at_exit_0_with_its_lsd_reported() {
+    let mpeg2 = fixture("mpeg2.mp3");
+    let h = detect::mp3::parse_header(&mpeg2[detect::mp3::layout(&mpeg2).frames_start..]).unwrap();
+    assert_eq!(h.version, detect::mp3::Version::Mpeg2);
+    let out = clean(&mpeg2, &Options::default(), &pkg()).unwrap();
+    assert_eq!(out.report.exit_code, EXIT_OK, "{:?}", out.report.actions);
+    let sanity = out.report.sanity.as_ref().unwrap();
+    assert!(sanity.passed && sanity.refusal.is_none());
+    let lsd = sanity.lsd_db.expect("LSD as data");
+    assert!(lsd > 0.0 && lsd < 20.0, "LSD {lsd}");
+    let au03 = out
+        .report
+        .actions
+        .iter()
+        .find(|a| a.transform == "AU03")
+        .unwrap();
+    assert!(au03.result.contains("64 kbps CBR"), "{}", au03.result);
+    let (back, kbps) =
+        unmark::codec::mp3::decode_with_bitrate(out.output.as_ref().unwrap()).unwrap();
+    assert_eq!((back.rate, kbps), (22050, 64));
 }

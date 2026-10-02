@@ -84,7 +84,7 @@ survive. At 0.95 the round-trip PSNR against the input is above 31 dB and the SS
 above 0.93 on every fixture. For the highpass the report cites the AudioSeal figures:
 accuracy 0.61, true-positive rate 0.82, false-positive rate 0.60. On MP3 the report
 carries the log-spectral distance of the decoded re-encode against the highpassed
-samples, held to the ceiling in the policy, and the re-encode row names its bitrate pin
+samples as data, and the re-encode row names its bitrate pin
 and marks it a second lossy stage.
 
 ## Certified capture
