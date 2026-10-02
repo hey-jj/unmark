@@ -48,8 +48,11 @@ MP3 joins the supported containers.
 - `tests/mp3_identity.rs` pins the sha256 of the decoded samples, the
   highpassed samples, and the re-encoded bytes of every MP3 fixture, so the
   macOS and Linux CI legs prove the path byte-identical across platforms.
-- Without the audio feature the `AU06` row on MP3 reads `not_attempted`
-  with the reason as its result field.
+- Every row that did not run carries its reason in a `reason` field, with
+  `result` for measured values only: kept rows, the certified-capture
+  keep, the stand-downs for a kept WebP C2PA chunk or kept MP3 frame bytes,
+  and the `AU06` row on MP3 without the audio feature, which reads
+  `not_attempted`. Report schema 2.4.0.
 - Builder-rendered MP3 fixtures under `fixtures/mp3/` from a synthetic tone
   and a broadband noise-plus-chirp signal, with tests per tag class and for
   the reservoir rule. Report schema 2.2.0.

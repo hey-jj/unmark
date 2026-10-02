@@ -37,7 +37,7 @@ use policy::PolicyPackage;
 use report::{Action, Capture, Finding, Kept, Report, ScanRow, Survivor};
 use scan::{Detection, Detections, Honesty, ScanState};
 
-pub const SCHEMA_VERSION: &str = "2.3.0";
+pub const SCHEMA_VERSION: &str = "2.4.0";
 
 /// The smallest image edge the pixel path accepts. The SSIM window is eight
 /// pixels and the resize must leave a scorable grid, so an image narrower or
@@ -435,7 +435,16 @@ fn action_for(pkg: &PolicyPackage, id: &str, outcome: &str, result: &str) -> Act
         kept: Vec::new(),
         delay: None,
         padding: None,
+        reason: None,
     }
+}
+
+/// A row that did not run: the outcome names the keep or the refusal, the
+/// reason says why, and the result is empty.
+fn not_applied(pkg: &PolicyPackage, id: &str, outcome: &str, reason: &str) -> Action {
+    let mut a = action_for(pkg, id, outcome, "");
+    a.reason = Some(reason.to_string());
+    a
 }
 
 /// The read-only survey: the detections, the capture reading, the plan the
@@ -481,11 +490,11 @@ fn survey(
             reason: "certified capture; use --strip-capture to override".to_string(),
         });
         for id in pkg.default_run(container_name(format)) {
-            r.actions.push(action_for(
+            r.actions.push(not_applied(
                 pkg,
                 &id,
                 "kept: certified capture",
-                "not applied",
+                "certified capture; use --strip-capture to override",
             ));
         }
     } else {
@@ -507,8 +516,7 @@ fn survey(
         }
         for k in &r.kept {
             if let Some(id) = k.item.split(' ').next() {
-                r.actions
-                    .push(action_for(pkg, id, &k.reason, "not applied"));
+                r.actions.push(not_applied(pkg, id, &k.reason, &k.reason));
             }
         }
         #[cfg(feature = "image")]
@@ -576,11 +584,11 @@ pub fn clean(
             reason: "certified capture; use --strip-capture to override".to_string(),
         });
         for id in pkg.default_run(container_name(format)) {
-            r.actions.push(action_for(
+            r.actions.push(not_applied(
                 pkg,
                 &id,
                 "kept: certified capture",
-                "not applied",
+                "certified capture; use --strip-capture to override",
             ));
         }
         r.survived = survivors(pkg, &det, &[]);
@@ -623,7 +631,7 @@ pub fn clean(
     let mut actions: Vec<Action> = Vec::new();
     #[cfg(not(feature = "audio"))]
     if format == Format::Mp3 && run.iter().any(|t| t == "AU06") {
-        actions.push(action_for(
+        actions.push(not_applied(
             pkg,
             "AU06",
             "not_attempted",
@@ -655,7 +663,7 @@ pub fn clean(
             && container::webp_metadata(&out_bytes).uncarried_c2pa;
         if uncarried {
             for id in &pixel_ids {
-                actions.push(action_for(
+                actions.push(not_applied(
                     pkg,
                     id,
                     "not applied",
@@ -865,7 +873,7 @@ pub fn clean(
     #[cfg(feature = "audio")]
     if mp3_ancillary_kept && run.iter().any(|t| t == "AU06") {
         for id in ["AU06", "AU03"] {
-            actions.push(action_for(
+            actions.push(not_applied(
                 pkg,
                 id,
                 "not applied",
@@ -1009,8 +1017,7 @@ pub fn clean(
         .extend(metadata_actions(pkg, &run, &det, Some(&det_after)));
     for k in &r.kept {
         if let Some(id) = k.item.split(' ').next() {
-            r.actions
-                .push(action_for(pkg, id, &k.reason, "not applied"));
+            r.actions.push(not_applied(pkg, id, &k.reason, &k.reason));
         }
     }
     // The output's scan states are the file the user now has.

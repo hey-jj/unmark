@@ -151,7 +151,8 @@ fn the_default_run_strips_every_class_and_leaves_the_referenced_bytes() {
             .find(|a| a.transform == "AU06")
             .unwrap();
         assert_eq!(au06.outcome, "not_attempted");
-        assert!(!au06.result.is_empty());
+        assert!(au06.result.is_empty());
+        assert!(au06.reason.is_some());
     }
     // The default run strips the same classes.
     let default = clean(&tagged, &Options::default(), &pkg()).unwrap();
@@ -580,8 +581,98 @@ fn a_kept_frame_class_stands_the_audio_path_down() {
                 .find(|a| a.transform == id)
                 .unwrap();
             assert_eq!(a.outcome, "not applied", "{id}");
-            assert!(a.result.contains("stands down"), "{}", a.result);
+            assert!(a.result.is_empty());
+            assert!(
+                a.reason
+                    .as_deref()
+                    .is_some_and(|r| r.contains("stands down")),
+                "{:?}",
+                a.reason
+            );
         }
         assert!(out.report.sanity.is_none());
     }
+}
+
+/// The acceptance property through ffmpeg when it is on the path: its
+/// decode of a --no-degrade output equals its decode of the input bit for
+/// bit once aligned by the delay and padding the frame carries. ffmpeg runs
+/// with its SIMD paths off: with them on, its own trimmed decode of the
+/// input converts the partial first and last frames through a different
+/// rounding path than the full frames, a few values off by one, which is
+/// ffmpeg's conversion and not the file.
+#[cfg(feature = "audio")]
+#[test]
+fn ffmpeg_decodes_a_no_degrade_output_to_the_input_samples_once_aligned() {
+    let Ok(ffmpeg) = std::process::Command::new("ffmpeg")
+        .arg("-version")
+        .output()
+    else {
+        eprintln!("ffmpeg not on the path; the ffmpeg leg of the acceptance test is skipped");
+        return;
+    };
+    if !ffmpeg.status.success() {
+        return;
+    }
+    let scratch = std::env::temp_dir().join(format!("unmark-ffmpeg-{}", std::process::id()));
+    std::fs::create_dir_all(&scratch).unwrap();
+    let decode = |path: &std::path::Path| -> Vec<i16> {
+        let out = std::process::Command::new("ffmpeg")
+            .args(["-v", "error", "-nostdin", "-cpuflags", "0", "-i"])
+            .arg(path)
+            .args(["-f", "s16le", "-acodec", "pcm_s16le", "-"])
+            .output()
+            .unwrap();
+        assert!(
+            out.status.success(),
+            "{}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        out.stdout
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|c| i16::from_le_bytes([c[0], c[1]]))
+            .collect()
+    };
+    for name in ["tagged.mp3", "vbr.mp3", "broadband.mp3"] {
+        let input = fixture(name);
+        let out = clean(&input, &no_degrade(), &pkg()).unwrap();
+        let cleaned = out.output.unwrap();
+        let in_path = scratch.join(name);
+        let out_path = scratch.join(format!("cleaned-{name}"));
+        std::fs::write(&in_path, &input).unwrap();
+        std::fs::write(&out_path, &cleaned).unwrap();
+        let a = decode(&in_path);
+        let b = decode(&out_path);
+        let channels = unmark::codec::mp3::decode_with_bitrate(&input)
+            .unwrap()
+            .0
+            .channels
+            .len();
+        // Where the input carried an identity, ffmpeg trimmed it and the
+        // output is the untrimmed stream: longer by the delay plus the
+        // decoder's own at the head and the padding less that at the tail.
+        let info = detect::mp3::layout(&cleaned).info;
+        let (head, tail) = match info.as_ref().and_then(|i| i.delay_padding) {
+            Some((d, p))
+                if detect::mp3::layout(&input)
+                    .info
+                    .as_ref()
+                    .is_some_and(|i| i.identity) =>
+            {
+                (
+                    (d as usize + unmark::codec::mp3::DECODER_DELAY) * channels,
+                    (p as usize).saturating_sub(unmark::codec::mp3::DECODER_DELAY) * channels,
+                )
+            }
+            _ => (0, 0),
+        };
+        assert_eq!(b.len(), a.len() + head + tail, "{name}: length");
+        assert!(
+            a.iter().zip(b[head..].iter()).all(|(x, y)| x == y),
+            "{name}: ffmpeg's decodes differ once aligned"
+        );
+    }
+    let _ = std::fs::remove_dir_all(&scratch);
 }

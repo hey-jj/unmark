@@ -39,6 +39,9 @@ pub struct Action {
     /// Encoder delay and padding in samples, on an audio re-encode row.
     pub delay: Option<u32>,
     pub padding: Option<u32>,
+    /// Why a row was not applied or was refused. `result` carries measured
+    /// values only.
+    pub reason: Option<String>,
 }
 
 /// One scan-state row per class, carried as its own field so a reader never
