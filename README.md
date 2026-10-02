@@ -48,7 +48,7 @@ written output is refused. A run whose output equals its input is a no-op: a sin
 | Flag | Effect |
 |---|---|
 | `--keep <id\|class>` | Repeatable. Turns off the named transform, by id or name, or every strip of the named mark class, and reports the item as kept by flag |
-| `--no-degrade` | Turns off every transform that touches pixels or samples, so the encoded stream comes out byte-identical |
+| `--no-degrade` | Turns off every transform that touches pixels or samples, so the decoded pixels or samples come out identical |
 | `--strip-capture` | Strips a certified capture claim that the default run keeps |
 | `--output json\|text` | The machine report, the default, or the human one. Any other value is a usage error |
 
