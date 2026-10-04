@@ -3,14 +3,14 @@
 //! rebuilds the last-block flag so the metadata chain stays valid. The audio
 //! frames and the kept blocks are copied verbatim. A walk that never reached
 //! the last-block flag cannot place the audio frames, so the rewriter refuses
-//! rather than copy an unknown layout.
+//! the unknown layout.
 
 use super::{DropSpec, RewriteError};
 use crate::detect::flac::{blocks, VORBIS_COMMENT};
 
 /// The Vorbis comment answers to its own transform only, so a `--keep
 /// vorbis` survives the unlisted-block strip. The unlisted strip removes
-/// application, picture, and reserved blocks; STREAMINFO, padding, the seek
+/// application, picture, and reserved blocks. STREAMINFO, padding, the seek
 /// table, and the cue sheet stay.
 fn should_drop(kind: u8, spec: &DropSpec) -> bool {
     match kind {

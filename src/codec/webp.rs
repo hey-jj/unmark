@@ -1,7 +1,7 @@
 //! WebP through `image-webp`. Decoding covers lossy VP8 and lossless VP8L
 //! stills, with or without alpha. Encoding is lossless VP8L only, because no
-//! pure Rust lossy WebP encoder exists; a plan that needs a lossy WebP write
-//! reports itself as held rather than silently writing lossless.
+//! pure Rust lossy WebP encoder exists. A plan that needs a lossy WebP write
+//! reports itself as held. It does not write lossless output for that plan.
 
 use super::{CodecError, Image};
 use std::io::Cursor;

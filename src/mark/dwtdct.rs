@@ -11,7 +11,7 @@
 //! block reads the largest-magnitude value other than the first as the
 //! carrier: its magnitude modulo 36 above 18 is a one, at most 18 a zero.
 //! Payload bits repeat across blocks cyclically and the repetitions are
-//! majority-voted. The reference behavior applies no DCT; the raw low-low
+//! majority-voted. The reference behavior applies no DCT. The raw low-low
 //! block is quantized.
 //!
 //! The package returns bits and makes no presence decision. Presence here is
@@ -21,7 +21,7 @@
 
 use crate::codec::Image;
 
-/// The 48-bit Diffusers SDXL payload, most significant bit first.
+/// The 48-bit Diffusers SDXL payload, highest-order bit first.
 pub const SDXL_PAYLOAD: u64 = 0xB3EC907BB19E;
 pub const SDXL_BITS: usize = 48;
 /// The CompVis payload, 17 bytes of UTF-8, 136 bits.
@@ -39,7 +39,7 @@ pub const BLOCK: usize = 4;
 /// produces there.
 pub const AGREEMENT_THRESHOLD: f64 = 0.80;
 
-/// A known payload as a bit vector.
+/// The bits of a known payload.
 pub fn payload_bits(name: &str) -> Option<Vec<u8>> {
     match name {
         "sdxl-48" => Some(
@@ -180,7 +180,7 @@ pub fn decode(img: &Image, n: usize) -> (Vec<u8>, usize) {
 pub struct Decision {
     pub payload: String,
     pub bits: usize,
-    /// Blocks that voted; every payload bit has at least one vote when this
+    /// Blocks that voted. Every payload bit has at least one vote when this
     /// reaches the bit count.
     pub blocks: usize,
     /// The fraction of payload bits the voted bits agree with.
@@ -253,7 +253,7 @@ mod tests {
         let (ll, w, h) = haar_low_low(&plane, 8, 8);
         assert_eq!((w, h), (4, 4));
         // Mirrors the reference wavelet's tap order, so the sum over two
-        // holds to floating precision rather than exactly.
+        // holds to floating precision.
         assert!((ll[0] - (0.0 + 1.0 + 8.0 + 9.0) / 2.0).abs() < 1e-9);
         let (_, w, h) = haar_low_low(&vec![0.0; 10 * 6], 10, 6);
         assert_eq!((w, h), (4, 2), "crops to multiples of four first");

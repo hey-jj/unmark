@@ -67,8 +67,8 @@ fn find_ilst(
     while p + 8 <= end {
         let size32 = crate::detect::be_u32(bytes, p).unwrap_or(0) as usize;
         let kind = [bytes[p + 4], bytes[p + 5], bytes[p + 6], bytes[p + 7]];
-        // A 64-bit or to-end size at this depth is not a layout this rewriter
-        // edits; the box is skipped whole.
+        // A 64-bit or to-end size at this depth is a layout this rewriter
+        // skips whole.
         let total = if size32 == 0 { end - p } else { size32 };
         if total < 8 || p + total > end {
             break;

@@ -19,7 +19,7 @@ pub struct Chunk<'a> {
 /// Walk PNG chunks. Returns the chunks and a completeness flag. `complete` is
 /// true only when the walk reached the IEND chunk cleanly. A corrupt length or a
 /// truncated chunk stops the walk with `complete` false, so a caller never reads
-/// an early break as an exhaustive scan. Never panics.
+/// an early break as an exhaustive scan. Handles any input without panicking.
 pub fn chunks(bytes: &[u8]) -> (Vec<Chunk<'_>>, bool) {
     let mut out = Vec::new();
     if bytes.len() < 8 || bytes[..8] != SIGNATURE {

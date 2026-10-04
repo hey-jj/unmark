@@ -1,7 +1,7 @@
 //! A lightweight TIFF/EXIF reader. It extracts the fields the report and the
 //! camera-origin heuristic need and does not decode image data.
 
-/// What an EXIF payload told us. The presence flags feed guardrail G3.
+/// Facts from an EXIF payload. The presence flags feed guardrail G3.
 #[derive(Clone, Debug, Default)]
 pub struct ExifFacts {
     pub make: Option<String>,
@@ -31,7 +31,7 @@ const TAG_FOCAL_LENGTH: u16 = 0x920A;
 const TAG_LENS_MODEL: u16 = 0xA434;
 
 /// Parse a TIFF block that begins at the byte order marker (`II` or `MM`).
-/// Returns None when the header does not parse. Never panics.
+/// Returns `None` when the header does not parse. Handles any input without panicking.
 pub fn parse_tiff(b: &[u8]) -> Option<ExifFacts> {
     let le = match b.get(0..2)? {
         b"II" => true,

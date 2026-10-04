@@ -21,7 +21,7 @@ pub struct Chunk<'a> {
 /// Walk the top-level chunks inside the RIFF payload. Returns the chunks and a
 /// completeness flag. `complete` is true when the walk consumed the payload to
 /// its declared or actual end without a chunk size overrunning the buffer. A
-/// corrupt size stops the walk with `complete` false. Never panics.
+/// corrupt size stops the walk with `complete` false. Handles any input without panicking.
 pub fn chunks(bytes: &[u8]) -> (Vec<Chunk<'_>>, bool) {
     let mut out = Vec::new();
     if bytes.len() < 12 || &bytes[..4] != b"RIFF" {
@@ -65,8 +65,8 @@ pub fn chunks(bytes: &[u8]) -> (Vec<Chunk<'_>>, bool) {
         complete = true;
     }
     // Bytes left past the declared end mean the RIFF size understates the file,
-    // so chunks sit where the walk never looked. Those chunks are unknown, not
-    // absent. A single trailing pad byte is the only excess allowed.
+    // so chunks sit outside the scanned range and their presence is unknown.
+    // A single trailing pad byte is the only excess allowed.
     if bytes.len() > declared_end + 1 {
         complete = false;
     }

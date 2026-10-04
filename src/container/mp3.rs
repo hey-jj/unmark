@@ -33,7 +33,7 @@ pub fn scrub_ancillary(bytes: &[u8]) -> Result<Vec<u8>, RewriteError> {
 pub fn minimal_info_frame(frame: &mut [u8], info: &InfoFrame) {
     if info.kind == "VBRI" {
         // VBRI carries a version and encoder-specific fields after its
-        // table; the 26-byte head (version, delay, quality, bytes, frames,
+        // table. The 26-byte head (version, delay, quality, bytes, frames,
         // table layout) stays and the rest is zeroed.
         let keep = (info.tag_at + 26).min(frame.len());
         for b in frame[keep..].iter_mut() {

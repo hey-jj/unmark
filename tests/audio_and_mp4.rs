@@ -146,7 +146,7 @@ fn find_subslice(hay: &[u8], needle: &[u8]) -> Option<usize> {
 fn flac_with_vorbis() -> Vec<u8> {
     let wav = build_wav(&WavOpts::default());
     let mut audio = unmark::codec::decode_audio(&wav, Format::RiffWav).unwrap();
-    // The builder WAV is a few frames; a FLAC block needs more.
+    // The builder WAV is a few frames. A FLAC block needs more.
     for ch in audio.channels.iter_mut() {
         let base = ch.clone();
         for i in 0..4096usize {
@@ -196,8 +196,8 @@ fn a_kept_vorbis_comment_rides_through_the_flac_highpass_re_encode() {
         detect::inspect(&bytes).get("vorbis").map(|d| d.state),
         Some(ScanState::ConfirmedAbsent)
     );
-    // --keep vorbis: the highpass still runs, and the comment is in the
-    // file the user now has, not only in the report.
+    // --keep vorbis preserves the comment in the output file and the report.
+    // The highpass still runs.
     let keep = Options {
         keep: vec!["vorbis".to_string()],
         ..Default::default()

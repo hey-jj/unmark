@@ -67,7 +67,7 @@ fn a_written_output_keeps_its_stripped_list_and_a_refusal_clears_it() {
     let out = clean(&png, &Options::default(), &pkg).unwrap();
     assert!(out.output.is_some());
     assert!(!out.report.stripped_and_proven_gone.is_empty());
-    // Every action names its outcome and its result; nothing says weakened.
+    // Every action names its outcome and result. No result says `weakened`.
     for a in &out.report.actions {
         assert!(!a.outcome.is_empty() && !a.result.is_empty());
         assert!(!a.result.contains("weakened"));

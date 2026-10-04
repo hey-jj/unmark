@@ -3,6 +3,13 @@
 All notable changes to this project are documented here. The format follows
 Keep a Changelog, and the project uses semantic versioning.
 
+## [0.3.1] - 2026-10-03
+
+### Documentation
+
+- Rustdoc and code comments read in the house style for shipped prose.
+- The regenerated transform reference carries the release policy version and digest.
+
 ## [0.3.0] - 2026-10-02
 
 MP3 joins the supported containers.

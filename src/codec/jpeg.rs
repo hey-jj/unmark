@@ -5,7 +5,7 @@
 //! crate: JFIF header, the quantization and Huffman tables published in
 //! ITU-T T.81 Annex K, the quality-scaling rule (5000/q below 50, 200-2q
 //! from 50 up), a separable f64 DCT whose cosine table comes from the crate's
-//! own libm-free cosine, and 4:4:4 chroma. It contains no IJG code; the
+//! own libm-free cosine, and 4:4:4 chroma. It contains no IJG code. The
 //! Annex K tables and the quality formula are specification data. Nothing in
 //! it is adaptive, so the output is a pure function of the pixels and the
 //! quality, and `ENCODER_VERSION` names this exact behavior in the encoder

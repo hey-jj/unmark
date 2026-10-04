@@ -1,6 +1,6 @@
-//! C2PA recognition. The parse reads structure and content, never a signature.
-//! The build is offline and carries no certificate stack, so a refusal keys on
-//! manifest content rather than on cryptographic identity.
+//! C2PA recognition. The parser reads structure and content. Signatures
+//! remain unchecked. The build is offline and carries no certificate stack,
+//! so a refusal keys on manifest content.
 
 /// True when a byte range carries a JUMBF box or a C2PA marker. The JUMBF box
 /// type is the four bytes `jumb`, and a C2PA store names itself `c2pa`.
@@ -43,7 +43,8 @@ pub enum RunClass {
 }
 
 /// The length at or above which an unparseable variation-selector run is
-/// treated as a wrapper that failed to parse rather than as stray hygiene.
+/// treated as a wrapper that failed to parse. A shorter unparseable run is
+/// treated as stray hygiene.
 pub const WRAPPER_SUSPECT_LEN: usize = 8;
 
 pub fn classify_run(run: &[char]) -> RunClass {

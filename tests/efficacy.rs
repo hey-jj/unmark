@@ -1,13 +1,13 @@
 //! The efficacy properties: every builder-rendered fixture watermarked through
 //! the oracle reads present under the declared rule before the default run
-//! and absent after it, with the oracle's recovered bits agreeing; the
+//! and absent after it, with the oracle's recovered bits agreeing. The
 //! false-positive fraction of the rule on unmarked builder-rendered images is
-//! measured and pinned; the pinned resize ratio is the measured one.
+//! measured and pinned. The resize ratio is pinned to the measured value.
 //!
 //! The oracle is the reference embedding package, run as a subprocess
 //! through `tools/oracle.py`, never linked. CI installs it and sets
 //! `UNMARK_ORACLE_REQUIRED=1`, so the oracle checks fail there when it is
-//! absent; a local run without it skips those checks and says so.
+//! absent. A local run without it skips those checks and says so.
 
 use std::path::PathBuf;
 use std::process::Command;

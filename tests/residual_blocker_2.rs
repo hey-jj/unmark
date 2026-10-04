@@ -180,7 +180,8 @@ fn the_text_formats_are_in_the_supported_constant() {
         );
         assert!(f.is_supported_container());
     }
-    // Absence over a text file goes through the constant, not a side channel.
+    // The supported-container constant determines whether a text scan may
+    // report absence.
     let det = detect::inspect(b"plain text with nothing hidden\n");
     assert_eq!(det.format, Format::Text);
     assert_eq!(

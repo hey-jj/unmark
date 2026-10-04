@@ -20,7 +20,7 @@ const CONTAINERS: &[&[u8; 4]] = &[b"moov", b"udta", b"trak", b"mdia", b"minf", b
 
 /// Parse the boxes directly under `[start, end)`. Returns the boxes and a
 /// completeness flag: `complete` is true when the walk consumed the range to its
-/// end without a box size overrunning it. Never panics.
+/// end without a box size overrunning it. Handles any input without panicking.
 fn boxes(bytes: &[u8], start: usize, end: usize) -> (Vec<BoxHeader>, bool) {
     let mut out = Vec::new();
     let mut p = start;

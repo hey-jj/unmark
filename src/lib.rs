@@ -1,7 +1,7 @@
 //! unmark strips every mark it can find by default and keeps provenance only
 //! where a well-formed C2PA claim identifies a camera or sensor capture with
-//! no later generative action. Capture claims are read, not
-//! signature-verified. Every policy flag turns a strip off. The report lists
+//! no later generative action. Capture claims are parsed. Their signatures
+//! remain unchecked. Every policy flag turns a strip off. The report lists
 //! what was stripped and proven gone, what was kept and why, and what
 //! survived.
 //!
@@ -12,8 +12,8 @@
 //!
 //! The tool never emits a clean verdict, and it never renders an empty
 //! detection list as human authorship. A finding of no marks is a statement
-//! about this build's reach over an enumerated set of containers, never about
-//! the asset's origin.
+//! about this build's reach over an enumerated set of containers. It establishes
+//! nothing about the asset's origin.
 
 pub mod asset;
 pub mod budget;
@@ -100,7 +100,7 @@ impl Verb {
 pub struct Options {
     /// Transform ids or mark classes to preserve.
     pub keep: Vec<String>,
-    /// Disable every pixel and audio transform; metadata strips still run.
+    /// Disable every pixel and audio transform. Metadata strips still run.
     pub no_degrade: bool,
     /// Strip a certified capture too.
     pub strip_capture: bool,
@@ -111,7 +111,7 @@ pub struct Options {
 pub enum UnmarkError {
     Usage(String),
     Unsupported(String),
-    /// A required inspection or decode failed; presence past the break is
+    /// A required inspection or decode failed. Presence past the break is
     /// unknown. Maps to exit 30 and writes nothing.
     Inspection(String),
 }
@@ -159,7 +159,7 @@ fn keep_matches(pkg: &PolicyPackage, keep: &str, id: &str) -> bool {
 }
 
 /// Validate every `--keep` value against the catalog: a value that names no
-/// transform, class, or name is a usage error rather than a silent no-op.
+/// transform, class, or name is a usage error.
 fn validate_keeps(pkg: &PolicyPackage, opts: &Options) -> Result<(), UnmarkError> {
     for k in &opts.keep {
         let known = pkg.transforms.iter().any(|t| keep_matches(pkg, k, &t.id))
@@ -271,7 +271,7 @@ fn full_inspect(bytes: &[u8]) -> Detections {
         let (mut row, _) = dwtdct_detection(img.as_ref());
         // Chroma subsampling halves the U channel the mark lives in, and
         // decoders upsample it differently, so an absent read there is the
-        // unsupported state rather than a confirmed absence.
+        // unsupported state.
         if det.format == Format::Jpeg
             && detect::jpeg::chroma_subsampled(bytes) == Some(true)
             && row.state == ScanState::ConfirmedAbsent
@@ -540,7 +540,7 @@ fn survey(
 
 /// The mutating verb: apply the default run under the opt-outs, re-inspect
 /// the output to prove the confirmable marks gone, and measure the sanity
-/// floor. Writes nothing itself; the caller writes `output` when it is Some.
+/// floor. Writes nothing itself. The caller writes `output` when it is `Some`.
 pub fn clean(
     bytes: &[u8],
     opts: &Options,
@@ -600,8 +600,8 @@ pub fn clean(
     r.kept = kept;
     let targeted = targeted_for(&run);
 
-    // A targeted class whose scan state is malformed has unknown presence;
-    // the required inspection failed. Nothing is written.
+    // A targeted class whose scan state is malformed has unknown presence.
+    // The required inspection failed. Nothing is written.
     let unknown: Vec<&str> = targeted
         .iter()
         .copied()

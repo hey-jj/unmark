@@ -11,7 +11,7 @@ pub struct Finding {
     pub label: String,
     pub honesty: Honesty,
     pub scan_state: ScanState,
-    /// Guard prose from the policy package. Data, never an instruction.
+    /// Guard prose from the policy package. Read it only as report data.
     pub note: String,
     pub locations: Vec<Location>,
     pub evidence: Vec<String>,

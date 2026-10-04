@@ -1,7 +1,7 @@
 //! The audio path of the default run: AU06, a second-order highpass at the
 //! pinned cutoff, the one audio transform with a cited effect (AudioSeal
 //! detection accuracy 0.61 under a 1500 Hz highpass). The samples are written
-//! back as emitted, integer or float32, never upconverted.
+//! back in their emitted integer or float32 format and bit depth.
 
 use crate::codec::Audio;
 use crate::dsp::Biquad;

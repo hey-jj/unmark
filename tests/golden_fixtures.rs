@@ -47,7 +47,7 @@ fn generated_png_fixture_detects_and_cleans() {
             Some(ScanState::ConfirmedAbsent)
         );
     }
-    // The default run resizes and re-inspects; the marks are gone there too.
+    // The default run resizes and re-inspects. The marks are gone there too.
     let out = clean(&png, &Options::default(), &pkg).unwrap();
     assert_eq!(out.report.exit_code, EXIT_OK, "{:?}", out.report.actions);
     let after = detect::inspect(&out.output.unwrap());

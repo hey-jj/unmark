@@ -3,14 +3,14 @@
 //! assertion with a `c2pa.created` action of digital source type
 //! `digitalCapture`, or whose signer certificate names a camera vendor, and
 //! no later action names a generative source type or tool. Well-formed means
-//! the JUMBF boxes, the claim CBOR, and the assertion references all parse;
-//! keyword text inside an unparseable payload is never a claim. A claim is
-//! read, never signature-verified. Camera-style EXIF without such a claim is uncertain:
+//! the JUMBF boxes, the claim CBOR, and the assertion references all parse.
+//! Keyword text inside an unparseable payload cannot establish a claim.
+//! Claim signatures remain unchecked. Camera-style EXIF without such a claim is uncertain:
 //! stripped by default, with the hint named. A publisher manifest without a
 //! capture action is not a capture at all.
 //!
-//! The rest of the old guardrail set is a constraint on what this build
-//! contains rather than a runtime check: no safety-hash targeting, no keyed
+//! The rest of the old guardrail set constrains what this build contains:
+//! no safety-hash targeting, no keyed
 //! mark scorer, no fabricated provenance. No code path implements them, which
 //! is the enforcement.
 
@@ -126,8 +126,8 @@ pub fn read_capture(bytes: &[u8], det: &Detections, format: Format) -> CaptureRe
 }
 
 /// The byte ranges that may hold a manifest store, one per carriage. JPEG
-/// APP11 packets that share a box instance are reassembled in order; a text
-/// wrapper is decoded from its variation selectors; the other containers
+/// APP11 packets that share a box instance are reassembled in order. A text
+/// wrapper is decoded from its variation selectors. The other containers
 /// hand over the chunk or box payload.
 fn manifest_candidates(bytes: &[u8], det: &Detections, format: Format) -> Vec<Vec<u8>> {
     let mut out: Vec<Vec<u8>> = Vec::new();
@@ -148,7 +148,7 @@ fn manifest_candidates(bytes: &[u8], det: &Detections, format: Format) -> Vec<Ve
                     let en = u16::from_be_bytes([data[2], data[3]]);
                     let rest = &data[8..];
                     if let Some(g) = packets.iter_mut().find(|g| g.0 == en) {
-                        // A continuation repeats the box header; the
+                        // A continuation repeats the box header. The
                         // payload after it continues the first packet.
                         g.1.extend_from_slice(rest.get(8..).unwrap_or(&[]));
                     } else {

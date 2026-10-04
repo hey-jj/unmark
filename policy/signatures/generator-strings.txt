@@ -1,7 +1,7 @@
 # Generator and software tags seen in generative-tool metadata. Matched against
 # C2PA claim_generator, EXIF Software, XMP CreatorTool, and PNG text values.
-# One entry per line, matched case-insensitively as a substring. This is a
-# starting set, not a survey.
+# One entry per line, matched case-insensitively as a substring. The list
+# contains an initial selection of generator strings.
 stable diffusion
 stablediffusionwebui
 automatic1111

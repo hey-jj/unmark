@@ -1,7 +1,7 @@
 //! Pixel and sample codecs behind the degrade transforms. Every decoder lands
 //! in one of two in-memory forms: an interleaved 8-bit RGB or RGBA image, or
 //! per-channel f64 audio normalized to [-1, 1). Every encoder setting is
-//! pinned here rather than left at a library default, and
+//! pinned here. Library defaults do not select the settings, and
 //! `crate::encoder_fingerprint` names each codec crate and version.
 //!
 //! The metadata tier never touches this module. A container rewrite copies
@@ -98,8 +98,8 @@ pub struct Audio {
     /// Bit depth of the container the samples came from or go to. 32 with
     /// `float` set means IEEE float32.
     pub bits: u16,
-    /// True when the emitted sample format is float32 rather than integer
-    /// PCM. Recorded as emitted, never upconverted.
+    /// True for emitted float32 samples and false for integer PCM.
+    /// Records the emitted format. Samples keep their emitted bit depth.
     pub float: bool,
     pub channels: Vec<Vec<f64>>,
 }

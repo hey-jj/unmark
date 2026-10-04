@@ -1,7 +1,7 @@
 //! Policy package loading, validation, and digest. The canonical package lives
 //! in `policy/` and is embedded at build time. The mark classes, the transform
 //! catalog, the held list, the guardrail prose, and the sanity floor all live
-//! here rather than in Rust source.
+//! in the policy package.
 
 use sha2::{Digest, Sha256};
 

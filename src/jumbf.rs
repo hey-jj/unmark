@@ -9,7 +9,7 @@ pub struct JBox<'a> {
     pub payload: &'a [u8],
 }
 
-/// The C2PA UUID suffix; the first four bytes name the box role.
+/// The C2PA UUID suffix. The first four bytes name the box role.
 pub const C2PA_SUFFIX: [u8; 12] = [
     0x00, 0x11, 0x00, 0x10, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71,
 ];

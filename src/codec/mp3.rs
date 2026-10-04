@@ -1,17 +1,18 @@
 //! MPEG audio layer III decode and encode behind the audio feature. The
-//! decoder is nanomp3, a safe port that documents bit-exact agreement with
-//! its reference on x86-64 and ARM64; the encoder is rusty_mp3, a pure Rust
-//! encoder with no dependencies. Both are MIT or Apache-2.0. The decode
-//! yields f32 samples; the encode takes them back at a constant bitrate.
+//! decoder is nanomp3, a safe decoder derived from its reference. It
+//! documents bit-exact agreement with that reference on x86-64 and ARM64.
+//! The encoder is rusty_mp3, a pure Rust encoder with no dependencies. Both
+//! are MIT or Apache-2.0. Decoding yields f32 samples. Encoding takes them
+//! back at a constant bitrate.
 
 use super::{Audio, CodecError};
 
 /// The decoded audio with the delay and padding of a nameless information
 /// frame applied, and the stream's bitrate in kbps: the constant rate of a
 /// CBR stream, or the average of a VBR one. The decoder applies the
-/// fields of an extension that names its encoder; a minimal frame carries
-/// the same fields without the name, so they are applied here, and a
-/// decode of a cleaned file comes back at the length its input decoded to.
+/// fields of an extension that names its encoder. A minimal frame carries
+/// the same fields without the name, so they are applied here. A cleaned
+/// file decodes to the same length as its input.
 pub fn decode_with_bitrate(bytes: &[u8]) -> Result<(Audio, u32), CodecError> {
     let (audio, kbps) = decode_raw_with_bitrate(bytes)?;
     let audio = match crate::detect::mp3::layout(bytes).info {
@@ -72,7 +73,7 @@ pub fn decode(bytes: &[u8]) -> Result<Audio, CodecError> {
 /// rusty_mp3 and decoded through nanomp3 lands 1057 samples late, and
 /// nanomp3 adds the 529-sample decoder delay to the value a LAME-style
 /// extension carries, so the extension value is 528. The same at every
-/// bitrate pin and sample rate; a test re-measures it.
+/// bitrate pin and sample rate. A test re-measures it.
 pub const ENCODER_DELAY: u16 = 528;
 
 /// The decoder's own delay nanomp3 adds to the extension's value.
@@ -150,7 +151,7 @@ pub fn encode(audio: &Audio, bitrate_kbps: u32) -> Result<Encoded, CodecError> {
             "mp3: the encoder wrote nothing".to_string(),
         ));
     }
-    // The encoder's information frame comes first; it is replaced by the
+    // The encoder's information frame comes first. Replace it with the
     // minimal one carrying the fields a decoder needs for gapless output.
     let l = crate::detect::mp3::layout(&out);
     let Some(info) = l.info.as_ref().filter(|i| i.offset == l.frames_start) else {

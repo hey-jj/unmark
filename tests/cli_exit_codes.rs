@@ -1,5 +1,4 @@
-//! Exit codes and the batch model observed from the built binary, not the
-//! library.
+//! Exit codes and batch behavior from the built binary.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -117,8 +116,8 @@ fn a_directory_argument_processes_every_supported_file_independently() {
         outputs.to_str().unwrap(),
         inputs.to_str().unwrap(),
     ]);
-    // The unknown file is unsupported, the others complete; the worst exit
-    // wins and the supported files are still written.
+    // The unknown file is unsupported. The others complete. The worst exit
+    // wins, and the supported files are still written.
     assert_eq!(code, 40, "{err}");
     assert!(outputs.join("a.png").exists());
     assert!(outputs.join("b.txt").exists());
@@ -132,7 +131,7 @@ fn a_directory_argument_processes_every_supported_file_independently() {
 
 #[test]
 fn an_out_extension_that_contradicts_the_emitted_container_exits_2_with_the_report() {
-    // A JPEG input comes back as JPEG; asking for .png is a usage error, and
+    // A JPEG input comes back as JPEG. Asking for .png is a usage error, and
     // the report still says which container the run emits.
     let dir = scratch("ext");
     let jpg = dir.join("in.jpg");

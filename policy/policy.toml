@@ -8,7 +8,7 @@
 # later generative action, and let every policy flag turn a strip off.
 
 [policy]
-version = "0.3.0"
+version = "0.3.1"
 # sha256 over the canonical serialization of the whole package (this file with
 # the digest emptied, LF endings, followed by each signature file path-sorted).
 # The build embeds the computed value in every result and snapshot.
@@ -462,10 +462,10 @@ keep = [
 # ---------------------------------------------------------------------------
 # Sanity floor. The one refusal in the run: an output whose signal fidelity
 # against the grid-matched reference falls below this is a broken encode, and
-# clean exits 50 with nothing written. The values were proposed with the
-# fixture evidence in the milestone-one report and confirmed by the owner's
-# review of 2026-09-03, together with the resize ratio 0.95 and the dwtDct
-# agreement threshold 0.80 as the shipped pins.
+# clean exits 50 with nothing written. The fixture evidence in the
+# milestone-one report supported the proposed values. The 2026-09-03 review
+# affirmed the sanity floor, the 0.95 resize ratio, and the 0.80 dwtDct
+# agreement threshold together as the shipped pins.
 # ---------------------------------------------------------------------------
 
 [sanity]

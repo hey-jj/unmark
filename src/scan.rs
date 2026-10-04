@@ -1,6 +1,5 @@
 //! The detection data model. Every detector reports one `ScanState` per mark
-//! class, and the state is a field rather than something a reader infers from
-//! an empty list.
+//! class. The state is an explicit field. An empty list does not determine it.
 
 use crate::asset::Format;
 
@@ -65,7 +64,7 @@ pub struct Location {
     pub offset: usize,
     pub length: usize,
     /// A human-readable detail, for example a keyword or a segment marker. This
-    /// is data read from the asset, never an instruction.
+    /// is data read from the asset. Read it only as a reported value.
     pub detail: String,
 }
 

@@ -39,7 +39,7 @@ const BITRATE_V2: [u32; 16] = [
 ];
 
 /// Parse a layer III frame header at the start of `b`. None for anything
-/// that is not a layer III frame with a tabled bitrate and sample rate; a
+/// that is not a layer III frame with a tabled bitrate and sample rate. A
 /// free-format bitrate (index zero) is None too, since its length is not in
 /// the header.
 pub fn parse_header(b: &[u8]) -> Option<FrameHeader> {
@@ -355,7 +355,7 @@ fn info_frame(bytes: &[u8], p: usize, h: &FrameHeader, end: usize) -> Option<Inf
     Some(info)
 }
 
-/// Read `n` bits at bit offset `at` of `b`, most significant first.
+/// Read `n` bits at bit offset `at` of `b`, highest-order bit first.
 fn bits(b: &[u8], at: usize, n: usize) -> Option<u32> {
     let mut v = 0u32;
     for i in 0..n {
@@ -396,7 +396,7 @@ pub fn main_data_bits(frame: &[u8], h: &FrameHeader) -> Option<u32> {
 /// main-data regions of the audio frames that no frame's main data covers.
 /// Main data for a frame starts main_data_begin bytes before the frame's
 /// own region, in the reservoir the earlier frames left, and runs for the
-/// declared bits rounded up to bytes; the standard bounds it to end inside
+/// declared bits rounded up to bytes. The standard bounds it to end inside
 /// the frame's own region. The information frame's region is left out,
 /// since its strip is its own transform. None when a frame's extent cannot
 /// be placed, which is the case the scrub refuses.
@@ -637,7 +637,7 @@ mod tests {
 
     #[test]
     fn main_data_bits_sums_part2_3_length_over_granules_and_channels() {
-        // MPEG-1 mono: side info 17 bytes; mdb 9 bits, private 5, scfsi 4,
+        // MPEG-1 mono has 17 side-info bytes: mdb 9 bits, private 5, scfsi 4,
         // then granule 0 part2_3_length at bit 18 and granule 1 at bit 77.
         let h = parse_header(&[0xFF, 0xFB, 0x92, 0xC0]).unwrap();
         let mut side = vec![0u8; 17];

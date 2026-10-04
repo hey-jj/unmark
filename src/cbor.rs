@@ -19,7 +19,7 @@ pub enum Value {
     Simple(u8),
 }
 
-/// Nesting deeper than this is refused rather than followed.
+/// Refuse nesting deeper than this limit.
 const MAX_DEPTH: usize = 64;
 
 /// Decode one item that fills the buffer exactly. None on any malformed

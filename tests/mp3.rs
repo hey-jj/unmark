@@ -212,8 +212,8 @@ fn each_class_has_its_own_keep() {
 
 #[test]
 fn a_reservoir_dependent_stream_keeps_its_frame_in_place() {
-    // The information frame precedes frames that draw from the reservoir;
-    // the rewrite never moves or drops it, so nothing breaks.
+    // The information frame precedes frames that draw from the reservoir.
+    // The rewrite never moves or drops it, so nothing breaks.
     let res = fixture("reservoir.mp3");
     let l = detect::mp3::layout(&res);
     let info = l.info.as_ref().expect("an Info frame");
@@ -590,7 +590,7 @@ fn a_kept_frame_class_stands_the_audio_path_down() {
 /// with its SIMD paths off: with them on, its own trimmed decode of the
 /// input converts the partial first and last frames through a different
 /// rounding path than the full frames, a few values off by one, which is
-/// ffmpeg's conversion and not the file.
+/// caused by ffmpeg's conversion.
 #[cfg(feature = "audio")]
 #[test]
 fn ffmpeg_decodes_a_no_degrade_output_to_the_input_samples_once_aligned() {
@@ -735,7 +735,7 @@ fn an_untrimmed_decode_is_longer_by_exactly_delay_plus_padding() {
 }
 
 /// A LAME-encoded MPEG-2 input runs at exit 0 with its distance reported as
-/// data; the refusals are structural only.
+/// data. The refusals are structural only.
 #[cfg(feature = "audio")]
 #[test]
 fn an_mpeg2_input_runs_at_exit_0_with_its_lsd_reported() {
@@ -760,8 +760,8 @@ fn an_mpeg2_input_runs_at_exit_0_with_its_lsd_reported() {
     assert_eq!((back.rate, kbps), (22050, 64));
 }
 
-/// The information-frame class is `mp3_info`; the earlier name is not an
-/// alias, so a keep by it is a usage error like any unknown name.
+/// The information-frame class is `mp3_info`. The earlier name has no alias,
+/// so a keep by it is a usage error like any unknown name.
 #[test]
 fn the_old_class_name_is_not_an_alias() {
     let tagged = fixture("tagged.mp3");

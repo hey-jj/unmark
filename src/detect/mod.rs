@@ -92,7 +92,7 @@ pub fn inspect(bytes: &[u8]) -> Detections {
     // Each walker reports whether it covered the container exhaustively. An
     // incomplete walk (a corrupt length, a truncated chunk) must never let an
     // unreported class fall through to absence, so a class the walk did not
-    // reach is Malformed rather than confirmed_absent.
+    // reach is Malformed.
     let (mut found, complete): (Vec<Detection>, bool) = match format {
         Format::Png => png_text::scan(bytes),
         Format::Jpeg => jpeg::scan(bytes),

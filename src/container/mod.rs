@@ -52,7 +52,7 @@ pub enum RewriteError {
     Malformed(String),
     /// A targeted class cannot be stripped from this container in this build.
     /// Carries the mark class that was declined so the caller attributes the
-    /// decline to the right transform rather than to a hardcoded one.
+    /// decline to the right transform. The class selects the transform dynamically.
     Declined { class: String, reason: String },
 }
 
@@ -156,9 +156,9 @@ fn png_chunk(kind: &[u8; 4], data: &[u8]) -> Vec<u8> {
 /// `source` into `fresh`, a container the pixel path re-encoded from the
 /// same image. A `--keep` on a metadata class means the class is present in
 /// `source`, so copying every ancillary structure across preserves exactly
-/// the kept items. PNG copies every chunk that is not critical to the pixel
-/// stream after the fresh IHDR; JPEG copies every APP1 through APP15 and
-/// COM segment after the fresh APP0. WebP is carried by the encoder itself.
+/// the kept items. PNG copies every ancillary chunk except tRNS after the
+/// fresh IHDR. JPEG copies every APP1 through APP15 and COM segment after the
+/// fresh APP0. WebP is carried by the encoder itself.
 pub fn carry_ancillary(source: &[u8], fresh: &[u8], format: Format) -> Vec<u8> {
     match format {
         Format::Png => {
@@ -213,7 +213,7 @@ pub fn carry_ancillary(source: &[u8], fresh: &[u8], format: Format) -> Vec<u8> {
             if !ok {
                 return fresh.to_vec();
             }
-            // Padding and the seek table describe the old frames; every
+            // Padding and the seek table describe the old frames. Every
             // other block is metadata the strips left in place.
             let carried: Vec<&[u8]> = src
                 .iter()
@@ -248,8 +248,8 @@ pub fn carry_ancillary(source: &[u8], fresh: &[u8], format: Format) -> Vec<u8> {
             out
         }
         Format::Mp3 => {
-            // The tags the strips left stand at either end of the frames;
-            // the fresh frames go between them.
+            // The tags the strips left stand at either end of the frames.
+            // The fresh frames go between them.
             let l = crate::detect::mp3::layout(source);
             if !l.complete {
                 return fresh.to_vec();

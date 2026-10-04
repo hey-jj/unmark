@@ -4,7 +4,7 @@
 /// A container format unmark can name. The supported-container set below is the
 /// enumerated list over which a scan may report `confirmed_absent`. A format
 /// outside it can still be sniffed and named, and every mark class in it
-/// resolves to `unsupported_format` rather than to absence.
+/// resolves to `unsupported_format`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, serde::Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Format {
@@ -73,8 +73,8 @@ impl Format {
     }
 
     /// True when the format is a text file read by code point. The text formats
-    /// are members of `SUPPORTED_CONTAINERS`, so absence over them is licensed
-    /// by the constant like any other format, never by this predicate.
+    /// are members of `SUPPORTED_CONTAINERS`. That constant determines which
+    /// formats allow an absence report. This predicate only identifies text.
     pub fn is_text(self) -> bool {
         matches!(self, Format::Svg | Format::Html | Format::Text)
     }
@@ -101,7 +101,7 @@ pub enum Media {
     Unknown,
 }
 
-/// Identify a container from its leading bytes. Never panics on short input.
+/// Identify a container from its leading bytes. Handles short input without panicking.
 pub fn sniff(bytes: &[u8]) -> Format {
     if bytes.len() >= 8 && bytes[..8] == [0x89, b'P', b'N', b'G', b'\r', b'\n', 0x1a, b'\n'] {
         return Format::Png;

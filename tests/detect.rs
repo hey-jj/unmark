@@ -22,7 +22,7 @@ fn png_text_and_c2pa_are_confirmed_present() {
     });
     assert_eq!(state(&png, "png_text"), ScanState::ConfirmedPresent);
     assert_eq!(state(&png, "c2pa"), ScanState::ConfirmedPresent);
-    // A class scanned in a supported container and not found is confirmed absent.
+    // A class scanned in a supported container and not found has state `ConfirmedAbsent`.
     assert_eq!(state(&png, "exif"), ScanState::ConfirmedAbsent);
 }
 

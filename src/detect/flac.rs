@@ -22,7 +22,7 @@ pub struct Block {
 /// byte offset where the audio frames begin, and a completeness flag.
 /// `complete` is true when the walk reached the block whose last-block flag is
 /// set. A block length that overruns the buffer stops the walk with `complete`
-/// false. Never panics.
+/// false. Handles any input without panicking.
 pub fn blocks(bytes: &[u8]) -> (Vec<Block>, usize, bool) {
     let mut out = Vec::new();
     if bytes.len() < 4 || &bytes[..4] != b"fLaC" {

@@ -11,9 +11,9 @@ use std::f64::consts::PI;
 //
 // The transforms produce output bytes, so every transcendental they touch is
 // computed here in sequential f64 with fixed range reduction and a fixed
-// polynomial, never through the platform libm. No fused multiply-add is used:
-// the expressions below are plain products and sums, which Rust never
-// contracts. Accuracy is a few ulps, and the same bits on every platform.
+// polynomial. These calculations bypass the platform libm. The expressions
+// below use products and sums. Rust keeps those operations separate, so
+// they produce no fused multiply-add. Accuracy is a few ulps, and the same bits on every platform.
 
 /// pi/2 split so that `k * PIO2_HI` is exact for |k| below 2^27.
 const PIO2_HI: f64 = 1.570_796_310_901_641_8;
@@ -290,11 +290,11 @@ fn sinc(x: f64) -> f64 {
 }
 
 /// Kaiser-windowed sinc resampling over a rational step `p / q`: output
-/// sample i sits at input position `i * p / q`. `half_taps` is the kernel
-/// half-width in samples at unit ratio; when the step exceeds one the kernel
+/// sample `i` sits at input position `i * p / q`. `half_taps` is the kernel
+/// half-width in samples at unit ratio. When the step exceeds one the kernel
 /// widens by the step so the transition band keeps its shape. `cutoff` scales
 /// the lowpass below the narrower Nyquist. Samples outside the input read as
-/// zero. The kernel is evaluated once per phase (i * p mod q), so the result
+/// zero. The kernel is evaluated once per phase (`i * p mod q`), so the result
 /// is a pure function of the arguments whatever the input length.
 pub fn resample_sinc(
     x: &[f64],
@@ -328,7 +328,7 @@ pub fn resample_sinc(
         }
         taps
     };
-    // Precompute every phase when the count is modest; otherwise compute
+    // Precompute every phase when the count is modest. Otherwise compute
     // per sample by the same formula.
     let phases: Option<Vec<Vec<(i64, f64)>>> = if q <= 16384 {
         Some((0..q).map(|r| kernel_for(r as f64 / q as f64)).collect())
@@ -457,7 +457,7 @@ pub fn resample_lanczos3(
 
 // --- shelving filters ----------------------------------------------------------
 
-/// A biquad in direct form I, coefficients normalized so a0 is one.
+/// A biquad in direct form 1, with coefficients normalized so a0 is one.
 #[derive(Clone, Debug)]
 pub struct Biquad {
     b0: f64,

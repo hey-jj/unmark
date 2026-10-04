@@ -45,7 +45,7 @@ fn malformed_jpeg_with_c2pa_after_corruption() -> Vec<u8> {
 /// file, so the Vorbis comment it would carry is never reached.
 fn malformed_flac() -> Vec<u8> {
     let mut out = b"fLaC".to_vec();
-    // STREAMINFO, not the last block.
+    // STREAMINFO with its last-block flag clear.
     out.push(0x00);
     out.extend_from_slice(&[0x00, 0x00, 34]);
     out.extend_from_slice(&[0u8; 34]);

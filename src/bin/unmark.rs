@@ -170,7 +170,7 @@ fn walk_dir(
 
 /// Expand directory arguments into their files, recursively and sorted, so
 /// a batch runs in a fixed order. One directory mirrors its tree straight
-/// under --out; several mirror under their own names so equal paths in two
+/// under --out. Several mirror under their own names so equal paths in two
 /// trees never collide. Returns the inputs and whether any argument was a
 /// directory.
 fn expand_inputs(paths: &[String]) -> Result<(Vec<Input>, bool), String> {
@@ -550,7 +550,7 @@ fn cmd_clean(mut parser: lexopt::Parser) -> Result<i32, lexopt::Error> {
             exit = worst(exit, EXIT_USAGE);
             continue;
         }
-        // A no-op in a batch writes nothing; a single --out asks for a
+        // A no-op in a batch writes nothing. A single --out asks for a
         // file and gets one.
         if r.no_op && batch {
             eprintln!(

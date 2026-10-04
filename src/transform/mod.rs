@@ -223,7 +223,7 @@ fn remove_generator_elements(text: &str) -> String {
         if let Some(len) = cut {
             p += len;
             // An element that stood alone on its line takes the line with
-            // it; one inside a line leaves its neighbours in place.
+            // it. An element inside a line leaves its neighbours in place.
             let line_start = out.rfind('\n').map(|i| i + 1).unwrap_or(0);
             let after = &text[p..];
             let nl = after.find('\n');

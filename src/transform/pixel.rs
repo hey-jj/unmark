@@ -1,7 +1,7 @@
 //! The pixel path of the default run: decode, resize at the pinned ratio
 //! (the removal path for the dwtDct mark), and write the same container. A
 //! JPEG input has no lossless write, so it comes back as a baseline JPEG at
-//! the pinned quality from the crate's own encoder; a PNG or WebP input is
+//! the pinned quality from the crate's own encoder. A PNG or WebP input is
 //! written losslessly in its own container. The container choice sits behind
 //! an `Emitter`, one seam.
 //!
@@ -215,7 +215,8 @@ pub fn blur(img: &Image, sigma: f64) -> Image {
     }
 }
 
-/// PX02: both edges by `ratio`, rounded half up, never below one pixel.
+/// PX02: scale both edges by `ratio`, round half up, and clamp each to at
+/// least one pixel.
 pub fn resize(img: &Image, ratio: f64) -> Image {
     let nw = ((img.width as f64 * ratio + 0.5).floor() as usize).max(1);
     let nh = ((img.height as f64 * ratio + 0.5).floor() as usize).max(1);
@@ -246,8 +247,8 @@ pub trait Emitter {
 }
 
 /// The 0.2.0 rule: a JPEG input comes back as a baseline JPEG at the pinned
-/// quality; a PNG or WebP input is written losslessly in its own container,
-/// alpha kept.
+/// quality. A PNG or WebP input is written losslessly in its own container
+/// with alpha kept.
 pub struct DefaultEmitter;
 
 impl Emitter for DefaultEmitter {

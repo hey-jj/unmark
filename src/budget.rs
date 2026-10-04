@@ -64,8 +64,7 @@ pub struct BudgetExceeded {
 
 /// Check a metric-bounded plan's cost against its budget. Both the signal cost
 /// and the geometry cost must pass. The byte-identity gate is checked
-/// separately with `check_byte_identity`, because it compares streams rather
-/// than reading a metric.
+/// separately with `check_byte_identity`, which compares streams. It does not read a metric.
 pub fn check(budget: &Budget, cost: &Cost) -> Result<(), BudgetExceeded> {
     match budget {
         Budget::Exact => Ok(()),

@@ -1,6 +1,6 @@
-//! The fidelity-budget machinery. Milestone 1 exercises the byte-identity gate;
-//! these tests also cover the metric functions and the two-cost split so the
-//! pixel and audio transforms drop in against a proven gate.
+//! The fidelity-budget machinery. Milestone 1 exercises the byte-identity gate.
+//! These tests also cover the metric functions and the two-cost split so the
+//! pixel and audio transforms can use a tested gate.
 
 use unmark::budget::{self, Budget, Cost};
 

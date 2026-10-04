@@ -379,8 +379,8 @@ fn html_generator_meta_is_cut_in_either_quoting_and_the_body_stays() {
             "<!doctype html>\n<html><head></head><body>KEEP VISIBLE</body></html>\n"
         );
     }
-    // A generator comment inside a line leaves the rest of the line; one
-    // on its own line takes the line.
+    // A generator comment inside a line leaves the rest of the line. A
+    // comment on its own line takes the line.
     let inline = "<p>x</p><!-- Generator: ComfyUI --><p>y</p>\n";
     let out = clean(inline.as_bytes(), &Options::default(), &p).unwrap();
     assert_eq!(
@@ -500,8 +500,8 @@ fn a_failed_write_leaves_no_partial_output() {
     let writable = std::fs::write(ro.join("probe"), b"x").is_ok();
     std::fs::set_permissions(&ro, std::fs::Permissions::from_mode(0o755)).unwrap();
     if writable {
-        // Running with permissions that ignore the mode; the refusal path
-        // cannot be exercised here.
+        // These permissions allow writes despite the mode, so this run
+        // cannot exercise the refusal path.
         return;
     }
     assert_eq!(code, EXIT_INSTRUMENTATION, "{err}");

@@ -21,7 +21,7 @@ pub const IPTC_ID: &[u8] = b"Photoshop 3.0\0";
 /// segments and a completeness flag. `complete` is true when the walk reached
 /// the start-of-scan or end-of-image marker, meaning the whole metadata region
 /// was covered. A corrupt segment length stops the walk with `complete` false.
-/// Never panics. A stand-alone marker without a length is skipped.
+/// Handles any input without panicking. A stand-alone marker without a length is skipped.
 pub fn segments(bytes: &[u8]) -> (Vec<Segment<'_>>, bool) {
     let mut out = Vec::new();
     if bytes.len() < 2 || bytes[0] != 0xFF || bytes[1] != 0xD8 {

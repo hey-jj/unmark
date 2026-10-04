@@ -6,7 +6,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  # The efficacy test fails when the oracle is absent in CI; a local run
+  # The efficacy test fails when the oracle is absent in CI. A local run
   # without the package skips it.
   UNMARK_ORACLE_REQUIRED: "1"
   UNMARK_ORACLE_PYTHON: python
@@ -14,9 +14,8 @@ env:
 jobs:
   test:
     name: test (stable, ${{ matrix.os }})
-    # Both an x86_64 and an aarch64 host, so the libm-free transforms and the
-    # dwtDct decoder are tested for cross-platform identity rather than
-    # assumed.
+    # Run on x86_64 and aarch64 hosts to compare the output bytes of the
+    # libm-free transforms and the dwtDct decoder across platforms.
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -31,7 +30,7 @@ jobs:
           python-version: "3.12"
       # The invisible-watermark package is the subprocess oracle for the
       # dwtDct efficacy test. It is never linked. Its torch dependency is not
-      # used by the dwtDct path and is stubbed by tools/oracle.py.
+      # used by the dwtDct path. tools/oracle.py supplies a stub for it.
       - run: python -m pip install --no-deps invisible-watermark && python -m pip install opencv-python-headless PyWavelets numpy Pillow
       - run: cargo fmt --check
       - run: cargo clippy --all-targets --all-features -- -D warnings

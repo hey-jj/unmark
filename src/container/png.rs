@@ -4,8 +4,8 @@
 use super::{DropSpec, RewriteError};
 use crate::detect::png_text::{chunks, SIGNATURE};
 
-/// Ancillary chunks kept regardless of MC06, because they are load-bearing for
-/// rendering: color, gamma, chromaticity, physical dimensions, and background.
+/// Keep these ancillary chunks regardless of MC06 because rendering needs
+/// their color, gamma, chromaticity, physical dimensions, and background data.
 const KEEP_ANCILLARY: &[&[u8; 4]] = &[
     b"iCCP", b"gAMA", b"cHRM", b"sRGB", b"sBIT", b"pHYs", b"bKGD", b"tRNS", b"PLTE", b"acTL",
     b"fcTL", b"fdAT", b"cICP", b"mDCv", b"cLLi",
