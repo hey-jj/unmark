@@ -355,7 +355,7 @@ fn info_frame(bytes: &[u8], p: usize, h: &FrameHeader, end: usize) -> Option<Inf
     Some(info)
 }
 
-/// Read `n` bits at bit offset `at` of `b`, highest-order bit first.
+/// Read `n` bits at bit offset `at` of `b`, most significant bit first.
 fn bits(b: &[u8], at: usize, n: usize) -> Option<u32> {
     let mut v = 0u32;
     for i in 0..n {

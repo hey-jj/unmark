@@ -21,7 +21,7 @@
 
 use crate::codec::Image;
 
-/// The 48-bit Diffusers SDXL payload, highest-order bit first.
+/// The 48-bit Diffusers SDXL payload, most significant bit first.
 pub const SDXL_PAYLOAD: u64 = 0xB3EC907BB19E;
 pub const SDXL_BITS: usize = 48;
 /// The CompVis payload, 17 bytes of UTF-8, 136 bits.

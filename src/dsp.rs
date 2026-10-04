@@ -457,7 +457,7 @@ pub fn resample_lanczos3(
 
 // --- shelving filters ----------------------------------------------------------
 
-/// A biquad in direct form 1, with coefficients normalized so a0 is one.
+/// A biquad in direct form I, with coefficients normalized so a0 is one.
 #[derive(Clone, Debug)]
 pub struct Biquad {
     b0: f64,
