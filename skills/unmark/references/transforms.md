@@ -2,8 +2,8 @@
 
 Regenerate with `unmark policy snapshot` after any policy change. Edits here are overwritten.
 
-- policy version: 0.3.1
-- policy digest: sha256:e6295bf1e7ee618519be26905cb440bb3fb5599428819853fec1894ebbf1a40c
+- policy version: 0.3.2
+- policy digest: sha256:962dace9469831eca7ec81daf130093b071729b2e1ffd1775097bf3fad42beb1
 
 ## What each mark kind means
 

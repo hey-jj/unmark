@@ -3,6 +3,12 @@
 All notable changes to this project are documented here. The format follows
 Keep a Changelog, and the project uses semantic versioning.
 
+## [0.3.2] - 2026-10-25
+
+### Documentation
+
+- Three doc comments spell the bit-order and biquad-form terms as the field does.
+
 ## [0.3.1] - 2026-10-03
 
 ### Documentation
